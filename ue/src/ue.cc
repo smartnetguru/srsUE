@@ -126,7 +126,7 @@ void ue::init()
   radio_uhd->set_tx_rx_gain_offset(15);
   radio_uhd->set_rx_freq(args->rf.dl_freq);
   radio_uhd->set_tx_freq(args->rf.ul_freq);
-
+    
   phy->init_agc(radio_uhd, mac, phy_log);
   mac->init(phy, rlc, mac_log);
   rlc->init(pdcp, rrc, this, rlc_log, mac);

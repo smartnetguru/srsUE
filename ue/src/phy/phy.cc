@@ -35,6 +35,7 @@
 
 #include "srslte/srslte.h"
 
+#include "radio/radio_uhd.h"
 #include "common/threads.h"
 #include "common/log.h"
 #include "phy/phy.h"
@@ -255,8 +256,14 @@ void phy::enable_pregen_signals(bool enable)
 {
   for(uint32_t i=0;i<NOF_WORKERS;i++) {
     workers[i].enable_pregen_signals(enable);
-  }
-}
+  }  
+  log_h->console("Starting channel emulator...\n");
+  // Enable channel emulator  
+  if (!((srslte::radio_uhd*)radio_handler)->channel_emulator_init("test", 6, 256, 5760)) {
+    fprintf(stderr, "Error initiating channel emulator\n");
+    exit(-1);
+  }  
+} 
 
 
 uint32_t phy::tti_to_SFN(uint32_t tti) {

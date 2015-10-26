@@ -38,6 +38,15 @@
 //#define DO_UL_POWER_CONTROL
 
 
+/* This is to visualize the channel response */
+#include "srsgui/srsgui.h"
+#include <semaphore.h>
+void init_plots(srsue::phch_worker *worker);
+pthread_t plot_thread; 
+sem_t plot_sem; 
+/*********************************************/
+
+
 namespace srsue {
 
 phch_worker::phch_worker() : tr_exec(10240)
@@ -142,6 +151,7 @@ void phch_worker::work_imp()
   
   reset_uci();
 
+  bool dl_grant_available = false; 
   bool ul_grant_available = false; 
   bool dl_ack = false; 
   
@@ -160,7 +170,8 @@ void phch_worker::work_imp()
     /***** Downlink Processing *******/
     
     /* PDCCH DL + PDSCH */
-    if(decode_pdcch_dl(&dl_mac_grant)) {
+    dl_grant_available = decode_pdcch_dl(&dl_mac_grant); 
+    if(dl_grant_available) {
       /* Send grant to MAC and get action for this TB */
       phy->mac->new_grant_dl(dl_mac_grant, &dl_action);
       
@@ -279,6 +290,11 @@ void phch_worker::work_imp()
     // Compute PL
     float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
     phy->pathloss = phy->rsrp_filtered - tx_crs_power;
+  }  
+  
+  /* Tell the plotting thread to draw the plots */
+  if (dl_grant_available && get_id() == 0 && (tti%10) == 0) {
+    sem_post(&plot_sem);
   }
 }
 
@@ -795,13 +811,32 @@ void phch_worker::set_ul_params()
   I_sr                         = (uint32_t) phy->params_db->get_param(phy_interface_params::SR_CONFIG_INDEX);
   
 
-  
-  
   if (pregen_enabled) { 
     Info("Pre-generating UL signals\n");
     srslte_ue_ul_pregen_signals(&ue_ul);
   }
+
   
+  if (get_id() == 0) {
+    init_plots(this);
+  }
+}
+
+int phch_worker::read_ce_abs(float *ce_abs) {
+  int i;
+  for (i = 0; i < 12*cell.nof_prb; i++) {
+    ce_abs[i] = 20 * log10(cabs(ue_dl.ce[0][i]));
+    if (isinf(ce_abs[i])) {
+      ce_abs[i] = -80;
+    }
+  }
+  return i;
+}
+
+int phch_worker::read_pdsch_d(cf_t* pdsch_d)
+{
+  memcpy(pdsch_d, ue_dl.pdsch.d, ue_dl.pdsch_cfg.nbits.nof_re*sizeof(cf_t));
+  return ue_dl.pdsch_cfg.nbits.nof_re; 
 }
 
 /********** Execution time trace function ************/
@@ -830,5 +865,69 @@ void phch_worker::tr_log_end()
   }
 }
 
+}
 
+
+
+
+
+
+
+
+/***********************************************************
+ * 
+ * PLOT TO VISUALIZE THE CHANNEL RESPONSEE 
+ * 
+ ***********************************************************/
+
+
+plot_real_t    pce;
+plot_scatter_t pconst;
+float tmp_plot[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
+cf_t  tmp_plot2[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
+
+void *plot_thread_run(void *arg) {
+  srsue::phch_worker *worker = (srsue::phch_worker*) arg; 
+  
+  printf("Starting SDR GUI Channel response plot...\n");
+  sdrgui_init();  
+  plot_real_init(&pce);
+  plot_real_setTitle(&pce, (char*) "Channel Response - Magnitude");
+  plot_real_setLabels(&pce, (char*) "Index", (char*) "dB");
+  plot_real_setYAxisScale(&pce, -40, 40);
+  
+  plot_scatter_init(&pconst);
+  plot_scatter_setTitle(&pconst, (char*) "PDSCH - Equalized Symbols");
+  plot_scatter_setXAxisScale(&pconst, -4, 4);
+  plot_scatter_setYAxisScale(&pconst, -4, 4);
+
+
+  while(1) {
+    sem_wait(&plot_sem);    
+    int n = worker->read_ce_abs(tmp_plot);
+    plot_real_setNewData(&pce, tmp_plot, n);             
+    n = worker->read_pdsch_d(tmp_plot2);
+    plot_scatter_setNewData(&pconst, tmp_plot2, n);
+  }  
+  return NULL;
+}
+
+
+void init_plots(srsue::phch_worker *worker) {
+
+  if (sem_init(&plot_sem, 0, 0)) {
+    perror("sem_init");
+    exit(-1);
+  }
+  
+  pthread_attr_t attr;
+  struct sched_param param;
+  param.sched_priority = 0;  
+  pthread_attr_init(&attr);
+  pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
+  pthread_attr_setschedparam(&attr, &param);
+  if (pthread_create(&plot_thread, &attr, plot_thread_run, worker)) {
+    perror("pthread_create");
+    exit(-1);
+  }  
 }

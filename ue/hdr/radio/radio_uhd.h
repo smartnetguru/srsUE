@@ -35,6 +35,8 @@
 #ifndef RADIO_UHD_H
 #define RADIO_UHD_H
 
+// This is for the channel emulator
+#include <fftw3.h>
 
 namespace srslte {
   
@@ -43,7 +45,11 @@ namespace srslte {
   class radio_uhd : public radio
   {
     public: 
-      radio_uhd() : tr_local_time(1024*10), tr_usrp_time(1024*10), tr_tx_time(1024*10), tr_is_eob(1024*10) {sf_len=0;};
+      radio_uhd() : tr_local_time(1024*10), tr_usrp_time(1024*10), tr_tx_time(1024*10), tr_is_eob(1024*10) {
+        sf_len=0; 
+        en_channel_emulator=false;        
+      }
+      
       bool init();
       bool init(char *args);
       bool init_agc();
@@ -85,6 +91,8 @@ namespace srslte {
       void set_tti_len(uint32_t sf_len);
       uint32_t get_tti_len();     
       
+      bool channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_); 
+      
     private:
       
       void save_trace(uint32_t is_eob, srslte_timestamp_t *usrp_time);
@@ -111,6 +119,17 @@ namespace srslte {
       bool agc_enabled;
       int offset;
       uint32_t sf_len;
+      
+      /* This is for the channel emulator */
+      FILE *fr; 
+      cf_t *in_ifft, *out_ifft, *taps; 
+      fftwf_plan ifft_plan; 
+      cf_t *temp, *temp_buffer_in, *temp_buffer_out;
+      int Ntaps; 
+      int Ncoeff; 
+      int nsamples;
+      bool en_channel_emulator;
+      void channel_emulator(cf_t *input, cf_t *output); 
   }; 
 }
 

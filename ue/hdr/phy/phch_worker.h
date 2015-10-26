@@ -62,6 +62,9 @@ public:
   void start_trace();
   void write_trace(std::string filename);
   
+  int read_ce_abs(float *ce_abs);
+  int read_pdsch_d(cf_t *pdsch_d);
+  
 private: 
   /* Inherited from thread_pool::worker. Function called every subframe to run the DL/UL processing */
   void work_imp();

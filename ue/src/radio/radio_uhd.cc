@@ -27,6 +27,10 @@
 
 #include "srslte/srslte.h"
 #include "radio/radio_uhd.h"
+#include <string.h>
+
+// This is for the channel emulator
+#include <fftw3.h>
 
 namespace srslte {
 
@@ -86,7 +90,14 @@ bool radio_uhd::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_
 
 bool radio_uhd::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
 {
-  if (cuhd_recv_with_time(uhd, buffer, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
+  void *recv_ptr = buffer; 
+  if (en_channel_emulator) {
+    recv_ptr = temp_buffer_in;
+  }
+  if (cuhd_recv_with_time(uhd, recv_ptr, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
+    if (en_channel_emulator) {
+      channel_emulator(temp_buffer_in, (cf_t*) buffer);
+    }
     return true; 
   } else {
     return false; 
@@ -143,12 +154,19 @@ bool radio_uhd::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_tim
     is_start_of_burst = false;     
   }
   
+  void *tx_ptr = buffer; 
+  /*
+  if (en_channel_emulator) {
+    tx_ptr = temp_buffer_out;
+    channel_emulator((cf_t*) buffer, temp_buffer_out);
+  }
+  */
   // Save possible end of burst time 
   srslte_timestamp_copy(&end_of_burst_time, &tx_time);
   srslte_timestamp_add(&end_of_burst_time, 0, (double) nof_samples/cur_tx_srate); 
   
   save_trace(0, &tx_time);
-  if (cuhd_send_timed2(uhd, buffer, nof_samples+offset, tx_time.full_secs, tx_time.frac_secs, false, false) > 0) {
+  if (cuhd_send_timed2(uhd, tx_ptr, nof_samples+offset, tx_time.full_secs, tx_time.frac_secs, false, false) > 0) {
     offset = 0; 
     return true; 
   } else {
@@ -264,6 +282,80 @@ void radio_uhd::start_rx()
 void radio_uhd::stop_rx()
 {
   cuhd_stop_rx_stream(uhd);
+}
+
+
+
+
+
+
+
+
+/*************************************************************************
+ * 
+ *                      CHANNEL EMULATOR 
+ * 
+ *************************************************************************/
+
+
+bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_) {
+  Ntaps    = Ntaps_;
+  Ncoeff   = Ncoeff_;
+  nsamples = nsamples_;
+  
+  fr = fopen(filename, "r");
+  if (!fr) {
+    fprintf(stderr, "Error opening file\n");
+    return false;
+  }
+
+  temp_buffer_in  = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
+  temp_buffer_out = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
+  temp            = (cf_t*) fftwf_malloc(sizeof(cf_t)*(Ncoeff+1)*Ntaps);
+  in_ifft         = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
+  out_ifft        = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
+  taps            = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples*Ntaps);
+  if (!in_ifft || !out_ifft || !taps || !temp_buffer_in || !temp_buffer_out || !temp) {
+    return false; 
+  }
+  bzero(in_ifft, sizeof(cf_t)*nsamples);
+  ifft_plan = fftwf_plan_dft_1d(nsamples, 
+                                   reinterpret_cast<fftwf_complex*>(in_ifft), 
+                                   reinterpret_cast<fftwf_complex*>(out_ifft), 
+                                   FFTW_BACKWARD, 0U);
+
+  en_channel_emulator = true; 
+  
+  return true; 
+}
+
+void radio_uhd::channel_emulator(cf_t *input, cf_t *output) {
+  if (en_channel_emulator) {
+    int i,j; 
+    float fft_norm = 1/(float) Ncoeff;
+    int n = fread(temp, (Ncoeff+1)*Ntaps, sizeof(cf_t), fr);  
+    if (n <= 0) {
+      if (feof(fr)) {
+        fseek(fr, 0, SEEK_SET);
+      } else {
+        perror("fread");
+        exit(-1);
+      }
+    }
+    for (i=0;i<Ntaps;i++) {
+      memcpy(in_ifft, &temp[Ncoeff/2+i*Ncoeff], (1+Ncoeff/2)*sizeof(cf_t));
+      memcpy(&in_ifft[Ncoeff/2+(nsamples-Ncoeff)], &temp[i*Ncoeff], (Ncoeff/2)*sizeof(cf_t));
+      fftwf_execute(ifft_plan);  
+      srslte_vec_sc_prod_cfc(out_ifft, fft_norm, out_ifft, nsamples);
+      for (j=0;j<nsamples;j++) {
+        //taps[j*Ntaps+i] = out_ifft[j];
+        taps[j*Ntaps+i] = 1; 
+      }
+    }
+    for (i=0;i<nsamples;i++) {
+      output[i] = srslte_vec_dot_prod_conj_ccc(&input[i], &taps[i*Ntaps], Ntaps);      
+    }  
+  }
 }
 
   
