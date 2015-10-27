@@ -39,11 +39,15 @@
 
 
 /* This is to visualize the channel response */
+#define ENABLE_GUI
+#ifdef ENABLE_GUI
 #include "srsgui/srsgui.h"
 #include <semaphore.h>
 void init_plots(srsue::phch_worker *worker);
 pthread_t plot_thread; 
 sem_t plot_sem; 
+static int plot_worker_id = -1;
+#endif
 /*********************************************/
 
 
@@ -293,9 +297,11 @@ void phch_worker::work_imp()
   }  
   
   /* Tell the plotting thread to draw the plots */
-  if (dl_grant_available && get_id() == 0 && (tti%10) == 0) {
-    sem_post(&plot_sem);
+#ifdef ENABLE_GUI
+  if (get_id() == plot_worker_id) {
+    sem_post(&plot_sem);    
   }
+#endif
 }
 
 
@@ -816,10 +822,20 @@ void phch_worker::set_ul_params()
     srslte_ue_ul_pregen_signals(&ue_ul);
   }
 
-  
-  if (get_id() == 0) {
+}
+
+void phch_worker::start_plot() {
+#ifdef ENABLE_GUI
+  if (plot_worker_id == -1) {
+    plot_worker_id = get_id();
+    phy->log_h->console("Starting plot for worker_id=%d\n", plot_worker_id);
     init_plots(this);
+  } else {
+    phy->log_h->console("Trying to start a plot but already started by worker_id=%d\n", plot_worker_id);
   }
+#else 
+    phy->log_h->console("Trying to start a plot but plots are disabled (ENABLE_GUI constant in phch_worker.cc)\n");
+#endif
 }
 
 int phch_worker::read_ce_abs(float *ce_abs) {
@@ -881,6 +897,7 @@ void phch_worker::tr_log_end()
  ***********************************************************/
 
 
+#ifdef ENABLE_GUI
 plot_real_t    pce;
 plot_scatter_t pconst;
 float tmp_plot[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
@@ -889,7 +906,6 @@ cf_t  tmp_plot2[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
 void *plot_thread_run(void *arg) {
   srsue::phch_worker *worker = (srsue::phch_worker*) arg; 
   
-  printf("Starting SDR GUI Channel response plot...\n");
   sdrgui_init();  
   plot_real_init(&pce);
   plot_real_setTitle(&pce, (char*) "Channel Response - Magnitude");
@@ -904,10 +920,15 @@ void *plot_thread_run(void *arg) {
 
   while(1) {
     sem_wait(&plot_sem);    
+    
     int n = worker->read_ce_abs(tmp_plot);
-    plot_real_setNewData(&pce, tmp_plot, n);             
+    if (n>0) {
+      plot_real_setNewData(&pce, tmp_plot, n);             
+    }
     n = worker->read_pdsch_d(tmp_plot2);
-    plot_scatter_setNewData(&pconst, tmp_plot2, n);
+    if (n>0) {
+      plot_scatter_setNewData(&pconst, tmp_plot2, n);
+    }
   }  
   return NULL;
 }
@@ -924,6 +945,7 @@ void init_plots(srsue::phch_worker *worker) {
   struct sched_param param;
   param.sched_priority = 0;  
   pthread_attr_init(&attr);
+  pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
   pthread_attr_setschedparam(&attr, &param);
   if (pthread_create(&plot_thread, &attr, plot_thread_run, worker)) {
@@ -931,3 +953,5 @@ void init_plots(srsue::phch_worker *worker) {
     exit(-1);
   }  
 }
+#endif
+

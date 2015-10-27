@@ -254,14 +254,19 @@ void phy::set_crnti(uint16_t rnti) {
 
 void phy::enable_pregen_signals(bool enable)
 {
-  for(uint32_t i=0;i<NOF_WORKERS;i++) {
-    workers[i].enable_pregen_signals(enable);
-  }  
+  // Start GUI 
+  ((phch_worker) workers[0]).start_plot();
+
+  // Start channel emulator  
   log_h->console("Starting channel emulator...\n");
-  // Enable channel emulator  
-  if (!((srslte::radio_uhd*)radio_handler)->channel_emulator_init("test", 6, 256, 5760)) {
+  if (!((srslte::radio_uhd*)radio_handler)->channel_emulator_init("test", 6, 256, 5760, 1000)) {
     fprintf(stderr, "Error initiating channel emulator\n");
     exit(-1);
+  }  
+ 
+  // Precompute signals 
+  for(uint32_t i=0;i<NOF_WORKERS;i++) {
+    workers[i].enable_pregen_signals(enable);
   }  
 } 
 

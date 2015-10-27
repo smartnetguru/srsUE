@@ -91,11 +91,11 @@ bool radio_uhd::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_
 bool radio_uhd::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
 {
   void *recv_ptr = buffer; 
-  if (en_channel_emulator) {
+  if (en_channel_emulator && nof_samples == nsamples) {
     recv_ptr = temp_buffer_in;
   }
   if (cuhd_recv_with_time(uhd, recv_ptr, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
-    if (en_channel_emulator) {
+    if (en_channel_emulator && nof_samples == nsamples) {
       channel_emulator(temp_buffer_in, (cf_t*) buffer);
     }
     return true; 
@@ -298,20 +298,15 @@ void radio_uhd::stop_rx()
  *************************************************************************/
 
 
-bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_) {
+bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_, int ntti_) {
   Ntaps    = Ntaps_;
   Ncoeff   = Ncoeff_;
   nsamples = nsamples_;
+  ntti     = ntti_;
   
-  fr = fopen(filename, "r");
-  if (!fr) {
-    fprintf(stderr, "Error opening file\n");
-    return false;
-  }
-
   temp_buffer_in  = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   temp_buffer_out = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
-  temp            = (cf_t*) fftwf_malloc(sizeof(cf_t)*(Ncoeff+1)*Ntaps);
+  read_buffer     = (cf_t*) fftwf_malloc(sizeof(cf_t)*Ncoeff*Ntaps*ntti);
   in_ifft         = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   out_ifft        = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   taps            = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples*Ntaps);
@@ -324,6 +319,20 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
                                    reinterpret_cast<fftwf_complex*>(out_ifft), 
                                    FFTW_BACKWARD, 0U);
 
+  FILE *fr = fopen(filename, "r");
+  if (!fr) {
+    fprintf(stderr, "Error opening file\n");
+    return false;
+  }
+
+  int n = fread(temp, ntti*Ncoeff*Ntaps*sizeof(cf_t), 1, fr); 
+  if (n<0) {
+    perror("fread");
+    exit(-1);
+  }
+  temp = read_buffer; 
+  tti_cnt=0;
+  
   en_channel_emulator = true; 
   
   return true; 
@@ -332,29 +341,26 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
 void radio_uhd::channel_emulator(cf_t *input, cf_t *output) {
   if (en_channel_emulator) {
     int i,j; 
+    
     float fft_norm = 1/(float) Ncoeff;
-    int n = fread(temp, (Ncoeff+1)*Ntaps, sizeof(cf_t), fr);  
-    if (n <= 0) {
-      if (feof(fr)) {
-        fseek(fr, 0, SEEK_SET);
-      } else {
-        perror("fread");
-        exit(-1);
-      }
-    }
     for (i=0;i<Ntaps;i++) {
-      memcpy(in_ifft, &temp[Ncoeff/2+i*Ncoeff], (1+Ncoeff/2)*sizeof(cf_t));
-      memcpy(&in_ifft[Ncoeff/2+(nsamples-Ncoeff)], &temp[i*Ncoeff], (Ncoeff/2)*sizeof(cf_t));
+      memcpy(in_ifft, &temp[Ncoeff/2+i*Ncoeff], Ncoeff/2*sizeof(cf_t));
+      memcpy(&in_ifft[nsamples-Ncoeff/2], &temp[i*Ncoeff], Ncoeff/2*sizeof(cf_t));
       fftwf_execute(ifft_plan);  
       srslte_vec_sc_prod_cfc(out_ifft, fft_norm, out_ifft, nsamples);
       for (j=0;j<nsamples;j++) {
-        //taps[j*Ntaps+i] = out_ifft[j];
-        taps[j*Ntaps+i] = 1; 
+        taps[j*Ntaps+i] = out_ifft[j];
       }
     }
     for (i=0;i<nsamples;i++) {
-      output[i] = srslte_vec_dot_prod_conj_ccc(&input[i], &taps[i*Ntaps], Ntaps);      
+      output[i] = srslte_vec_dot_prod_ccc(&input[i], &taps[i*Ntaps], Ntaps);      
     }  
+    temp += Ncoeff*Ntaps;
+    tti_cnt++;
+    if (tti_cnt==ntti) {
+      temp    = read_buffer;
+      tti_cnt = 0;
+    }
   }
 }
 

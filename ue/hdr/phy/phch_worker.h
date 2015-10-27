@@ -64,6 +64,7 @@ public:
   
   int read_ce_abs(float *ce_abs);
   int read_pdsch_d(cf_t *pdsch_d);
+  void start_plot();
   
 private: 
   /* Inherited from thread_pool::worker. Function called every subframe to run the DL/UL processing */

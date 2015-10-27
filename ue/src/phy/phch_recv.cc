@@ -341,7 +341,9 @@ void phch_recv::run_thread()
             workers_pool->start_worker(worker);             
             mac->tti_clock(tti);
           } else {
+            printf("Not synchronized tti=%d\n",tti);
             worker->release();
+            exit(-1);
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here
