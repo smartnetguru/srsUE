@@ -35,6 +35,7 @@ namespace srsue{
 nas::nas()
   :state(EMM_STATE_DEREGISTERED)
   ,is_guti_set(false)
+  ,ue_attached(false)
   ,ip_addr(0)
   ,eps_bearer_id(0)
   ,count_ul(0)
@@ -190,6 +191,8 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
                     act_def_eps_bearer_context_req.pdn_addr.addr[2],
                     act_def_eps_bearer_context_req.pdn_addr.addr[3]);
 
+      ue_attached = true; 
+      
       // Setup GW
       char *err_str;
       if(gw->setup_if_addr(ip_addr, err_str))
@@ -249,6 +252,10 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
     state = EMM_STATE_DEREGISTERED;
     pool->deallocate(pdu);
   }
+}
+
+bool nas::is_attached() {
+  return ue_attached;
 }
 
 void nas::parse_attach_reject(uint32_t lcid, byte_buffer_t *pdu)

@@ -106,11 +106,26 @@ typedef struct{
 }usim_args_t;
 
 typedef struct {
+  bool          enable;
+}gui_args_t;
+
+typedef struct {
+  bool          enable;
+  std::string   filename;
+  int           nof_paths;
+  int           nof_coeffs;
+  int           nof_samples;
+  int           nof_tti;
+}ch_emu_args_t;
+
+typedef struct {
   std::string   usrp_args;
   rf_args_t     rf;
   pcap_args_t   pcap;
   trace_args_t  trace;
   log_args_t    log;
+  gui_args_t    gui;
+  ch_emu_args_t ch_emu;
   usim_args_t   usim;
 }all_args_t;
 
@@ -129,6 +144,13 @@ public:
   void stop();
   void notify();
 
+  
+  
+  bool is_attached();
+  void start_plot();
+  void start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+
+  
 protected:
   void run_thread();
 

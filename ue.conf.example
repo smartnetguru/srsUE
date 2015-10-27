@@ -13,6 +13,18 @@ enable = false
 phy_filename = /tmp/ue.phy_trace
 radio_filename = /tmp/ue.radio_trace
 
+[gui]
+enable = true
+
+[channel_emulator]
+enable          = true
+coeff_filename  = test
+nof_paths       = 6
+nof_coeffs      = 256
+nof_samples     = 5.76e6 // Samples per TTI
+nof_tti         = 1000   // Number of pregenerated TTIs
+
+
 [log]
 rlc_level = debug
 pdcp_level = debug

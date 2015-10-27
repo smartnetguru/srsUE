@@ -109,6 +109,9 @@ public:
   uint32_t get_current_tti();
   void     get_current_cell(srslte_cell_t *cell);
   
+  void    start_plot();
+  void    start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+    
 private:
     
   const static int NOF_WORKERS         = 2;

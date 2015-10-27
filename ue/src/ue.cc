@@ -25,9 +25,8 @@
  *
  */
 
-#include "ue.h"
-
 #include <boost/algorithm/string.hpp>
+#include "ue.h"
 
 namespace srsue{
 
@@ -173,6 +172,7 @@ void ue::stop()
       radio_uhd->write_trace(args->trace.radio_filename);
     }
     started = false;
+    notify();
     wait_thread_finish();
   }
 }
@@ -182,6 +182,11 @@ void ue::notify()
   boost::mutex::scoped_lock lock(mutex);
   have_data = true;
   condition.notify_one();
+}
+
+bool ue::is_attached()
+{
+  return gw->is_attached();
 }
 
 void ue::run_thread()
@@ -194,6 +199,14 @@ void ue::run_thread()
       while (!have_data) condition.wait(lock);
     }
   }
+}
+
+void ue::start_plot() {
+  phy->start_plot();
+}
+
+void ue::start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti) {
+  phy->start_channel_emulator(filename, nof_paths, nof_coeffs, nof_samples, nof_tti);
 }
 
 srslte::LOG_LEVEL_ENUM ue::level(std::string l)
