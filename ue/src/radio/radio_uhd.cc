@@ -304,7 +304,7 @@ bool radio_uhd::channel_emulator_init(const char *filename, int *path_tap_, int 
   ntti     = ntti_;
   path_tap = (int*) malloc(sizeof(int)*Npaths);
   memcpy(path_tap, path_tap_, sizeof(int)*Npaths);
-  srslte_vec_fprint_i(stdout, path_tap, Npaths);
+
   // Choose a 4-word aligned FIR 
   Ntaps    = 4*((path_tap[Npaths-1]-1)/4+1);
   

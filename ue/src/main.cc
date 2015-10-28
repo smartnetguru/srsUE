@@ -118,14 +118,6 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
         ("usim.k",            bpo::value<string>(&args->usim.k),           "USIM K")
     ;
     
-    /* Make sure the number of path taps equal the number of paths */
-    if (args->ch_emu.enable) {
-      if (args->ch_emu.nof_paths != args->ch_emu.path_tap.size()) {
-        cout << "Error: Number path_tap elements must be equal to nof_paths" << endl; 
-        exit(0);
-      }
-    }
-
     // Positional options - config file location
     bpo::options_description position("Positional options");
     position.add_options()
@@ -227,6 +219,16 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
         args->log.usim_hex_limit = args->log.all_hex_limit;
       }
     }
+    
+    /* Make sure the number of path taps equal the number of paths */
+    if (args->ch_emu.enable) {
+      if (args->ch_emu.nof_paths != args->ch_emu.path_tap.size()) {
+        cout << "Error: Number path_tap elements must be equal to nof_paths" << endl; 
+        exit(0);
+      }
+    }
+
+
 }
 
 
