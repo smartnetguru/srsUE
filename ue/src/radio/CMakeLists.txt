@@ -18,4 +18,4 @@
 #
 
 add_library(srsue_radio radio_uhd.cc)
-target_link_libraries(srsue_radio ${SRSLTE_LIBRARY_CUHD})
+target_link_libraries(srsue_radio ${SRSLTE_LIBRARY_CUHD} fftw3f)

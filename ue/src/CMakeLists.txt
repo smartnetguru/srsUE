@@ -29,5 +29,5 @@ target_link_libraries(ue    srsue_upper
                             srsue_mac
                             srsue_phy
                             srsue_radio
-                            lte
+                            lte                            
                             ${Boost_LIBRARIES})

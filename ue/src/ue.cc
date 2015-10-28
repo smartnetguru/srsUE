@@ -186,7 +186,7 @@ void ue::notify()
 
 bool ue::is_attached()
 {
-  return gw->is_attached();
+  return nas->is_attached();
 }
 
 void ue::run_thread()
