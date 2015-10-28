@@ -66,6 +66,8 @@ public:
             srslte::log         *nas_log_);
   void stop();
 
+  emm_state_t get_state();
+
   // RRC interface
   void      notify_connection_setup();
   void      write_pdu(uint32_t lcid, byte_buffer_t *pdu);
@@ -81,8 +83,6 @@ private:
   gw_interface_nas   *gw;
 
   emm_state_t        state;
-  
-  bool ue_attached; 
 
   LIBLTE_MME_EPS_MOBILE_ID_GUTI_STRUCT guti;
   bool                                 is_guti_set;

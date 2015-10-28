@@ -284,11 +284,10 @@ void radio_uhd::stop_rx()
   cuhd_stop_rx_stream(uhd);
 }
 
-
-
-
-
-
+void radio_uhd::register_msg_handler(cuhd_msg_handler_t h)
+{
+  cuhd_register_msg_handler(h);
+}
 
 
 /*************************************************************************
@@ -363,7 +362,6 @@ void radio_uhd::channel_emulator(cf_t *input, cf_t *output) {
     }
   }
 }
-
   
-}
+} // namespace srslte
 
