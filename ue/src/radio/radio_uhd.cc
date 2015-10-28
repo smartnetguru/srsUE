@@ -297,16 +297,20 @@ void radio_uhd::stop_rx()
  * 
  *************************************************************************/
 
-
-bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_, int ntti_) {
-  Ntaps    = Ntaps_;
+/** FIXME: Dealloc all this mallocs */
+bool radio_uhd::channel_emulator_init(const char *filename, int *path_tap_, int Npaths_, int Ncoeff_, int nsamples_, int ntti_) {
+  Ntaps    = 16;
+  Npaths   = Npaths_;
   Ncoeff   = Ncoeff_;
   nsamples = nsamples_;
   ntti     = ntti_;
+  path_tap = (int*) malloc(sizeof(int)*Npaths);
+  memcpy(path_tap, path_tap_, sizeof(int)*Npaths);
+  ;
   
   temp_buffer_in  = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   temp_buffer_out = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
-  read_buffer     = (cf_t*) fftwf_malloc(sizeof(cf_t)*Ncoeff*Ntaps*ntti);
+  read_buffer     = (cf_t*) fftwf_malloc(sizeof(cf_t)*Ncoeff*Npaths*ntti);
   in_ifft         = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   out_ifft        = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   taps            = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples*Ntaps);
@@ -314,6 +318,7 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
     return false; 
   }
   bzero(in_ifft, sizeof(cf_t)*nsamples);
+  bzero(taps, sizeof(cf_t)*nsamples*Ntaps);
   ifft_plan = fftwf_plan_dft_1d(nsamples, 
                                    reinterpret_cast<fftwf_complex*>(in_ifft), 
                                    reinterpret_cast<fftwf_complex*>(out_ifft), 
@@ -325,11 +330,12 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
     return false;
   }
 
-  int n = fread(temp, ntti*Ncoeff*Ntaps*sizeof(cf_t), 1, fr); 
+  int n = fread(read_buffer, ntti*Ncoeff*Npaths*sizeof(cf_t), 1, fr); 
   if (n<0) {
     perror("fread");
     return false;
   }
+  fclose(fr);
   temp = read_buffer; 
   tti_cnt=0;
   
@@ -343,19 +349,19 @@ void radio_uhd::channel_emulator(cf_t *input, cf_t *output) {
     int i,j; 
     
     float fft_norm = 1/(float) Ncoeff;
-    for (i=0;i<Ntaps;i++) {
+    for (i=0;i<Npaths;i++) {
       memcpy(in_ifft, &temp[Ncoeff/2+i*Ncoeff], Ncoeff/2*sizeof(cf_t));
       memcpy(&in_ifft[nsamples-Ncoeff/2], &temp[i*Ncoeff], Ncoeff/2*sizeof(cf_t));
       fftwf_execute(ifft_plan);  
       srslte_vec_sc_prod_cfc(out_ifft, fft_norm, out_ifft, nsamples);
       for (j=0;j<nsamples;j++) {
-        taps[j*Ntaps+i] = out_ifft[j];
-      }
+        taps[j*Ntaps+path_tap[i]] = out_ifft[j];
+      }      
     }
     for (i=0;i<nsamples;i++) {
       output[i] = srslte_vec_dot_prod_ccc(&input[i], &taps[i*Ntaps], Ntaps);      
     }  
-    temp += Ncoeff*Ntaps;
+    temp += Ncoeff*Npaths;
     tti_cnt++;
     if (tti_cnt==ntti) {
       temp    = read_buffer;

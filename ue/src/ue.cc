@@ -205,8 +205,8 @@ void ue::start_plot() {
   phy->start_plot();
 }
 
-void ue::start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti) {
-  phy->start_channel_emulator(filename, nof_paths, nof_coeffs, nof_samples, nof_tti);
+void ue::start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti) {
+  phy->start_channel_emulator(filename, path_taps, nof_paths, nof_coeffs, nof_samples, nof_tti);
 }
 
 srslte::LOG_LEVEL_ENUM ue::level(std::string l)

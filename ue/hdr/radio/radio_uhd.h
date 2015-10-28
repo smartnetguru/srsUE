@@ -89,7 +89,7 @@ namespace srslte {
       void set_tti_len(uint32_t sf_len);
       uint32_t get_tti_len();
       
-      bool channel_emulator_init(const char *filename, int Ntaps_, int Ncoeff_, int nsamples_, int ntti_); 
+      bool channel_emulator_init(const char *filename, int *path_tap_, int Npaths_, int Ncoeff_, int nsamples_, int ntti_); 
       
     private:
       
@@ -122,7 +122,8 @@ namespace srslte {
       cf_t *in_ifft, *out_ifft, *taps; 
       fftwf_plan ifft_plan; 
       cf_t *temp, *temp_buffer_in, *temp_buffer_out, *read_buffer;
-      int Ntaps, Ncoeff, nsamples, ntti, tti_cnt;
+      int *path_tap;
+      int Ntaps, Npaths, Ncoeff, nsamples, ntti, tti_cnt;
       bool en_channel_emulator;
       void channel_emulator(cf_t *input, cf_t *output); 
   }; 

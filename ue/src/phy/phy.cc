@@ -257,9 +257,9 @@ void phy::start_plot() {
   ((phch_worker) workers[0]).start_plot();
 }
 
-void phy::start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti) {
-  log_h->console("Starting channel emulator...\n");
-  if (!((srslte::radio_uhd*)radio_handler)->channel_emulator_init(filename, nof_paths, nof_coeffs, nof_samples, nof_tti)) {
+void phy::start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti) {
+  log_h->console("Starting channel emulator. Using pregenerated coefficients file: %s\n", filename);
+  if (!((srslte::radio_uhd*)radio_handler)->channel_emulator_init(filename, path_taps, nof_paths, nof_coeffs, nof_samples, nof_tti)) {
     fprintf(stderr, "Error initiating channel emulator\n");
     exit(-1);
   }    

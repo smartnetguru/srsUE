@@ -148,7 +148,7 @@ public:
   
   bool is_attached();
   void start_plot();
-  void start_channel_emulator(const char *filename, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+  void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
 
   
 protected:

@@ -242,8 +242,11 @@ int main(int argc, char *argv[]) {
         ue.start_plot();
         plot_started = true; 
       }
+      
+      int path_tap[] = {0, 2, 4, 6, 10, 14};
+      
       if (!ch_emu_started && args.ch_emu.enable) {
-        ue.start_channel_emulator(args.ch_emu.filename.c_str(), 
+        ue.start_channel_emulator(args.ch_emu.filename.c_str(), path_tap,
                                   args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
                                   args.ch_emu.nof_samples, args.ch_emu.nof_tti);
         ch_emu_started = true; 
