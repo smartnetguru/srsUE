@@ -186,7 +186,7 @@ void ue::notify()
 
 bool ue::is_attached()
 {
-  return nas->is_attached();
+  return (EMM_STATE_REGISTERED == nas->get_state());
 }
 
 void ue::run_thread()
