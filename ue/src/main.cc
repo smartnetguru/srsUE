@@ -86,6 +86,7 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
         ("channel_emulator.enable",          bpo::value<bool>(&args->ch_emu.enable)->default_value(false),    "Enable fading channel emulator")
         ("channel_emulator.coeff_filename",  bpo::value<string>(&args->ch_emu.filename),                      "Pregenerated channel coefficients filename")
         ("channel_emulator.nof_paths",       bpo::value<int>(&args->ch_emu.nof_paths),                        "Number of pregenerated channel paths")
+        ("channel_emulator.path_tap",        bpo::value<vector<int> >(&args->ch_emu.path_tap)->multitoken(),  "Tap position per path")
         ("channel_emulator.nof_coeffs",      bpo::value<int>(&args->ch_emu.nof_coeffs),                       "Number of pregenerated channel coefficients")
         ("channel_emulator.nof_samples",     bpo::value<int>(&args->ch_emu.nof_samples),                      "Number of samples per TTI (sampling rate/1000)")
         ("channel_emulator.nof_tti",         bpo::value<int>(&args->ch_emu.nof_tti),                          "Number of TTIs pregenerated in the file")
@@ -116,6 +117,14 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
         ("usim.imei",         bpo::value<string>(&args->usim.imei),        "USIM IMEI")
         ("usim.k",            bpo::value<string>(&args->usim.k),           "USIM K")
     ;
+    
+    /* Make sure the number of path taps equal the number of paths */
+    if (args->ch_emu.enable) {
+      if (args->ch_emu.nof_paths != args->ch_emu.path_tap.size()) {
+        cout << "Error: Number path_tap elements must be equal to nof_paths" << endl; 
+        exit(0);
+      }
+    }
 
     // Positional options - config file location
     bpo::options_description position("Positional options");
@@ -243,10 +252,8 @@ int main(int argc, char *argv[]) {
         plot_started = true; 
       }
       
-      int path_tap[] = {0, 2, 4, 6, 10, 14};
-      
       if (!ch_emu_started && args.ch_emu.enable) {
-        ue.start_channel_emulator(args.ch_emu.filename.c_str(), path_tap,
+        ue.start_channel_emulator(args.ch_emu.filename.c_str(), args.ch_emu.path_tap.data(),
                                   args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
                                   args.ch_emu.nof_samples, args.ch_emu.nof_tti);
         ch_emu_started = true; 

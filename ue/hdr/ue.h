@@ -113,6 +113,7 @@ typedef struct {
   bool          enable;
   std::string   filename;
   int           nof_paths;
+  std::vector<int> path_tap;
   int           nof_coeffs;
   int           nof_samples;
   int           nof_tti;

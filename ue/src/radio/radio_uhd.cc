@@ -298,14 +298,15 @@ void radio_uhd::register_msg_handler(cuhd_msg_handler_t h)
 
 /** FIXME: Dealloc all this mallocs */
 bool radio_uhd::channel_emulator_init(const char *filename, int *path_tap_, int Npaths_, int Ncoeff_, int nsamples_, int ntti_) {
-  Ntaps    = 16;
   Npaths   = Npaths_;
   Ncoeff   = Ncoeff_;
   nsamples = nsamples_;
   ntti     = ntti_;
   path_tap = (int*) malloc(sizeof(int)*Npaths);
   memcpy(path_tap, path_tap_, sizeof(int)*Npaths);
-  ;
+  srslte_vec_fprint_i(stdout, path_tap, Npaths);
+  // Choose a 4-word aligned FIR 
+  Ntaps    = 4*((path_tap[Npaths-1]-1)/4+1);
   
   temp_buffer_in  = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   temp_buffer_out = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
