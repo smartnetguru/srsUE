@@ -310,7 +310,7 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
   in_ifft         = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   out_ifft        = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples);
   taps            = (cf_t*) fftwf_malloc(sizeof(cf_t)*nsamples*Ntaps);
-  if (!in_ifft || !out_ifft || !taps || !temp_buffer_in || !temp_buffer_out || !temp) {
+  if (!in_ifft || !out_ifft || !taps || !temp_buffer_in || !temp_buffer_out) {
     return false; 
   }
   bzero(in_ifft, sizeof(cf_t)*nsamples);
@@ -321,14 +321,14 @@ bool radio_uhd::channel_emulator_init(const char *filename, int Ntaps_, int Ncoe
 
   FILE *fr = fopen(filename, "r");
   if (!fr) {
-    fprintf(stderr, "Error opening file\n");
+    fprintf(stderr, "Error opening file: %s\n", filename);
     return false;
   }
 
   int n = fread(temp, ntti*Ncoeff*Ntaps*sizeof(cf_t), 1, fr); 
   if (n<0) {
     perror("fread");
-    exit(-1);
+    return false;
   }
   temp = read_buffer; 
   tti_cnt=0;

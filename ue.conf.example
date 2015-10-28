@@ -21,8 +21,8 @@ enable          = true
 coeff_filename  = test
 nof_paths       = 6
 nof_coeffs      = 256
-nof_samples     = 5.76e6 // Samples per TTI
-nof_tti         = 1000   // Number of pregenerated TTIs
+nof_samples     = 5760
+nof_tti         = 1000   
 
 
 [log]
