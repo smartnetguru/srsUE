@@ -302,6 +302,16 @@ void phch_recv::run_thread()
         } 
        break;
       case SYNC_DONE:
+        
+        /**** ATTENTION: ***********
+         * This branch uses a different ue_sync parameters to cope with channel emulator. Fix this or make sure it's necessary
+         * 
+         ***************************/
+        
+        srslte_sync_set_em_alpha(&ue_sync.strack, 1);
+        srslte_sync_set_threshold(&ue_sync.strack, 1.08);
+
+        
         tti = (tti + 1) % 10240;
         worker = (phch_worker*) workers_pool->wait_worker(tti);
         if (worker) {          
