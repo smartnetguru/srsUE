@@ -351,11 +351,8 @@ void phch_recv::run_thread()
             workers_pool->start_worker(worker);             
             mac->tti_clock(tti);
           } else {
-            log_h->console("Not synchronized tti=%d\n",tti);
+            log_h->console("Lost sync at tti=%d\n", tti);            
             worker->release();
-            printf("track peak_value=%f/%f, \n", ue_sync.strack.peak_value, ue_sync.strack.threshold);
-            srslte_vec_save_file((char*) "conv_output", ue_sync.strack.pss.conv_output, ue_sync.strack.pss.frame_size*sizeof(cf_t));
-            srslte_vec_save_file((char*) "conv_output_avg", ue_sync.strack.pss.conv_output_avg, ue_sync.strack.pss.frame_size*sizeof(float));
             exit(-1);
           }
         } else {
