@@ -64,7 +64,6 @@ public:
 
   // PDCP interface
   void write_sdu(byte_buffer_t *sdu);
-  bool read_sdu();
 
   // MAC interface
   uint32_t get_buffer_state();
@@ -96,7 +95,6 @@ private:
   uint32_t                           tx_mod; // Tx counter modulus
 
   // RX SDU buffers
-  msg_queue           rx_sdu_queue;
   byte_buffer_t      *rx_sdu;
 
   // Mutexes
@@ -129,6 +127,8 @@ private:
    * Ref: 3GPP TS 36.322 v10.0.0 Section 7
    ***************************************************************************/
   uint32_t reordering_timeout_id;
+
+  bool     pdu_lost;
 
   int  build_data_pdu(uint8_t *payload, uint32_t nof_bytes);
   void handle_data_pdu(uint8_t *payload, uint32_t nof_bytes);

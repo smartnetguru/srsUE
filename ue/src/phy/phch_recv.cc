@@ -303,14 +303,13 @@ void phch_recv::run_thread()
        break;
       case SYNC_DONE:
         
-        /**** ATTENTION: ***********
-         * This branch uses a different ue_sync parameters to cope with channel emulator. Fix this or make sure it's necessary
-         * 
-         ***************************/
-        
-        srslte_sync_set_em_alpha(&ue_sync.strack, 1);
-        srslte_sync_set_threshold(&ue_sync.strack, 1.08);
-
+        /* Set synchronization track phase threshold and averaging factor */
+        if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD) > 0) {
+          srslte_sync_set_threshold(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/10);          
+        }
+        if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_AVG_COEFF) > 0) {
+          srslte_sync_set_em_alpha(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/10);
+        }
         
         tti = (tti + 1) % 10240;
         worker = (phch_worker*) workers_pool->wait_worker(tti);
@@ -351,12 +350,8 @@ void phch_recv::run_thread()
             workers_pool->start_worker(worker);             
             mac->tti_clock(tti);
           } else {
-            log_h->console("Not synchronized tti=%d\n",tti);
+            log_h->console("Lost sync at tti=%d\n", tti);            
             worker->release();
-            printf("track peak_value=%f/%f, \n", ue_sync.strack.peak_value, ue_sync.strack.threshold);
-            srslte_vec_save_file((char*) "conv_output", ue_sync.strack.pss.conv_output, ue_sync.strack.pss.frame_size*sizeof(cf_t));
-            srslte_vec_save_file((char*) "conv_output_avg", ue_sync.strack.pss.conv_output_avg, ue_sync.strack.pss.frame_size*sizeof(float));
-            exit(-1);
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here

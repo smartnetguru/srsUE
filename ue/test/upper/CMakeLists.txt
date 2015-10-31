@@ -36,3 +36,4 @@ add_test(rlc_um_data_test rlc_um_data_test)
 add_executable(rlc_um_test rlc_um_test.cc)
 target_link_libraries(rlc_um_test srsue_upper)
 add_test(rlc_um_test rlc_um_test)
+  
