@@ -160,7 +160,6 @@ public:
   void start_plot();
   void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
 
-  
 private:
   srslte::radio_uhd *radio_uhd;
   srsue::phy        *phy;
