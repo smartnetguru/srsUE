@@ -2,8 +2,7 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2013-2015 The srsUE Developers. See the
- * COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright 2013-2015 Software Radio Systems Limited
  *
  * \section LICENSE
  *
@@ -39,6 +38,9 @@
 
 namespace srsue {
  
+  
+bool continuous_tx_mode = false; 
+
 phch_recv::phch_recv() { 
   running = false; 
 }
@@ -57,6 +59,9 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, pra
   time_adv_sec = 0; 
   cell_is_set  = false; 
   do_agc       = do_agc_;
+  
+  continuous_tx_mode = worker_com->params_db->get_param(phy_interface_params::CONTINUOUS_TX)>0?true:false;
+  
   start(prio);
 }
 
@@ -69,11 +74,11 @@ int radio_recv_wrapper_cs(void *h, void *data, uint32_t nsamples, srslte_timesta
 {
   srslte::radio *radio_h = (srslte::radio*) h;
   if (radio_h->rx_now(data, nsamples, rx_time)) {
-#ifdef CONTINUOUS_TX
-    if (abs(nsamples-radio_h->get_tti_len())<10) {
-      radio_h->tx_offset(nsamples-radio_h->get_tti_len());
+    if (continuous_tx_mode) {
+      if (abs(nsamples-radio_h->get_tti_len())<10) {
+        radio_h->tx_offset(nsamples-radio_h->get_tti_len());
+      }
     }
-#endif
     return nsamples;
   } else {
     return -1;

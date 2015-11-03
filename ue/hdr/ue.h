@@ -2,8 +2,7 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2015 The srsUE Developers. See the
- * COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright 2013-2015 Software Radio Systems Limited
  *
  * \section LICENSE
  *
@@ -100,6 +99,9 @@ typedef struct {
 }log_args_t;
 
 typedef struct{
+  std::string algo;
+  std::string op;
+  std::string amf;
   std::string imsi;
   std::string imei;
   std::string k;

@@ -2,8 +2,7 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2015 The srsUE Developers. See the
- * COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright 2013-2015 Software Radio Systems Limited
  *
  * \section LICENSE
  *
@@ -24,6 +23,7 @@
  * and at http://www.gnu.org/licenses/.
  *
  */
+
 
 #include <boost/algorithm/string.hpp>
 #include "ue.h"
@@ -163,7 +163,8 @@ bool ue::init()
   rrc->init(phy, mac, rlc, pdcp, nas, usim, rrc_log);
   nas->init(usim, rrc, gw, nas_log);
   gw->init(pdcp, this, gw_log);
-  usim->init(args->usim.imsi, args->usim.imei, args->usim.k, usim_log);
+  usim->init(args->usim.imsi, args->usim.imei, args->usim.k,
+             args->usim.algo, args->usim.op, args->usim.amf, usim_log);
 
   started = true;
 }

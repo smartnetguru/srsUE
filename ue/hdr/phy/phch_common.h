@@ -2,8 +2,7 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2013-2015 The srsUE Developers. See the
- * COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright 2013-2015 Software Radio Systems Limited
  *
  * \section LICENSE
  *
@@ -48,6 +47,7 @@ namespace srsue {
     
     phch_common() {
       pathloss = 0; 
+      cur_pathloss = 0; 
       rsrp_filtered = 0; 
       cur_pusch_power = 0; 
       p0_preamble = 0; 
@@ -63,6 +63,7 @@ namespace srsue {
     
     /* Power control variables */
     float pathloss;
+    float cur_pathloss;
     float p0_preamble;     
     float cur_radio_power; 
     float cur_pusch_power;
