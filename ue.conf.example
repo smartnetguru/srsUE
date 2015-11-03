@@ -1,6 +1,6 @@
 [rf]
-dl_freq = 2680000000
-ul_freq = 2560000000
+dl_freq = 930000000
+ul_freq = 885000000
 
 # If enabled, disables AGC
 #rx_gain = 50 
@@ -34,7 +34,6 @@ imsi = 001010123456789
 imei = 353490069873319
 k    = 00112233445566778899aabbccddeeff
 
-<<<<<<< HEAD
 [gui]
 enable = true
 
@@ -76,7 +75,7 @@ path_tap        = 21
 #path_tap        = 0
 #path_tap        = 1
 #path_tap        = 3
-=======
+
 [expert]
 
 # If positive, disables power control and fixes the PRACH tx gain
@@ -106,4 +105,3 @@ continuous_tx = false
 # Currently not enabled
 #nof_phy_threads = 2
 
->>>>>>> master
