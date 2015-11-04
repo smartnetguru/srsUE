@@ -120,9 +120,10 @@ cf_t* phch_worker::get_buffer()
   return signal_buffer; 
 }
 
-void phch_worker::set_tti(uint32_t tti_)
+void phch_worker::set_tti(uint32_t tti_, uint32_t tx_tti_)
 {
-  tti = tti_; 
+  tti    = tti_; 
+  tx_tti = tx_tti_;
 }
 
 void phch_worker::set_cfo(float cfo_)
@@ -242,7 +243,7 @@ void phch_worker::work_imp()
 
   tr_log_end();
   
-  phy->worker_end(tti, signal_ready, signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb), tx_time);
+  phy->worker_end(tx_tti, signal_ready, signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb), tx_time);
   
   if (dl_action.decode_enabled && !dl_action.generate_ack_callback) {
     phy->mac->tb_decoded(dl_ack, dl_mac_grant.rnti_type, dl_mac_grant.pid);
@@ -564,13 +565,15 @@ void phch_worker::set_uci_periodic_cqi()
         cqi_report.subband.subband_cqi = srslte_cqi_from_snr(snr);
         cqi_report.subband.subband_label = 0;
         phy->log_h->console("Warning: Subband CQI periodic reports not implemented\n");
+        Info("CQI: subband snr=%.1f dB, cqi=%d\n", snr, cqi_report.subband.subband_cqi);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
         snr = SRSLTE_VEC_EMA(10*log10f(srslte_chest_dl_get_snr(&ue_dl.chest)), snr, 0.2);
         cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(snr);        
+        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", snr, cqi_report.wideband.wideband_cqi);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
-      rar_cqi_request = false; 
+      rar_cqi_request = false;       
     }
   }
 }

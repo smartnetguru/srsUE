@@ -54,11 +54,15 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, pra
   workers_pool = _workers_pool;
   worker_com   = _worker_com;
   prach_buffer = _prach_buffer; 
+  tx_mutex_cnt = 0; 
   running      = true; 
   phy_state    = IDLE; 
   time_adv_sec = 0; 
   cell_is_set  = false; 
   do_agc       = do_agc_;
+
+  nof_tx_mutex = MUTEX_X_WORKER*workers_pool->get_nof_workers();
+  worker_com->set_nof_mutex(nof_tx_mutex);
   
   continuous_tx_mode = worker_com->params_db->get_param(phy_interface_params::CONTINUOUS_TX)>0?true:false;
   
@@ -315,7 +319,7 @@ void phch_recv::run_thread()
           srslte_sync_set_em_alpha(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/10);
         }
         
-        tti = (tti + 1) % 10240;
+        tti = (tti+1)%10240;        
         worker = (phch_worker*) workers_pool->wait_worker(tti);
         if (worker) {          
           buffer = worker->get_buffer();
@@ -336,8 +340,9 @@ void phch_recv::run_thread()
             srslte_timestamp_add(&tx_time_prach, 0, 4e-3);
             worker->set_tx_time(tx_time);
             
-            Debug("Settting TTI=%d to worker %d\n", tti, worker->get_id());
-            worker->set_tti(tti);
+            Debug("Settting TTI=%d, tx_mutex=%d to worker %d\n", tti, tx_mutex_cnt, worker->get_id());
+            worker->set_tti(tti, tx_mutex_cnt);
+            tx_mutex_cnt = (tx_mutex_cnt+1)%nof_tx_mutex;
 
             // Check if we need to TX a PRACH 
             if (prach_buffer->is_ready_to_send(tti)) {
