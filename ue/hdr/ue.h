@@ -35,6 +35,7 @@
 
 #include <stdarg.h>
 #include <string>
+#include <pthread.h>
 
 #include "radio/radio_uhd.h"
 #include "phy/phy.h"
@@ -48,7 +49,6 @@
 
 #include "common/buffer_pool.h"
 #include "common/interfaces.h"
-#include "common/threads.h"
 #include "common/logger.h"
 #include "common/log_filter.h"
 
@@ -98,15 +98,6 @@ typedef struct {
   std::string   filename;
 }log_args_t;
 
-typedef struct{
-  std::string algo;
-  std::string op;
-  std::string amf;
-  std::string imsi;
-  std::string imei;
-  std::string k;
-}usim_args_t;
-
 typedef struct {
   bool          enable;
 }gui_args_t;
@@ -131,6 +122,7 @@ typedef struct {
   float sync_track_avg_coef;
   float sync_find_th;
   float sync_find_max_frames;
+  bool enable_64qam_attach; 
   bool continuous_tx;
   int nof_phy_threads;  
 }expert_args_t;
@@ -147,6 +139,18 @@ typedef struct {
   expert_args_t expert;
 }all_args_t;
 
+typedef struct {
+  uint32_t uhd_o;
+  uint32_t uhd_u;
+  uint32_t uhd_l;
+  bool     uhd_error;
+}uhd_metrics_t;
+
+typedef struct {
+  uhd_metrics_t uhd;
+  phy_metrics_t phy;
+}ue_metrics_t;
+
 /*******************************************************************************
   Main UE class
 *******************************************************************************/
@@ -155,40 +159,50 @@ class ue
     :public ue_interface
 {
 public:
-  ue(all_args_t *args_);
-  ~ue();
-  bool init();
+  static ue* get_instance(void);
+  static void cleanup(void);
+
+  bool init(all_args_t *args_);
   void stop();
   bool is_attached();
   void start_plot();
   void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+  bool get_metrics(ue_metrics_t &m);
+  static void uhd_msg(const char* msg);
+  void handle_uhd_msg(const char* msg);
 
 private:
-  srslte::radio_uhd *radio_uhd;
-  srsue::phy        *phy;
-  srsue::mac        *mac;
-  srsue::mac_pcap   *mac_pcap;
-  srsue::rlc        *rlc;
-  srsue::pdcp       *pdcp;
-  srsue::rrc        *rrc;
-  srsue::nas        *nas;
-  srsue::gw         *gw;
-  srsue::usim       *usim;
+  static ue *instance;
+  ue();
+  ~ue();
 
-  srsue::logger     *logger;
-  srsue::log_filter *phy_log;
-  srsue::log_filter *mac_log;
-  srsue::log_filter *rlc_log;
-  srsue::log_filter *pdcp_log;
-  srsue::log_filter *rrc_log;
-  srsue::log_filter *nas_log;
-  srsue::log_filter *gw_log;
-  srsue::log_filter *usim_log;
+  srslte::radio_uhd radio_uhd;
+  srsue::phy        phy;
+  srsue::mac        mac;
+  srsue::mac_pcap   mac_pcap;
+  srsue::rlc        rlc;
+  srsue::pdcp       pdcp;
+  srsue::rrc        rrc;
+  srsue::nas        nas;
+  srsue::gw         gw;
+  srsue::usim       usim;
+
+  srsue::logger     logger;
+  srsue::log_filter uhd_log;
+  srsue::log_filter phy_log;
+  srsue::log_filter mac_log;
+  srsue::log_filter rlc_log;
+  srsue::log_filter pdcp_log;
+  srsue::log_filter rrc_log;
+  srsue::log_filter nas_log;
+  srsue::log_filter gw_log;
+  srsue::log_filter usim_log;
 
   srsue::buffer_pool *pool;
 
   all_args_t       *args;
   bool              started;
+  uhd_metrics_t     uhd_metrics;
 
   srslte::LOG_LEVEL_ENUM level(std::string l);
   

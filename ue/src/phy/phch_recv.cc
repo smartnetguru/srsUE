@@ -38,8 +38,6 @@
 
 namespace srsue {
  
-  
-bool continuous_tx_mode = false; 
 
 phch_recv::phch_recv() { 
   running = false; 
@@ -63,9 +61,7 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, pra
 
   nof_tx_mutex = MUTEX_X_WORKER*workers_pool->get_nof_workers();
   worker_com->set_nof_mutex(nof_tx_mutex);
-  
-  continuous_tx_mode = worker_com->params_db->get_param(phy_interface_params::CONTINUOUS_TX)>0?true:false;
-  
+    
   start(prio);
 }
 
@@ -78,10 +74,9 @@ int radio_recv_wrapper_cs(void *h, void *data, uint32_t nsamples, srslte_timesta
 {
   srslte::radio *radio_h = (srslte::radio*) h;
   if (radio_h->rx_now(data, nsamples, rx_time)) {
-    if (continuous_tx_mode) {
-      if (abs(nsamples-radio_h->get_tti_len())<10) {
-        radio_h->tx_offset(nsamples-radio_h->get_tti_len());
-      }
+    int offset = nsamples-radio_h->get_tti_len();
+    if (abs(offset)<10 && offset != 0) {
+      radio_h->tx_offset(offset);
     }
     return nsamples;
   } else {
@@ -147,7 +142,7 @@ bool phch_recv::cell_search(int force_N_id_2)
 
   bzero(found_cells, 3*sizeof(srslte_ue_cellsearch_result_t));
 
-  Info("Starting Cell search...\n");
+  log_h->console("Searching for cell...\n");
   if (srslte_ue_cellsearch_init(&cs, radio_recv_wrapper_cs, radio_h)) {
     Error("Initiating UE cell search\n");
     return false; 
@@ -162,7 +157,6 @@ bool phch_recv::cell_search(int force_N_id_2)
   srslte_ue_cellsearch_set_threshold(&cs, (float) 
     worker_com->params_db->get_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD)/10);
 
-  radio_h->set_master_clock_rate(30.72e6);        
   radio_h->set_rx_srate(1.92e6);
   radio_h->start_rx();
   
@@ -195,7 +189,7 @@ bool phch_recv::cell_search(int force_N_id_2)
   cell.cp   = found_cells[max_peak_cell].cp; 
   cellsearch_cfo = found_cells[max_peak_cell].cfo;
   
-  Info("Found CELL ID: %d CP: %s, CFO: %f\n", cell.id, srslte_cp_string(cell.cp), cellsearch_cfo);
+  log_h->console("Found CELL ID: %d CP: %s, CFO: %.1f KHz.\nTrying to decode MIB...\n", cell.id, srslte_cp_string(cell.cp), cellsearch_cfo/1000);
   
   srslte_ue_mib_sync_t ue_mib_sync; 
 
@@ -220,6 +214,7 @@ bool phch_recv::cell_search(int force_N_id_2)
 
   if (ret == 1) {
     srslte_pbch_mib_unpack(bch_payload, &cell, NULL);
+    worker_com->set_cell(cell);
     srslte_cell_fprint(stdout, &cell, 0);
     //FIXME: this is temporal
     srslte_bit_pack_vector(bch_payload, bch_payload_bits, SRSLTE_BCH_PAYLOAD_LEN);
@@ -328,8 +323,10 @@ void phch_recv::run_thread()
 
             Debug("Worker %d synchronized\n", worker->get_id());
             
-            float cfo = srslte_ue_sync_get_cfo(&ue_sync)/15000; 
-            worker->set_cfo(cfo);
+            metrics.sfo = srslte_ue_sync_get_sfo(&ue_sync);
+            metrics.cfo = srslte_ue_sync_get_cfo(&ue_sync);
+            worker->set_cfo(metrics.cfo/15000);
+            worker_com->set_sync_metrics(metrics);
     
             /* Compute TX time: Any transmission happens in TTI+4 thus advance 4 ms the reception time */
             srslte_timestamp_t rx_time, tx_time, tx_time_prach; 
@@ -351,7 +348,7 @@ void phch_recv::run_thread()
               Info("TX PRACH now. RX time: %d:%f, Now: %d:%f\n", rx_time.full_secs, rx_time.frac_secs, 
                    cur_time.full_secs, cur_time.frac_secs);
               // send prach if we have to 
-              prach_buffer->send(radio_h, cfo, worker_com->pathloss, tx_time_prach);
+              prach_buffer->send(radio_h, metrics.cfo/15000, worker_com->pathloss, tx_time_prach);
               radio_h->tx_end();            
               worker_com->p0_preamble = prach_buffer->get_p0_preamble();
               worker_com->cur_radio_power = SRSLTE_MIN(SRSLTE_PC_MAX, worker_com->pathloss + worker_com->p0_preamble);
@@ -394,6 +391,7 @@ void phch_recv::get_current_cell(srslte_cell_t* cell_)
 
 void phch_recv::sync_start()
 {
+  radio_h->set_master_clock_rate(30.72e6);        
   phy_state = CELL_SEARCH;
 }
 

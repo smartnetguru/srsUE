@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include <iostream>
 #include <fstream>
@@ -37,6 +38,7 @@
 #include <boost/program_options/parsers.hpp>
 
 #include "ue.h"
+#include "metrics_stdout.h"
 
 //TODO: Get version from cmake
 #define VERSION "0.1.0"
@@ -44,7 +46,8 @@
 using namespace std;
 namespace bpo = boost::program_options;
 
-static bool running = true;
+static bool running       = true;
+static bool print_metrics = false;
 
 void sig_int_handler(int signo)
 {
@@ -135,8 +138,10 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
         ("expert.sync_find_th",         bpo::value<float>(&args->expert.sync_find_th)->default_value(1.6), "Synchronization find phase threshold")
         ("expert.sync_find_max_frames",   bpo::value<float>(&args->expert.sync_find_max_frames)->default_value(100), "Synchronization find phase timeout")
                 
-        ("expert.continuous_tx",     bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continuous transmission")
-        ("expert.nof_phy_threads",   bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
+        ("expert.enable_64qam_attach",      bpo::value<bool>(&args->expert.enable_64qam_attach)->default_value(false), "PUSCH 64QAM modulation before attachment")
+        
+        ("expert.continuous_tx",      bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continues transmission (default off)")
+        ("expert.nof_phy_threads",    bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
         
     ;
     
@@ -253,40 +258,58 @@ void parse_args(srsue::all_args_t *args, int argc, char* argv[]) {
 
 }
 
+void *input_loop(void *v)
+{
+  char key;
+  while(running) {
+    cin >> key;
+    if('t' == key) {
+      print_metrics = !print_metrics;
+    }
+  }
+}
+
 
 int main(int argc, char *argv[]) {
 
   signal(SIGINT, sig_int_handler);
-  srsue::all_args_t args;
+  srsue::all_args_t     args;
+  srsue::metrics_stdout metrics;
+  srsue::ue            *ue = srsue::ue::get_instance();
 
   cout << "---  Software Radio Systems LTE UE  ---" << endl << endl;
   parse_args(&args, argc, argv);
-
-  srsue::ue ue(&args);
-  if(!ue.init()) {
+  if(!ue->init(&args)) {
     exit(1);
   }
+  metrics.init(ue);
+
+  pthread_t input;
+  pthread_create(&input, NULL, &input_loop, NULL);
 
   bool plot_started   = false; 
   bool ch_emu_started = false; 
   while(running) {
-    if (ue.is_attached()) {
+    if (ue->is_attached()) {
       if (!plot_started && args.gui.enable) {
-        ue.start_plot();
+        ue->start_plot();
         plot_started = true; 
       }
       
       if (!ch_emu_started && args.ch_emu.enable) {
-        ue.start_channel_emulator(args.ch_emu.filename.c_str(), args.ch_emu.path_tap.data(),
-                                  args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
-                                  args.ch_emu.nof_samples, args.ch_emu.nof_tti);
+        ue->start_channel_emulator(args.ch_emu.filename.c_str(), args.ch_emu.path_tap.data(),
+                                   args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
+                                   args.ch_emu.nof_samples, args.ch_emu.nof_tti);
         ch_emu_started = true; 
       }
     }
+    metrics.toggle_print(print_metrics);
     sleep(1);
   }
 
-  ue.stop();
+  metrics.stop();
+  ue->stop();
+  ue->cleanup();
   cout << "---  exiting  ---" << endl;
   exit(0);
 }
