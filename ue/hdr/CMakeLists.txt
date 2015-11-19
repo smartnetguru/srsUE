@@ -1,3 +1,4 @@
+#
 # Copyright 2015 Software Radio Systems Limited
 #
 # This file is part of srsUE
@@ -17,10 +18,7 @@
 # and at http://www.gnu.org/licenses/.
 #
 
-file(GLOB SOURCES "*.cc")
-add_library(srsue_phy ${SOURCES})
-target_link_libraries(srsue_phy srsue_common ${SRSLTE_LIBRARY})
-
-if(ENABLE_GUI AND SRSGUI_FOUND)
-    target_link_libraries(srsue_phy srsgui)
-endif(ENABLE_GUI AND SRSGUI_FOUND)
+CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+    ${PROJECT_BINARY_DIR}/version.h
+)

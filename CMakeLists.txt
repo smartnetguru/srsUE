@@ -23,8 +23,21 @@
 ########################################################################
 cmake_minimum_required(VERSION 2.6)
 project(srsUE CXX C)
-set(srsUE_version 0.0.1)
 enable_testing()
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+include(SRSUEVersion) #sets version information
+
+########################################################################
+# Options
+########################################################################
+option(ENABLE_GUI "ENABLE_GUI" OFF)
+
+########################################################################
+# Add general includes and dependencies
+########################################################################
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_BINARY_DIR})
 
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
@@ -35,9 +48,6 @@ elseif(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-include_directories(${CMAKE_SOURCE_DIR})
 
 ########################################################################
 # Compiler specific setup
@@ -95,6 +105,15 @@ endif()
 find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
 find_package(UHD REQUIRED)
+
+if(ENABLE_GUI)
+    find_package(SRSGUI)
+    if(SRSGUI_FOUND)
+        add_definitions(-DENABLE_GUI)
+        INCLUDE_DIRECTORIES(${SRSGUI_INCLUDE_DIRS})
+        LINK_DIRECTORIES(${SRSGUI_LIBRARY_DIRS})
+    endif(SRSGUI_FOUND)
+endif(ENABLE_GUI)
 
 ########################################################################
 # Setup the include and linker paths

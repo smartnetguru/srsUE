@@ -2,8 +2,7 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2015 The srsUE Developers. See the
- * COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright 2013-2015 Software Radio Systems Limited
  *
  * \section LICENSE
  *
@@ -55,7 +54,8 @@ private:
   void        print_disconnect();
   std::string float_to_string(float f, int digits);
   std::string float_to_eng_string(float f, int digits);
-
+  std::string int_to_eng_string(int f, int digits);
+  
   ue           *ue_;
   bool          started;
   bool          do_print;

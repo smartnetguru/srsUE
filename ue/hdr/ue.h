@@ -149,6 +149,7 @@ typedef struct {
 typedef struct {
   uhd_metrics_t uhd;
   phy_metrics_t phy;
+  mac_metrics_t mac;
 }ue_metrics_t;
 
 /*******************************************************************************
@@ -206,6 +207,7 @@ private:
 
   srslte::LOG_LEVEL_ENUM level(std::string l);
   
+  bool check_srslte_version();
   void set_expert_parameters();
 };
 

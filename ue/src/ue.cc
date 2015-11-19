@@ -28,11 +28,25 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/mutex.hpp>
 #include "ue.h"
+#include "srslte_version_check.h"
+#include "srslte/srslte.h"
 
 namespace srsue{
 
 ue*           ue::instance = NULL;
 boost::mutex  ue_instance_mutex;
+
+bool ue::check_srslte_version(void) {
+  bool ret = (0 != srslte_check_version(REQ_SRSLTE_VMAJOR, REQ_SRSLTE_VMINOR, REQ_SRSLTE_VPATCH));
+  if(!ret) {
+    fprintf(stderr, "srsLTE version mismatch. Minimum required version is %d.%d.%d Found version %s\n",
+            REQ_SRSLTE_VMAJOR, REQ_SRSLTE_VMINOR, REQ_SRSLTE_VPATCH,
+            srslte_get_version());
+  } else {
+    fprintf(stdout, "Using srsLTE version %s\n", srslte_get_version());
+  }
+  return ret;
+}
 
 ue* ue::get_instance(void)
 {
@@ -66,6 +80,10 @@ bool ue::init(all_args_t *args_)
 {
   args     = args_;
 
+  if (!check_srslte_version()) {
+    return false; 
+  }
+  
   logger.init(args->log.filename);
   uhd_log.init("UHD ", &logger);
   phy_log.init("PHY ", &logger, true);
@@ -142,6 +160,10 @@ bool ue::init(all_args_t *args_)
   }
   if (args->rf.tx_gain > 0) {
     radio_uhd.set_tx_gain(args->rf.tx_gain);
+  } else {
+    std::cout << std::endl << 
+                "Warning: TX gain was not set. " << 
+                "Using open-loop power control (not working properly)" << std::endl << std::endl; 
   }
 
   delete [] c_str;
@@ -174,9 +196,17 @@ void ue::set_expert_parameters() {
   
   phy.set_param(phy_interface_params::SYNC_TRACK_THRESHOLD, 10*args->expert.sync_track_th);
   phy.set_param(phy_interface_params::SYNC_TRACK_AVG_COEFF, 100*args->expert.sync_track_avg_coef);
-    
-  phy.set_param(phy_interface_params::PRACH_GAIN, args->expert.prach_gain);
-  phy.set_param(phy_interface_params::UL_GAIN, args->expert.ul_gain);
+
+  if (args->rf.tx_gain > 0) {
+    phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
+    phy.set_param(phy_interface_params::UL_GAIN,    args->rf.tx_gain);
+  } else {
+    phy.set_param(phy_interface_params::PRACH_GAIN, args->expert.prach_gain);
+    phy.set_param(phy_interface_params::UL_GAIN,    args->expert.ul_gain);
+    std::cout << std::endl << 
+                "Warning: TX gain was not set. " << 
+                "Using open-loop power control (not working properly)" << std::endl << std::endl; 
+  }
   
   phy.set_param(phy_interface_params::UL_PWR_CTRL_OFFSET, args->expert.ul_pwr_ctrl_offset);
   
@@ -232,11 +262,13 @@ void ue::start_channel_emulator(const char *filename, int *path_taps, int nof_pa
 bool ue::get_metrics(ue_metrics_t &m)
 {
   m.uhd = uhd_metrics;
+  bzero(&uhd_metrics, sizeof(uhd_metrics_t));
   uhd_metrics.uhd_error = false; // Reset error flag
 
   if(EMM_STATE_REGISTERED == nas.get_state()) {
     if(RRC_STATE_RRC_CONNECTED == rrc.get_state()) {
       phy.get_metrics(m.phy);
+      mac.get_metrics(m.mac);
       return true;
     }
   }

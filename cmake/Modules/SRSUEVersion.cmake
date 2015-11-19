@@ -1,6 +1,7 @@
+#
 # Copyright 2015 Software Radio Systems Limited
 #
-# This file is part of srsUE
+# This file is part of srsUE.
 #
 # srsUE is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,10 +18,7 @@
 # and at http://www.gnu.org/licenses/.
 #
 
-file(GLOB SOURCES "*.cc")
-add_library(srsue_phy ${SOURCES})
-target_link_libraries(srsue_phy srsue_common ${SRSLTE_LIBRARY})
-
-if(ENABLE_GUI AND SRSGUI_FOUND)
-    target_link_libraries(srsue_phy srsgui)
-endif(ENABLE_GUI AND SRSGUI_FOUND)
+SET(SRSUE_VERSION_MAJOR 001)
+SET(SRSUE_VERSION_MINOR 000)
+SET(SRSUE_VERSION_PATCH 000)
+SET(SRSUE_VERSION "${SRSUE_VERSION_MAJOR}.${SRSUE_VERSION_MINOR}.${SRSUE_VERSION_PATCH}")

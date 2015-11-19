@@ -92,6 +92,8 @@ private:
   float set_power(float tx_power);
   void setup_tx_gain();
   
+  void update_measurements();
+  
   void tr_log_start();
   void tr_log_end();
   struct timeval tr_time[3];
@@ -107,6 +109,7 @@ private:
   uint32_t       tx_tti;
   bool           pregen_enabled;
   uint32_t       last_dl_pdcch_ncce;
+  bool           rnti_is_set; 
   
   /* Objects for DL */
   srslte_ue_dl_t ue_dl; 
