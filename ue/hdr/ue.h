@@ -52,6 +52,8 @@
 #include "common/logger.h"
 #include "common/log_filter.h"
 
+#include "ue_metrics_interface.h"
+
 namespace srsue {
 
 /*******************************************************************************
@@ -139,25 +141,13 @@ typedef struct {
   expert_args_t expert;
 }all_args_t;
 
-typedef struct {
-  uint32_t uhd_o;
-  uint32_t uhd_u;
-  uint32_t uhd_l;
-  bool     uhd_error;
-}uhd_metrics_t;
-
-typedef struct {
-  uhd_metrics_t uhd;
-  phy_metrics_t phy;
-  mac_metrics_t mac;
-}ue_metrics_t;
-
 /*******************************************************************************
   Main UE class
 *******************************************************************************/
 
 class ue
     :public ue_interface
+    ,public ue_metrics_interface
 {
 public:
   static ue* get_instance(void);
@@ -168,9 +158,12 @@ public:
   bool is_attached();
   void start_plot();
   void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
-  bool get_metrics(ue_metrics_t &m);
+
   static void uhd_msg(const char* msg);
   void handle_uhd_msg(const char* msg);
+
+  // UE metrics interface
+  bool get_metrics(ue_metrics_t &m);
 
 private:
   static ue *instance;
