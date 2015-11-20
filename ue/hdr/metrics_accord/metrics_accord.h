@@ -24,36 +24,34 @@
  *
  */
 
-#ifndef UE_METRICS_INTERFACE_H
-#define UE_METRICS_INTERFACE_H
+/******************************************************************************
+ * File:        metrics_accord.h
+ * Description: UE metrics TCP server. Provides metrics in XML format.
+ *****************************************************************************/
 
-#include <stdint.h>
+#ifndef METRICS_ACCORD_H
+#define METRICS_ACCORD_H
 
-#include "mac/mac_metrics.h"
-#include "phy/phy_metrics.h"
+#include "ue_metrics_interface.h"
+
+class accord_server;
 
 namespace srsue {
 
-typedef struct {
-  uint32_t uhd_o;
-  uint32_t uhd_u;
-  uint32_t uhd_l;
-  bool     uhd_error;
-}uhd_metrics_t;
-
-typedef struct {
-  uhd_metrics_t uhd;
-  phy_metrics_t phy;
-  mac_metrics_t mac;
-}ue_metrics_t;
-
-// UE interface
-class ue_metrics_interface
+class metrics_accord
 {
 public:
-  virtual bool get_metrics(ue_metrics_t &m) = 0;
+  metrics_accord();
+  ~metrics_accord();
+
+  void init(ue_metrics_interface *u, int port=33335);
+  void stop();
+  void toggle_print(bool b);
+
+private:
+  accord_server *server;
 };
 
 } // namespace srsue
 
-#endif // UE_METRICS_INTERFACE_H
+#endif // METRICS_ACCORD_H

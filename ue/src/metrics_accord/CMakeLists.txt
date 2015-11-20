@@ -17,19 +17,6 @@
 # and at http://www.gnu.org/licenses/.
 #
 
-add_subdirectory(radio)
-add_subdirectory(common)
-add_subdirectory(phy)
-add_subdirectory(mac)
-add_subdirectory(upper)
-add_subdirectory(metrics_accord)
-
-add_executable(ue main.cc ue.cc metrics_stdout.cc)
-target_link_libraries(ue    srsue_metrics_accord
-                            srsue_upper
-                            srsue_common
-                            srsue_mac
-                            srsue_phy
-                            srsue_radio
-                            lte                            
-                            ${Boost_LIBRARIES})
+file(GLOB SOURCES "*.cc")
+add_library(srsue_metrics_accord ${SOURCES})
+target_link_libraries(srsue_metrics_accord ${Boost_LIBRARIES})
