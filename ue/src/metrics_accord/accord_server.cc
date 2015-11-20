@@ -117,16 +117,16 @@ string accord_server::get_metrics_xml()
 {
   char send_buf[BUF_LEN];
 
+  clock_gettime(CLOCK_MONOTONIC, &tend);
+  metrics_report_period_s = ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec)
+      - ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+  clock_gettime(CLOCK_MONOTONIC, &tstart);
+
   if(ue->get_metrics(metrics)) {
     print_metrics(metrics);
   } else {
     print_disconnect();
   }
-
-  clock_gettime(CLOCK_MONOTONIC, &tend);
-  metrics_report_period_s = ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec)
-      - ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-  clock_gettime(CLOCK_MONOTONIC, &tstart);
 
   metrics_to_status(metrics, &status);
 
@@ -153,10 +153,10 @@ void accord_server::metrics_to_status(srsue::ue_metrics_t metrics, ue_status_t *
   status->cfo                 = metrics.phy.sync.cfo;
   status->sfo                 = metrics.phy.sync.sfo;
   status->turbo_iters         = metrics.phy.dl.turbo_iters;
-  status->harq_retxs          = metrics.mac.rx_errors;    //TODO
+  status->harq_retxs          = ((float) metrics.mac.rx_errors)/metrics.mac.rx_pkts;
   status->arq_retx            = 0;                        //TODO
   status->latency             = 2;                        //TODO
-  status->throughput          = (float) metrics.mac.rx_brate/metrics_report_period_s;
+  status->throughput          = ((float) metrics.mac.rx_brate)/metrics_report_period_s;
   status->mcs                 = metrics.phy.dl.mcs;
   status->radio_buffer_status = (metrics.uhd.uhd_error) ? 0 : 1;
 }
