@@ -105,7 +105,16 @@ bool phch_common::dl_rnti_active(uint32_t tti) {
   if (((tti >= dl_rnti_start && dl_rnti_start >= 0)  || dl_rnti_start < 0) && 
       ((tti <  dl_rnti_end   && dl_rnti_end   >= 0)  || dl_rnti_end   < 0))
   {
-    return true; 
+    bool ret = true; 
+    // FIXME: This scheduling decision belongs to RRC
+    if (dl_rnti_type == SRSLTE_RNTI_SI) {
+      if (dl_rnti_end - dl_rnti_start > 1) { // This is not a SIB1        
+        if ((tti/10)%2 == 0 && (tti%5) == 0) { // Skip subframe #5 for which SFN mod 2 = 0
+          ret = false; 
+        }
+      }
+    }
+    return ret; 
   } else {
     return false; 
   }
