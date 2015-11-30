@@ -22,9 +22,11 @@ add_subdirectory(common)
 add_subdirectory(phy)
 add_subdirectory(mac)
 add_subdirectory(upper)
+add_subdirectory(metrics_accord)
 
 add_executable(ue main.cc ue.cc metrics_stdout.cc)
-target_link_libraries(ue    srsue_upper
+target_link_libraries(ue    srsue_metrics_accord
+                            srsue_upper
                             srsue_common
                             srsue_mac
                             srsue_phy

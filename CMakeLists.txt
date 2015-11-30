@@ -29,6 +29,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 include(SRSUEVersion) #sets version information
 
 ########################################################################
+# Options
+########################################################################
+option(ENABLE_GUI "ENABLE_GUI" OFF)
+
+########################################################################
 # Add general includes and dependencies
 ########################################################################
 include_directories(${PROJECT_SOURCE_DIR})
@@ -100,6 +105,15 @@ endif()
 find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
 find_package(UHD REQUIRED)
+
+if(ENABLE_GUI)
+    find_package(SRSGUI)
+    if(SRSGUI_FOUND)
+        add_definitions(-DENABLE_GUI)
+        INCLUDE_DIRECTORIES(${SRSGUI_INCLUDE_DIRS})
+        LINK_DIRECTORIES(${SRSGUI_LIBRARY_DIRS})
+    endif(SRSGUI_FOUND)
+endif(ENABLE_GUI)
 
 ########################################################################
 # Setup the include and linker paths

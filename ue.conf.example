@@ -72,7 +72,7 @@ imei = 353490069873319
 enable = true
 
 [channel_emulator]
-enable          = true
+enable = true
 
 # This options control the interpolation factor and the number of stored coefficients
 # nof_samples set for 5.76 Mhz sampling rate. Change accordingly. 
@@ -134,7 +134,6 @@ path_tap        = 21
 #                        Default disabled.
 # nof_phy_threads:      Selects the number of PHY threads (maximum 4, minimum 1, default 2)
 #####################################################################
->>>>>>> master
 [expert]
 #prach_gain = 60
 #ul_gain = 70

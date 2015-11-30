@@ -18,9 +18,5 @@
 #
 
 file(GLOB SOURCES "*.cc")
-add_library(srsue_phy ${SOURCES})
-target_link_libraries(srsue_phy srsue_common ${SRSLTE_LIBRARY})
-
-if(ENABLE_GUI AND SRSGUI_FOUND)
-    target_link_libraries(srsue_phy srsgui)
-endif(ENABLE_GUI AND SRSGUI_FOUND)
+add_library(srsue_metrics_accord ${SOURCES})
+target_link_libraries(srsue_metrics_accord ${Boost_LIBRARIES})

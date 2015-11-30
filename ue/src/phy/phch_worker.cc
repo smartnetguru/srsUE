@@ -37,7 +37,6 @@
 
 
 /* This is to visualize the channel response */
-#define ENABLE_GUI
 #ifdef ENABLE_GUI
 #include "srsgui/srsgui.h"
 #include <semaphore.h>
@@ -253,6 +252,8 @@ void phch_worker::work_imp()
   if (dl_action.decode_enabled && !dl_action.generate_ack_callback) {
     phy->mac->tb_decoded(dl_ack, dl_mac_grant.rnti_type, dl_mac_grant.pid);
   }
+
+  update_measurements();
   
   /* Tell the plotting thread to draw the plots */
 #ifdef ENABLE_GUI
@@ -260,8 +261,6 @@ void phch_worker::work_imp()
     sem_post(&plot_sem);    
   }
 #endif
-
-  update_measurements();
 }
 
 
@@ -837,10 +836,6 @@ int phch_worker::read_pdsch_d(cf_t* pdsch_d)
 
 
 
-
-
-
-
 /**************************** Measurements **************************/
 
 void phch_worker::update_measurements() 
@@ -906,11 +901,6 @@ void phch_worker::update_measurements()
   }
 
 }
-
-
-
-
-
 
 
 /********** Execution time trace function ************/

@@ -158,6 +158,7 @@ public:
   bool is_attached();
   void start_plot();
   void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+
   static void uhd_msg(const char* msg);
   void handle_uhd_msg(const char* msg);
 

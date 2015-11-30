@@ -2,7 +2,8 @@
  *
  * \section COPYRIGHT
  *
- * Copyright 2013-2015 Software Radio Systems Limited
+ * Copyright 2015 The srsUE Developers. See the
+ * COPYRIGHT file at the top-level directory of this distribution.
  *
  * \section LICENSE
  *
@@ -24,36 +25,36 @@
  *
  */
 
-#ifndef UE_METRICS_INTERFACE_H
-#define UE_METRICS_INTERFACE_H
+#include "metrics_accord/metrics_accord.h"
+#include "metrics_accord/accord_server.h"
 
-#include <stdint.h>
+namespace srsue{
 
-#include "mac/mac_metrics.h"
-#include "phy/phy_metrics.h"
-
-namespace srsue {
-
-typedef struct {
-  uint32_t uhd_o;
-  uint32_t uhd_u;
-  uint32_t uhd_l;
-  bool     uhd_error;
-}uhd_metrics_t;
-
-typedef struct {
-  uhd_metrics_t uhd;
-  phy_metrics_t phy;
-  mac_metrics_t mac;
-}ue_metrics_t;
-
-// UE interface
-class ue_metrics_interface
+metrics_accord::metrics_accord()
 {
-public:
-  virtual bool get_metrics(ue_metrics_t &m) = 0;
-};
+  server = NULL;
+}
+
+metrics_accord::~metrics_accord()
+{
+  if(server)
+    delete server;
+}
+
+void metrics_accord::init(ue_metrics_interface *u, int port)
+{
+  server = new accord_server(u, port);
+  server->start();
+}
+
+void metrics_accord::stop()
+{
+  server->stop();
+}
+
+void metrics_accord::toggle_print(bool b)
+{
+  server->toggle_print(b);
+}
 
 } // namespace srsue
-
-#endif // UE_METRICS_INTERFACE_H
