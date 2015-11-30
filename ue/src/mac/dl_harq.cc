@@ -135,6 +135,12 @@ void dl_harq_entity::tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t
   }
 }
 
+int dl_harq_entity::get_current_tbs(uint32_t harq_pid)
+{
+  return proc[harq_pid%NOF_HARQ_PROC].get_current_tbs();
+}
+
+
 bool dl_harq_entity::generate_ack_callback(void *arg)
 {
   demux *demux_unit = (demux*) arg;
@@ -212,7 +218,7 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
   if (pid == HARQ_BCCH_PID) {
     // Compute RV
     uint32_t k; 
-    if (grant.tti%10 == 5) { // This is SIB1, k is different
+    if ((grant.tti/10)%2 == 0 && grant.tti%10 == 5) { // This is SIB1, k is different
       k = (grant.tti/20)%4; 
     } else {      
       uint32_t nw = harq_entity->params_db->get_param(mac_interface_params::BCCH_SI_WINDOW_LEN);
@@ -270,6 +276,11 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
       Debug("Generating ACK\n");
     }
   }
+}
+
+int dl_harq_entity::dl_harq_process::get_current_tbs()
+{
+  return cur_grant.n_bytes*8;
 }
 
 void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)

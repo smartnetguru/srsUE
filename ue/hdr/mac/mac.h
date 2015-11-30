@@ -33,6 +33,7 @@
 #include "mac/dl_harq.h"
 #include "mac/ul_harq.h"
 #include "common/timers.h"
+#include "mac/mac_metrics.h"
 #include "mac/proc_ra.h"
 #include "mac/proc_sr.h"
 #include "mac/proc_bsr.h"
@@ -45,14 +46,6 @@
 #include "common/threads.h"
 
 namespace srsue {
-
-struct mac_metrics_t
-{
-  float tx_frames;
-  float rx_frames;
-  float rx_err_frames;
-  float ul_harq_retx;
-};
   
 class mac
     :public mac_interface_phy
@@ -66,7 +59,7 @@ public:
   bool init(phy_interface *phy, rlc_interface_mac *rlc, srslte::log *log_h);
   void stop();
 
-  void get_metrics(mac_metrics_t *m){}
+  void get_metrics(mac_metrics_t &m);
 
   /******** Interface from PHY (PHY -> MAC) ****************/ 
   /* see mac_interface.h for comments */
@@ -159,6 +152,7 @@ private:
   bool is_first_ul_grant;
 
 
+  mac_metrics_t metrics; 
 
 
   /* Class to run upper-layer timers with normal priority */

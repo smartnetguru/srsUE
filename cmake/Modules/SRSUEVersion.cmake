@@ -1,6 +1,7 @@
+#
 # Copyright 2015 Software Radio Systems Limited
 #
-# This file is part of srsUE
+# This file is part of srsUE.
 #
 # srsUE is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,9 +18,7 @@
 # and at http://www.gnu.org/licenses/.
 #
 
-include_directories(${CMAKE_SOURCE_DIR}/liblte/hdr)
-include_directories(hdr)
-
-add_subdirectory(hdr)
-add_subdirectory(src)
-add_subdirectory(test)
+SET(SRSUE_VERSION_MAJOR 001)
+SET(SRSUE_VERSION_MINOR 000)
+SET(SRSUE_VERSION_PATCH 000)
+SET(SRSUE_VERSION "${SRSUE_VERSION_MAJOR}.${SRSUE_VERSION_MINOR}.${SRSUE_VERSION_PATCH}")

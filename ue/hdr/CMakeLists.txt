@@ -1,3 +1,4 @@
+#
 # Copyright 2015 Software Radio Systems Limited
 #
 # This file is part of srsUE
@@ -17,9 +18,7 @@
 # and at http://www.gnu.org/licenses/.
 #
 
-include_directories(${CMAKE_SOURCE_DIR}/liblte/hdr)
-include_directories(hdr)
-
-add_subdirectory(hdr)
-add_subdirectory(src)
-add_subdirectory(test)
+CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+    ${PROJECT_BINARY_DIR}/version.h
+)
