@@ -4612,7 +4612,6 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_plmn_identity_ie(LIBLTE_RRC_PLMN_IDENTITY_STRU
                                                    uint8                           **ie_ptr)
 {
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
-    uint16            mnc;
     uint8             mcc_opt = true;
     uint8             mnc_size;
 
@@ -4623,19 +4622,24 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_plmn_identity_ie(LIBLTE_RRC_PLMN_IDENTITY_STRU
 
         if(true == mcc_opt)
         {
-            liblte_value_2_bits(plmn_id->mcc, ie_ptr, 12);
+            liblte_value_2_bits((plmn_id->mcc%1000)/100, ie_ptr, 4);
+            liblte_value_2_bits((plmn_id->mcc%100)/10, ie_ptr, 4);
+            liblte_value_2_bits((plmn_id->mcc%10), ie_ptr, 4);
         }
 
         if((plmn_id->mnc & 0xFF00) == 0xFF00)
         {
-            mnc_size = 8;
-            mnc      = plmn_id->mnc & 0x00FF;
+            mnc_size = 2;
+            liblte_value_2_bits((mnc_size)-2, ie_ptr, 1);
+            liblte_value_2_bits((plmn_id->mnc%100)/10, ie_ptr, 4);
+            liblte_value_2_bits((plmn_id->mnc%10), ie_ptr, 4);
         }else{
-            mnc_size = 12;
-            mnc      = plmn_id->mnc & 0x0FFF;
+            mnc_size = 3;
+            liblte_value_2_bits((mnc_size)-2, ie_ptr, 1);
+            liblte_value_2_bits((plmn_id->mnc%1000)/100, ie_ptr, 4);
+            liblte_value_2_bits((plmn_id->mnc%100)/10, ie_ptr, 4);
+            liblte_value_2_bits((plmn_id->mnc%10), ie_ptr, 4);
         }
-        liblte_value_2_bits((mnc_size/4)-2, ie_ptr, 1);
-        liblte_value_2_bits(mnc,            ie_ptr, mnc_size);
 
         err = LIBLTE_SUCCESS;
     }
@@ -4656,18 +4660,23 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_plmn_identity_ie(uint8                      
 
         if(true == mcc_opt)
         {
-            plmn_id->mcc = liblte_bits_2_value(ie_ptr, 12);
+            plmn_id->mcc  = liblte_bits_2_value(ie_ptr, 4) * 100;
+            plmn_id->mcc += liblte_bits_2_value(ie_ptr, 4) * 10;
+            plmn_id->mcc += liblte_bits_2_value(ie_ptr, 4);
+
         }else{
             plmn_id->mcc = LIBLTE_RRC_MCC_NOT_PRESENT;
         }
 
-        mnc_size     = (liblte_bits_2_value(ie_ptr, 1) + 2)*4;
-        plmn_id->mnc = liblte_bits_2_value(ie_ptr, mnc_size);
-        if(8 == mnc_size)
+        mnc_size     = (liblte_bits_2_value(ie_ptr, 1) + 2);
+        if(2 == mnc_size)
         {
-            plmn_id->mnc &= 0x00FF;
+            plmn_id->mnc  = liblte_bits_2_value(ie_ptr, 4) * 10;
+            plmn_id->mnc += liblte_bits_2_value(ie_ptr, 4);
         }else{
-            plmn_id->mnc &= 0x0FFF;
+            plmn_id->mnc  = liblte_bits_2_value(ie_ptr, 4) * 100;
+            plmn_id->mnc += liblte_bits_2_value(ie_ptr, 4) * 10;
+            plmn_id->mnc += liblte_bits_2_value(ie_ptr, 4);
         }
 
         err = LIBLTE_SUCCESS;
