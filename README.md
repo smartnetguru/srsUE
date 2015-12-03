@@ -11,7 +11,7 @@ Features
  
  * LTE Release 8 compliant
  * FDD configuration
- * Tested bandwidths: 1.4, 3, 5 and 10 and 20 MHz
+ * Tested bandwidths: 1.4, 3, 5, 10, 15 and 20 MHz
  * Transmission mode 1 (single antenna) and 2 (transmit diversity) 
  * Cell search and synchronization procedure for the UE
  * Frequency-based ZF and MMSE equalizer
