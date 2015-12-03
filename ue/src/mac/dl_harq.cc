@@ -218,7 +218,7 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
   if (pid == HARQ_BCCH_PID) {
     // Compute RV
     uint32_t k; 
-    if (grant.tti%10 == 5) { // This is SIB1, k is different
+    if ((grant.tti/10)%2 == 0 && grant.tti%10 == 5) { // This is SIB1, k is different
       k = (grant.tti/20)%4; 
     } else {      
       uint32_t nw = harq_entity->params_db->get_param(mac_interface_params::BCCH_SI_WINDOW_LEN);
