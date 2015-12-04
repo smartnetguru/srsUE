@@ -384,7 +384,10 @@ bool ra_proc::contention_resolution_id_received(uint64_t rx_contention_id) {
   
   if (transmitted_contention_id == rx_contention_id) 
   {
-    log_h->console("Random Access Complete.     c-rnti=%d\n", params_db->get_param(mac_interface_params::RNTI_TEMP));
+    log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", 
+                   params_db->get_param(mac_interface_params::RNTI_TEMP), 
+                   rar_pdu_msg.get()->get_ta_cmd());
+    
     // UE Contention Resolution ID included in MAC CE matches the CCCH SDU transmitted in Msg3
     params_db->set_param(mac_interface_params::RNTI_C, params_db->get_param(mac_interface_params::RNTI_TEMP));
     // finish the disassembly and demultiplexing of the MAC PDU
