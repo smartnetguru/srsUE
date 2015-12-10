@@ -327,14 +327,14 @@ void ul_harq_entity::ul_harq_process::generate_tx(uint32_t tti_tx, mac_interface
   current_irv = (current_irv+1)%4;  
   tti_last_tx = tti_tx; 
   if (is_msg3) {
-    if (current_tx_nb == harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX)) {
+    if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX)) {
       Info("UL PID %d: Maximum number of ReTX for Msg3 reached (%d). Discarting TB.\n", pid, 
            harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX));
       reset();          
       action->expect_ack = false;
     }        
   } else {
-    if (current_tx_nb == harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX)) {
+    if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX)) {
       Info("UL PID %d: Maximum number of ReTX reached (%d). Discarting TB.\n", pid, 
            harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX));
       reset();
