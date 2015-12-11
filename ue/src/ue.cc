@@ -125,41 +125,40 @@ bool ue::init(all_args_t *args_)
   if(args->trace.enable)
   {
     phy.start_trace();
-    radio_uhd.start_trace();
+    radio.start_trace();
   }
   
   // Set up expert mode parameters
   set_expert_parameters();
 
   // Init layers
-  radio_uhd.register_msg_handler(uhd_msg);
   char *c_str = new char[args->usrp_args.size() + 1];
   strcpy(c_str, args->usrp_args.c_str());
   
   /* Start Radio/PHY with AGC if rx_gain argument is negative */
   if (args->rf.rx_gain < 0) {
-    if(!radio_uhd.init_agc(c_str))
+    if(!radio.init_agc(c_str))
     {
       printf("Failed to find usrp with args=%s\n",c_str);
       delete [] c_str;
       return false;
     }    
-    phy.init_agc(&radio_uhd, &mac, &phy_log, args->expert.nof_phy_threads);
+    phy.init_agc(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
   } else {
-    if(!radio_uhd.init(c_str))
+    if(!radio.init(c_str))
     {
       printf("Failed to find usrp with args=%s\n",c_str);
       delete [] c_str;
       return false;
     }    
-    phy.init(&radio_uhd, &mac, &phy_log, args->expert.nof_phy_threads);
-    radio_uhd.set_rx_gain(args->rf.rx_gain);
+    phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
+    radio.set_rx_gain(args->rf.rx_gain);
     if (args->rf.tx_gain < 0) {
-      radio_uhd.set_tx_gain(args->rf.rx_gain);
+      radio.set_tx_gain(args->rf.rx_gain);
     }
   }
   if (args->rf.tx_gain > 0) {
-    radio_uhd.set_tx_gain(args->rf.tx_gain);
+    radio.set_tx_gain(args->rf.tx_gain);
   } else {
     std::cout << std::endl << 
                 "Warning: TX gain was not set. " << 
@@ -168,8 +167,10 @@ bool ue::init(all_args_t *args_)
 
   delete [] c_str;
 
-  radio_uhd.set_rx_freq(args->rf.dl_freq);
-  radio_uhd.set_tx_freq(args->rf.ul_freq);
+  radio.register_msg_handler(uhd_msg);
+
+  radio.set_rx_freq(args->rf.dl_freq);
+  radio.set_tx_freq(args->rf.ul_freq);
 
   phy_log.console("Setting frequency: DL=%.1f Mhz, UL=%.1f MHz\n", args->rf.dl_freq/1e6, args->rf.ul_freq/1e6);
 
@@ -240,7 +241,7 @@ void ue::stop()
     if(args->trace.enable)
     {
       phy.write_trace(args->trace.phy_filename);
-      radio_uhd.write_trace(args->trace.radio_filename);
+      radio.write_trace(args->trace.radio_filename);
     }
     started = false;
   }

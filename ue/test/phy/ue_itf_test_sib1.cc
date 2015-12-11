@@ -30,7 +30,7 @@
 #include "phy/phy.h"
 #include "common/log_stdout.h"
 #include "common/mac_interface.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 
 
 /**********************************************************************
@@ -142,7 +142,7 @@ public:
 
 
 testmac         my_mac;
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
 
 
 
@@ -155,12 +155,12 @@ int main(int argc, char *argv[])
 
   // Init Radio and PHY
   if (prog_args.uhd_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_gain);    
-    my_phy.init(&radio_uhd, &my_mac, &log);
+    radio.init();
+    radio.set_rx_gain(prog_args.uhd_gain);    
+    my_phy.init(&radio, &my_mac, &log);
   } else {
-    radio_uhd.init_agc();
-    my_phy.init_agc(&radio_uhd, &my_mac, &log);
+    radio.init_agc();
+    my_phy.init_agc(&radio, &my_mac, &log);
   }
   
   if (srsapps_verbose == 1) {
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
   sleep(1);
     
   // Set RX freq and gain
-  radio_uhd.set_rx_freq(prog_args.uhd_freq);
+  radio.set_rx_freq(prog_args.uhd_freq);
   
   my_phy.sync_start();
   
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
       if (srslte_verbose == SRSLTE_VERBOSE_NONE && srsapps_verbose == 0) {
         float gain = prog_args.uhd_gain; 
         if (gain < 0) {
-          gain = radio_uhd.get_rx_gain();
+          gain = radio.get_rx_gain();
         }
         printf("PDCCH BLER %.1f \%% PDSCH BLER %.1f \%% (total pkts: %5u) Gain: %.1f dB\r", 
             100-(float) 100*total_dci/total_pkts, 
@@ -206,5 +206,5 @@ int main(int argc, char *argv[])
     }
   }
   my_phy.stop();
-  radio_uhd.stop_rx();
+  radio.stop_rx();
 }

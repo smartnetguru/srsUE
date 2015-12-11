@@ -37,7 +37,7 @@
 #include <string>
 #include <pthread.h>
 
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 #include "phy/phy.h"
 #include "mac/mac.h"
 #include "upper/rlc.h"
@@ -150,7 +150,7 @@ private:
   ue();
   ~ue();
 
-  srslte::radio_uhd radio_uhd;
+  srslte::radio radio;
   srsue::phy        phy;
   srsue::mac        mac;
   srsue::mac_pcap   mac_pcap;

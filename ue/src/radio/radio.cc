@@ -25,20 +25,23 @@
  */
 
 #include "srslte/srslte.h"
-#include "radio/radio_uhd.h"
+extern "C" {
+#include "srslte/rf/rf.h"
+}
+#include "radio/radio.h"
 
 namespace srslte {
 
-bool radio_uhd::init()
+bool radio::init()
 {
   return init((char*) "");
 }
 
-bool radio_uhd::init(char *args)
+bool radio::init(char *args)
 {
-  printf("Opening UHD device...\n");
-  if (cuhd_open(args, &uhd)) {
-    fprintf(stderr, "Error opening uhd\n");
+  printf("Opening RF device...\n");
+  if (rf_open(&rf_device, args)) {
+    fprintf(stderr, "Error opening RF device\n");
     return false;
   }
   agc_enabled = false; 
@@ -46,29 +49,29 @@ bool radio_uhd::init(char *args)
   return true;    
 }
 
-bool radio_uhd::init_agc()
+bool radio::init_agc()
 {
   return init_agc((char*) "");
 }
 
-void radio_uhd::set_tx_rx_gain_offset(float offset) {
-  cuhd_set_tx_rx_gain_offset(uhd, offset);  
+void radio::set_tx_rx_gain_offset(float offset) {
+  rf_set_tx_rx_gain_offset(&rf_device, offset);  
 }
 
-void radio_uhd::tx_offset(int offset_)
+void radio::tx_offset(int offset_)
 {
   offset = offset_; 
 }
 
-bool radio_uhd::init_agc(char *args)
+bool radio::init_agc(char *args)
 {
-  printf("Opening UHD device with threaded RX Gain control ...\n");
-  if (cuhd_open_th(args, &uhd, false)) {
-    fprintf(stderr, "Error opening uhd\n");
+  printf("Opening RF device with threaded RX Gain control ...\n");
+  if (rf_open_th(&rf_device, args, false)) {
+    fprintf(stderr, "Error opening RF device\n");
     return false;
   }
-  cuhd_set_rx_gain(uhd, 40);
-  cuhd_set_tx_gain(uhd, 40);
+  rf_set_rx_gain(&rf_device, 40);
+  rf_set_tx_gain(&rf_device, 40);
 
   burst_settle_samples = 0; 
   burst_settle_time_rounded = 0; 
@@ -77,27 +80,27 @@ bool radio_uhd::init_agc(char *args)
 
   return true;    
 }
-bool radio_uhd::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_time)
+bool radio::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_time)
 {
   fprintf(stderr, "Not implemented\n");
   return false; 
 }
 
-bool radio_uhd::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
+bool radio::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
 {
-  if (cuhd_recv_with_time(uhd, buffer, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
+  if (rf_recv_with_time(&rf_device, buffer, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
     return true; 
   } else {
     return false; 
   }
 }
 
-void radio_uhd::get_time(srslte_timestamp_t *now) {
-  cuhd_get_time(uhd, &now->full_secs, &now->frac_secs);  
+void radio::get_time(srslte_timestamp_t *now) {
+  rf_get_time(&rf_device, &now->full_secs, &now->frac_secs);  
 }
 
 // TODO: Use Calibrated values for this 
-float radio_uhd::set_tx_power(float power)
+float radio::set_tx_power(float power)
 {
   if (power > 10) {
     power = 10; 
@@ -106,26 +109,26 @@ float radio_uhd::set_tx_power(float power)
     power = -50; 
   }
   float gain = power + 74;
-  cuhd_set_tx_gain(uhd, gain);
+  rf_set_tx_gain(&rf_device, gain);
   return gain; 
 }
 
-float radio_uhd::get_max_tx_power()
+float radio::get_max_tx_power()
 {
   return 10;
 }
 
-float radio_uhd::get_rssi()
+float radio::get_rssi()
 {
-  return cuhd_get_rssi(uhd);
+  return rf_get_rssi(&rf_device);
 }
 
-bool radio_uhd::has_rssi()
+bool radio::has_rssi()
 {
-  return cuhd_has_rssi(uhd);
+  return rf_has_rssi(&rf_device);
 }
 
-bool radio_uhd::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_time)
+bool radio::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_time)
 {
   if (is_start_of_burst) {
     if (burst_settle_samples != 0) {
@@ -133,7 +136,7 @@ bool radio_uhd::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_tim
       srslte_timestamp_copy(&tx_time_pad, &tx_time);
       srslte_timestamp_sub(&tx_time_pad, 0, burst_settle_time_rounded); 
       save_trace(1, &tx_time_pad);
-      cuhd_send_timed2(uhd, zeros, burst_settle_samples, tx_time_pad.full_secs, tx_time_pad.frac_secs, true, false);
+      rf_send_timed2(&rf_device, zeros, burst_settle_samples, tx_time_pad.full_secs, tx_time_pad.frac_secs, true, false);
     }        
     is_start_of_burst = false;     
   }
@@ -143,7 +146,7 @@ bool radio_uhd::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_tim
   srslte_timestamp_add(&end_of_burst_time, 0, (double) nof_samples/cur_tx_srate); 
   
   save_trace(0, &tx_time);
-  if (cuhd_send_timed2(uhd, buffer, nof_samples+offset, tx_time.full_secs, tx_time.frac_secs, false, false) > 0) {
+  if (rf_send_timed2(&rf_device, buffer, nof_samples+offset, tx_time.full_secs, tx_time.frac_secs, false, false) > 0) {
     offset = 0; 
     return true; 
   } else {
@@ -151,32 +154,32 @@ bool radio_uhd::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_tim
   }
 }
 
-uint32_t radio_uhd::get_tti_len()
+uint32_t radio::get_tti_len()
 {
   return sf_len; 
 }
 
-void radio_uhd::set_tti_len(uint32_t sf_len_)
+void radio::set_tti_len(uint32_t sf_len_)
 {
   sf_len = sf_len_; 
 }
 
-bool radio_uhd::tx_end()
+bool radio::tx_end()
 {
   save_trace(2, &end_of_burst_time);
-  cuhd_send_timed2(uhd, zeros, 0, end_of_burst_time.full_secs, end_of_burst_time.frac_secs, false, true);
+  rf_send_timed2(&rf_device, zeros, 0, end_of_burst_time.full_secs, end_of_burst_time.frac_secs, false, true);
   is_start_of_burst = true; 
 }
 
-void radio_uhd::start_trace() {
+void radio::start_trace() {
   trace_enabled = true; 
 }
 
-void radio_uhd::set_tti(uint32_t tti_) {
+void radio::set_tti(uint32_t tti_) {
   tti = tti_; 
 }
 
-void radio_uhd::write_trace(std::string filename)
+void radio::write_trace(std::string filename)
 {
   tr_local_time.writeToBinary(filename + ".local");
   tr_is_eob.writeToBinary(filename + ".eob");
@@ -184,65 +187,65 @@ void radio_uhd::write_trace(std::string filename)
   tr_tx_time.writeToBinary(filename + ".tx");
 }
 
-void radio_uhd::save_trace(uint32_t is_eob, srslte_timestamp_t *tx_time) {
+void radio::save_trace(uint32_t is_eob, srslte_timestamp_t *tx_time) {
   if (trace_enabled) {
     tr_local_time.push_cur_time_us(tti);
     srslte_timestamp_t usrp_time; 
-    cuhd_get_time(uhd, &usrp_time.full_secs, &usrp_time.frac_secs);
+    rf_get_time(&rf_device, &usrp_time.full_secs, &usrp_time.frac_secs);
     tr_usrp_time.push(tti, srslte_timestamp_uint32(&usrp_time));
     tr_tx_time.push(tti, srslte_timestamp_uint32(tx_time));
     tr_is_eob.push(tti, is_eob);
   }
 }
 
-void radio_uhd::set_rx_freq(float freq)
+void radio::set_rx_freq(float freq)
 {
-  cuhd_set_rx_freq(uhd, freq);
+  rf_set_rx_freq(&rf_device, freq);
 }
 
-void radio_uhd::set_rx_gain(float gain)
+void radio::set_rx_gain(float gain)
 {
-  cuhd_set_rx_gain(uhd, gain);
+  rf_set_rx_gain(&rf_device, gain);
 }
 
-double radio_uhd::set_rx_gain_th(float gain)
+double radio::set_rx_gain_th(float gain)
 {
-  return cuhd_set_rx_gain_th(uhd, gain);
+  return rf_set_rx_gain_th(&rf_device, gain);
 }
 
-void radio_uhd::set_master_clock_rate(float rate)
+void radio::set_master_clock_rate(float rate)
 {
-  cuhd_set_master_clock_rate(uhd, rate);
+  rf_set_master_clock_rate(&rf_device, rate);
 }
 
-void radio_uhd::set_rx_srate(float srate)
+void radio::set_rx_srate(float srate)
 {
-  cuhd_set_rx_srate(uhd, srate);
+  rf_set_rx_srate(&rf_device, srate);
 }
 
-void radio_uhd::set_tx_freq(float freq)
+void radio::set_tx_freq(float freq)
 {
-  cuhd_set_tx_freq_offset(uhd, freq, lo_offset);  
+  rf_set_tx_freq(&rf_device, freq);  
 }
 
-void radio_uhd::set_tx_gain(float gain)
+void radio::set_tx_gain(float gain)
 {
-  cuhd_set_tx_gain(uhd, gain);
+  rf_set_tx_gain(&rf_device, gain);
 }
 
-float radio_uhd::get_tx_gain()
+float radio::get_tx_gain()
 {
-  return cuhd_get_tx_gain(uhd);
+  return rf_get_tx_gain(&rf_device);
 }
 
-float radio_uhd::get_rx_gain()
+float radio::get_rx_gain()
 {
-  return cuhd_get_rx_gain(uhd);
+  return rf_get_rx_gain(&rf_device);
 }
 
-void radio_uhd::set_tx_srate(float srate)
+void radio::set_tx_srate(float srate)
 {
-  cur_tx_srate = cuhd_set_tx_srate(uhd, srate);
+  cur_tx_srate = rf_set_tx_srate(&rf_device, srate);
   burst_settle_samples = (uint32_t) (cur_tx_srate * burst_settle_time);
   if (burst_settle_samples > burst_settle_max_samples) {
     burst_settle_samples = burst_settle_max_samples;
@@ -251,19 +254,19 @@ void radio_uhd::set_tx_srate(float srate)
   burst_settle_time_rounded = (double) burst_settle_samples/cur_tx_srate;
 }
 
-void radio_uhd::start_rx()
+void radio::start_rx()
 {
-  cuhd_start_rx_stream(uhd);
+  rf_start_rx_stream(&rf_device);
 }
 
-void radio_uhd::stop_rx()
+void radio::stop_rx()
 {
-  cuhd_stop_rx_stream(uhd);
+  rf_stop_rx_stream(&rf_device);
 }
 
-void radio_uhd::register_msg_handler(cuhd_msg_handler_t h)
+void radio::register_msg_handler(rf_msg_handler_t h)
 {
-  cuhd_register_msg_handler(h);
+  rf_register_msg_handler(&rf_device, h);
 }
 
   

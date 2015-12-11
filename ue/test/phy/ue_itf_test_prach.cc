@@ -29,7 +29,7 @@
 #include "srslte/utils/debug.h"
 #include "phy/phy.h"
 #include "common/log_stdout.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 
 /**********************************************************************
  *  Program arguments processing
@@ -321,7 +321,7 @@ private:
 
 
 testmac         my_mac;
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
   
 int main(int argc, char *argv[])
 {
@@ -331,14 +331,14 @@ int main(int argc, char *argv[])
 
   // Init Radio and PHY
   if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_rx_gain);
-    radio_uhd.set_tx_gain(prog_args.uhd_tx_gain);
-    my_phy.init(&radio_uhd, &my_mac, &log);
+    radio.init();
+    radio.set_rx_gain(prog_args.uhd_rx_gain);
+    radio.set_tx_gain(prog_args.uhd_tx_gain);
+    my_phy.init(&radio, &my_mac, &log);
   } else {
-    radio_uhd.init_agc();
-    radio_uhd.set_tx_rx_gain_offset(10);
-    my_phy.init_agc(&radio_uhd, &my_mac, &log);
+    radio.init_agc();
+    radio.set_tx_rx_gain_offset(10);
+    my_phy.init_agc(&radio, &my_mac, &log);
   }
   
   if (srsapps_verbose == 1) {
@@ -354,8 +354,8 @@ int main(int argc, char *argv[])
   sleep(1);
   
   // Set RX freq
-  radio_uhd.set_rx_freq(prog_args.uhd_rx_freq);
-  radio_uhd.set_tx_freq(prog_args.uhd_tx_freq);
+  radio.set_rx_freq(prog_args.uhd_rx_freq);
+  radio.set_tx_freq(prog_args.uhd_tx_freq);
   
   // Instruct the PHY to configure PRACH parameters and sync to current cell 
   my_phy.sync_start();
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
     sleep(1);
   }
   my_phy.stop();
-  radio_uhd.stop_rx();
+  radio.stop_rx();
 }
 
 

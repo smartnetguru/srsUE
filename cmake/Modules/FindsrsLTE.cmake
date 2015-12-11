@@ -40,8 +40,8 @@ FIND_LIBRARY(
 )
 
 FIND_LIBRARY(
-    SRSLTE_LIBRARY_CUHD
-    NAMES   srslte_uhd 
+    SRSLTE_LIBRARY_RF
+    NAMES   srslte_rf 
     HINTS   $ENV{SRSLTE_DIR}/lib
             ${SRSLTE_BUILDDIR}/srslte/lib
             ${PC_SRSLTE_LIBDIR}
@@ -59,7 +59,7 @@ IF(DEFINED SRSLTE_SRCDIR)
                             ${SRSLTE_SRCDIR}/common/include)
 ENDIF(DEFINED SRSLTE_SRCDIR)
 
-SET(SRSLTE_LIBRARIES    ${SRSLTE_LIBRARY_CUHD}
+SET(SRSLTE_LIBRARIES    ${SRSLTE_LIBRARY_RF}
                         ${SRSLTE_LIBRARY})
 
 message(STATUS "SRSLTE LIBRARIES: " ${SRSLTE_LIBRARIES})

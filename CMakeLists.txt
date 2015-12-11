@@ -99,7 +99,6 @@ endif()
 ########################################################################
 find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
-find_package(UHD REQUIRED)
 
 ########################################################################
 # Setup the include and linker paths
@@ -108,14 +107,12 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${POLARSSL_INCLUDE_DIRS}
     ${SRSLTE_INCLUDE_DIRS}
-    ${UHD_INCLUDE_DIRS}
 )
 
 link_directories(
     ${Boost_LIBRARY_DIRS}
     ${POLARSSL_LIBRARY_DIRS}
     ${SRSLTE_LIBRARY_DIRS}
-    ${UHD_LIBRARIES}
 )
 
 ########################################################################

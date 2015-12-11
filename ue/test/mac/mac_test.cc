@@ -29,7 +29,7 @@
 #include <signal.h>
 
 #include "liblte/hdr/liblte_rrc.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 #include "phy/phy.h"
 #include "common/mac_interface.h"
 #include "common/log_stdout.h"
@@ -320,7 +320,7 @@ uint32_t lengths[2] = {37, 41};
 uint8_t reply[2] = {0x00, 0x04};
 
 
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
 srsue::phy phy; 
 srsue::mac mac; 
 srsue::mac_pcap mac_pcap; 
@@ -330,7 +330,7 @@ prog_args_t prog_args;
 void sig_int_handler(int signo)
 {
   if (prog_args.do_trace) {
-    //radio_uhd.write_trace("radio");
+    //radio.write_trace("radio");
     phy.write_trace("phy");
   }
   if (prog_args.do_pcap) {
@@ -518,7 +518,7 @@ int main(int argc, char *argv[])
   // Capture SIGINT to write traces 
   if (prog_args.do_trace) {
     signal(SIGINT, sig_int_handler);
-    //radio_uhd.start_trace();
+    //radio.start_trace();
     phy.start_trace();
   }
   
@@ -532,21 +532,21 @@ int main(int argc, char *argv[])
   
   // Init Radio and PHY
   if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_rx_gain);
-    radio_uhd.set_tx_gain(prog_args.uhd_tx_gain);
-    phy.init(&radio_uhd, &mac, &phy_log);
+    radio.init();
+    radio.set_rx_gain(prog_args.uhd_rx_gain);
+    radio.set_tx_gain(prog_args.uhd_tx_gain);
+    phy.init(&radio, &mac, &phy_log);
   } else {
-    radio_uhd.init_agc();
-    radio_uhd.set_tx_rx_gain_offset(10);
-    phy.init_agc(&radio_uhd, &mac, &phy_log);
+    radio.init_agc();
+    radio.set_tx_rx_gain_offset(10);
+    phy.init_agc(&radio, &mac, &phy_log);
   }  
   // Init MAC 
   mac.init(&phy, &my_rlc, &mac_log);
     
   // Set RX freq
-  radio_uhd.set_rx_freq(prog_args.uhd_rx_freq);
-  radio_uhd.set_tx_freq(prog_args.uhd_tx_freq);
+  radio.set_rx_freq(prog_args.uhd_rx_freq);
+  radio.set_tx_freq(prog_args.uhd_tx_freq);
   
   
   while(1) {
