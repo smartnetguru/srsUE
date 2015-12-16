@@ -39,6 +39,8 @@ Hardware
 
 srsUE currently supports Ettus Research USRP RF front-ends through the USRP Hardware Driver (UHD). Host sample rate conversion is not supported, therefore the hardware should support configurable clock rates. We recommend the USRP B2X0 range.
 
+*News*: We have recently added support for the bladeRF in the `maint` branch. It's still experimental so any feedback will be very appreciated. You need to compile against the srsLTE `maint` branch too, in order to support the bladeRF. 
+
 Download & Install Instructions
 -------------------------------
 
