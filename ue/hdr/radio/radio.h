@@ -81,15 +81,15 @@ namespace srslte {
       void set_tti_len(uint32_t sf_len);
       uint32_t get_tti_len();
 
-      void register_msg_handler(rf_msg_handler_t h);
+      void register_msg_handler(srslte_rf_msg_handler_t h);
       
     private:
       
       void save_trace(uint32_t is_eob, srslte_timestamp_t *usrp_time);
       
-      rf_t rf_device; 
+      srslte_rf_t rf_device; 
       
-      static const double burst_settle_time = 0.4e-3; // Start of burst settle time (off->on RF transition time)      
+      static const double burst_settle_time = 0;//0.4e-3; // Start of burst settle time (off->on RF transition time)      
       const static uint32_t burst_settle_max_samples = 30720000;  // 30.72 MHz is maximum frequency
 
       srslte_timestamp_t end_of_burst_time; 
