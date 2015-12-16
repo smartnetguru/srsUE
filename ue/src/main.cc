@@ -255,6 +255,7 @@ void *input_loop(void *m)
       metrics->toggle_print(do_metrics);
     }
   }
+  return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -278,7 +279,7 @@ int main(int argc, char *argv[])
   while(running) {
     sleep(1);
   }
-
+  pthread_cancel(input);
   metrics.stop();
   ue->stop();
   ue->cleanup();
