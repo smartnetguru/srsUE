@@ -39,6 +39,7 @@ bool radio::init(char *args, char *devname)
     fprintf(stderr, "Error opening RF device\n");
     return false;
   }
+  
   agc_enabled = false; 
   burst_settle_samples = 0; 
   burst_settle_time_rounded = 0; 
@@ -126,6 +127,7 @@ bool radio::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_time)
       srslte_timestamp_sub(&tx_time_pad, 0, burst_settle_time_rounded); 
       save_trace(1, &tx_time_pad);
       srslte_rf_send_timed2(&rf_device, zeros, burst_settle_samples, tx_time_pad.full_secs, tx_time_pad.frac_secs, true, false);
+      is_start_of_burst = false; 
     }        
   }
   
