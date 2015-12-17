@@ -32,15 +32,10 @@ extern "C" {
 
 namespace srslte {
 
-bool radio::init()
-{
-  return init((char*) "");
-}
-
-bool radio::init(char *args)
+bool radio::init(char *args, char *devname)
 {
   printf("Opening RF device...\n");
-  if (srslte_rf_open(&rf_device, args)) {
+  if (srslte_rf_open_devname(&rf_device, devname, args)) {
     fprintf(stderr, "Error opening RF device\n");
     return false;
   }
@@ -52,11 +47,6 @@ bool radio::init(char *args)
   return true;    
 }
 
-bool radio::init_agc()
-{
-  return init_agc((char*) "");
-}
-
 void radio::set_tx_rx_gain_offset(float offset) {
   srslte_rf_set_tx_rx_gain_offset(&rf_device, offset);  
 }
@@ -66,19 +56,14 @@ void radio::tx_offset(int offset_)
   offset = offset_; 
 }
 
-bool radio::init_agc(char *args)
+bool radio::start_agc(bool tx_gain_same_rx)
 {
-  printf("Opening RF device with threaded RX Gain control ...\n");
-  if (srslte_rf_open_th(&rf_device, args, false)) {
+  printf("Starting AGC thread...\n");
+  if (srslte_rf_start_gain_thread(&rf_device, tx_gain_same_rx)) {
     fprintf(stderr, "Error opening RF device\n");
     return false;
   }
-  srslte_rf_set_rx_gain(&rf_device, 40);
-  srslte_rf_set_tx_gain(&rf_device, 40);
 
-  burst_settle_samples = 0; 
-  burst_settle_time_rounded = 0; 
-  is_start_of_burst = true; 
   agc_enabled = true; 
   bzero(zeros, burst_settle_max_samples*sizeof(cf_t));
 

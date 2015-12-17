@@ -136,22 +136,19 @@ bool ue::init(all_args_t *args_)
   strcpy(c_str, args->usrp_args.c_str());
   
   /* Start Radio/PHY with AGC if rx_gain argument is negative */
+  if(!radio.init(c_str))
+  {
+    printf("Failed to find usrp with args=%s\n",c_str);
+    delete [] c_str;
+    return false;
+  }    
+  phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
+  
   if (args->rf.rx_gain < 0) {
-    if(!radio.init_agc(c_str))
-    {
-      printf("Failed to find usrp with args=%s\n",c_str);
-      delete [] c_str;
-      return false;
-    }    
-    phy.init_agc(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
+    radio.start_agc(false);    
+    radio.set_tx_rx_gain_offset(10);
+    phy.set_agc_enable(true);
   } else {
-    if(!radio.init(c_str))
-    {
-      printf("Failed to find usrp with args=%s\n",c_str);
-      delete [] c_str;
-      return false;
-    }    
-    phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
     radio.set_rx_gain(args->rf.rx_gain);
     if (args->rf.tx_gain < 0) {
       radio.set_tx_gain(args->rf.rx_gain);

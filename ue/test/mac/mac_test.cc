@@ -531,15 +531,15 @@ int main(int argc, char *argv[])
   }
   
   // Init Radio and PHY
+  radio.init();
+  phy.init(&radio, &mac, &phy_log);
   if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio.init();
     radio.set_rx_gain(prog_args.uhd_rx_gain);
     radio.set_tx_gain(prog_args.uhd_tx_gain);
-    phy.init(&radio, &mac, &phy_log);
   } else {
-    radio.init_agc();
+    radio.start_agc(false);
     radio.set_tx_rx_gain_offset(10);
-    phy.init_agc(&radio, &mac, &phy_log);
+    phy.set_agc_enable(true);
   }  
   // Init MAC 
   mac.init(&phy, &my_rlc, &mac_log);

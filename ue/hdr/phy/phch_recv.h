@@ -45,8 +45,9 @@ class phch_recv : public thread
 public:
   phch_recv();
   bool init(srslte::radio* radio_handler, mac_interface_phy *mac, prach *prach_buffer, srslte::thread_pool *_workers_pool,
-            phch_common *_worker_com, srslte::log* _log_h, bool do_agc, uint32_t prio);
+            phch_common *_worker_com, srslte::log* _log_h, uint32_t prio);
   void stop();
+  void set_agc_enable(bool enable);
   
   uint32_t get_current_tti();
   

@@ -44,7 +44,7 @@ phch_recv::phch_recv() {
 }
 
 bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, prach* _prach_buffer, srslte::thread_pool* _workers_pool,
-                     phch_common* _worker_com, srslte::log* _log_h, bool do_agc_, uint32_t prio)
+                     phch_common* _worker_com, srslte::log* _log_h, uint32_t prio)
 {
   radio_h      = _radio_handler;
   log_h        = _log_h;     
@@ -57,7 +57,6 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, pra
   phy_state    = IDLE; 
   time_adv_sec = 0; 
   cell_is_set  = false; 
-  do_agc       = do_agc_;
 
   nof_tx_mutex = MUTEX_X_WORKER*workers_pool->get_nof_workers();
   worker_com->set_nof_mutex(nof_tx_mutex);
@@ -68,6 +67,11 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, pra
 void phch_recv::stop() {
   running = false; 
   wait_thread_finish();
+}
+
+void phch_recv::set_agc_enable(bool enable)
+{
+  do_agc = enable;
 }
 
 int radio_recv_wrapper_cs(void *h, void *data, uint32_t nsamples, srslte_timestamp_t *rx_time)

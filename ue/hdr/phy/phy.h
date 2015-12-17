@@ -52,8 +52,9 @@ class phy
 public:
   phy();
   bool init(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
-  bool init_agc(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
   void stop();
+
+  void set_agc_enable(bool enabled);
 
   void get_metrics(phy_metrics_t &m);
   

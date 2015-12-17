@@ -40,11 +40,9 @@ namespace srslte {
   {
     public: 
       radio() : tr_local_time(1024*10), tr_usrp_time(1024*10), tr_tx_time(1024*10), tr_is_eob(1024*10) {sf_len=0;};
-      bool init();
-      bool init(char *args);
-      bool init_agc();
-      bool init_agc(char *args);
-
+      bool init(char *args = NULL, char *devname = NULL);
+      bool start_agc(bool tx_gain_same_rx);
+      
       void get_time(srslte_timestamp_t *now);
       bool tx(void *buffer, uint32_t nof_samples, srslte_timestamp_t tx_time);
       bool tx_end();

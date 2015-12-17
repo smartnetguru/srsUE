@@ -330,15 +330,15 @@ int main(int argc, char *argv[])
   parse_args(&prog_args, argc, argv);
 
   // Init Radio and PHY
+  radio.init();
+  my_phy.init(&radio, &my_mac, &log);
   if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio.init();
     radio.set_rx_gain(prog_args.uhd_rx_gain);
     radio.set_tx_gain(prog_args.uhd_tx_gain);
-    my_phy.init(&radio, &my_mac, &log);
   } else {
-    radio.init_agc();
+    radio.start_agc(false);
     radio.set_tx_rx_gain_offset(10);
-    my_phy.init_agc(&radio, &my_mac, &log);
+    my_phy.set_agc_enable(true);
   }
   
   if (srsapps_verbose == 1) {
