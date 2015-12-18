@@ -139,8 +139,8 @@ public:
 
   bool init(all_args_t *args_);
   void stop();
-  static void uhd_msg(const char* msg);
-  void handle_uhd_msg(const char* msg);
+  static void rf_msg(srslte_rf_error_t error);
+  void handle_rf_msg(srslte_rf_error_t error);
 
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
@@ -162,7 +162,7 @@ private:
   srsue::usim       usim;
 
   srsue::logger     logger;
-  srsue::log_filter uhd_log;
+  srsue::log_filter rf_log;
   srsue::log_filter phy_log;
   srsue::log_filter mac_log;
   srsue::log_filter rlc_log;
@@ -176,7 +176,7 @@ private:
 
   all_args_t       *args;
   bool              started;
-  uhd_metrics_t     uhd_metrics;
+  rf_metrics_t     rf_metrics;
 
   srslte::LOG_LEVEL_ENUM level(std::string l);
   

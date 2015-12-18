@@ -129,11 +129,11 @@ void metrics_stdout::print_metrics()
   }
   cout << endl;
 
-  if(metrics.uhd.uhd_error) {
-    cout << "UHD status:"
-         << "  O=" << metrics.uhd.uhd_o
-         << ", U=" << metrics.uhd.uhd_u
-         << ", L=" << metrics.uhd.uhd_l << endl;
+  if(metrics.rf.rf_error) {
+    cout << "RF status:"
+         << "  O=" << metrics.rf.rf_o
+         << ", U=" << metrics.rf.rf_u
+         << ", L=" << metrics.rf.rf_l << endl;
   }
   
 }

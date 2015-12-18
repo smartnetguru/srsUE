@@ -85,7 +85,7 @@ bool ue::init(all_args_t *args_)
   }
   
   logger.init(args->log.filename);
-  uhd_log.init("UHD ", &logger);
+  rf_log.init("RF ", &logger);
   phy_log.init("PHY ", &logger, true);
   mac_log.init("MAC ", &logger, true);
   rlc_log.init("RLC ", &logger);
@@ -97,7 +97,7 @@ bool ue::init(all_args_t *args_)
 
   // Init logs
   logger.log("\n\n");
-  uhd_log.set_level(srslte::LOG_LEVEL_INFO);
+  rf_log.set_level(srslte::LOG_LEVEL_INFO);
   phy_log.set_level(level(args->log.phy_level));
   mac_log.set_level(level(args->log.mac_level));
   rlc_log.set_level(level(args->log.rlc_level));
@@ -164,7 +164,7 @@ bool ue::init(all_args_t *args_)
 
   delete [] c_str;
 
-  radio.register_msg_handler(uhd_msg);
+  radio.register_error_handler(rf_msg);
 
   radio.set_rx_freq(args->rf.dl_freq);
   radio.set_tx_freq(args->rf.ul_freq);
@@ -246,9 +246,9 @@ void ue::stop()
 
 bool ue::get_metrics(ue_metrics_t &m)
 {
-  m.uhd = uhd_metrics;
-  bzero(&uhd_metrics, sizeof(uhd_metrics_t));
-  uhd_metrics.uhd_error = false; // Reset error flag
+  m.rf = rf_metrics;
+  bzero(&rf_metrics, sizeof(rf_metrics_t));
+  rf_metrics.rf_error = false; // Reset error flag
 
   if(EMM_STATE_REGISTERED == nas.get_state()) {
     if(RRC_STATE_RRC_CONNECTED == rrc.get_state()) {
@@ -260,32 +260,29 @@ bool ue::get_metrics(ue_metrics_t &m)
   return false;
 }
 
-void ue::uhd_msg(const char *msg)
+void ue::rf_msg(srslte_rf_error_t error)
 {
   ue *u = ue::get_instance();
-  u->handle_uhd_msg(msg);
+  u->handle_rf_msg(error);
 }
 
-void ue::handle_uhd_msg(const char* msg)
+void ue::handle_rf_msg(srslte_rf_error_t error)
 {
-  if(0 == strcmp(msg, "O")) {
-    uhd_metrics.uhd_o++;
-    uhd_metrics.uhd_error = true;
-  } else if(0 == strcmp(msg, "D")) {
-    uhd_metrics.uhd_o++;
-    uhd_metrics.uhd_error = true;
-  }else if(0 == strcmp(msg, "U")) {
-    uhd_metrics.uhd_u++;
-    uhd_metrics.uhd_error = true;
-  } else if(0 == strcmp(msg, "L")) {
-    uhd_metrics.uhd_l++;
-    uhd_metrics.uhd_error = true;
-  } else {
-    std::string str(msg);
+  if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OVERFLOW) {
+    rf_metrics.rf_o++;
+    rf_metrics.rf_error = true;
+  }else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_UNDERFLOW) {
+    rf_metrics.rf_u++;
+    rf_metrics.rf_error = true;
+  } else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_LATE) {
+    rf_metrics.rf_l++;
+    rf_metrics.rf_error = true;
+  } else if (error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OTHER) {
+    std::string str(error.msg);
     str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
     str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
     str.push_back('\n');
-    uhd_log.info(str);
+    rf_log.info(str);
   }
 }
 

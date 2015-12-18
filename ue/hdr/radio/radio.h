@@ -79,7 +79,7 @@ namespace srslte {
       void set_tti_len(uint32_t sf_len);
       uint32_t get_tti_len();
 
-      void register_msg_handler(srslte_rf_msg_handler_t h);
+      void register_error_handler(srslte_rf_error_handler_t h);
       
     private:
       

@@ -258,9 +258,9 @@ void radio::stop_rx()
   srslte_rf_stop_rx_stream(&rf_device);
 }
 
-void radio::register_msg_handler(srslte_rf_msg_handler_t h)
+void radio::register_error_handler(srslte_rf_error_handler_t h)
 {
-  srslte_rf_register_msg_handler(&rf_device, h);
+  srslte_rf_register_error_handler(&rf_device, h);
 }
 
   

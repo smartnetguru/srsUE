@@ -42,20 +42,20 @@
  *  Program arguments processing
  ***********************************************************************/
 typedef struct {
-  float uhd_rx_freq;
-  float uhd_tx_freq; 
-  float uhd_rx_gain;
-  float uhd_tx_gain;
+  float rf_rx_freq;
+  float rf_tx_freq; 
+  float rf_rx_gain;
+  float rf_tx_gain;
   int   verbose; 
   bool  do_trace; 
   bool  do_pcap; 
 }prog_args_t;
 
 void args_default(prog_args_t *args) {
-  args->uhd_rx_freq = -1.0;
-  args->uhd_tx_freq = -1.0;
-  args->uhd_rx_gain = -1; // set to autogain
-  args->uhd_tx_gain = -1; 
+  args->rf_rx_freq = -1.0;
+  args->rf_tx_freq = -1.0;
+  args->rf_rx_gain = -1; // set to autogain
+  args->rf_tx_gain = -1; 
   args->verbose     = 0; 
   args->do_trace    = false; 
   args->do_pcap     = false; 
@@ -63,8 +63,8 @@ void args_default(prog_args_t *args) {
 
 void usage(prog_args_t *args, char *prog) {
   printf("Usage: %s [gGtpv] -f rx_frequency (in Hz) -F tx_frequency (in Hz)\n", prog);
-  printf("\t-g UHD RX gain [Default AGC]\n");
-  printf("\t-G UHD TX gain [Default same as RX gain (AGC)]\n");
+  printf("\t-g RF RX gain [Default AGC]\n");
+  printf("\t-G RF TX gain [Default same as RX gain (AGC)]\n");
   printf("\t-t Enable trace [Default disabled]\n");
   printf("\t-p Enable PCAP capture [Default disabled]\n");
   printf("\t-v [increase verbosity, default none]\n");
@@ -76,16 +76,16 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
   while ((opt = getopt(argc, argv, "gGftpFv")) != -1) {
     switch (opt) {
     case 'g':
-      args->uhd_rx_gain = atof(argv[optind]);
+      args->rf_rx_gain = atof(argv[optind]);
       break;
     case 'G':
-      args->uhd_tx_gain = atof(argv[optind]);
+      args->rf_tx_gain = atof(argv[optind]);
       break;
     case 'f':
-      args->uhd_rx_freq = atof(argv[optind]);
+      args->rf_rx_freq = atof(argv[optind]);
       break;
     case 'F':
-      args->uhd_tx_freq = atof(argv[optind]);
+      args->rf_tx_freq = atof(argv[optind]);
       break;
     case 't':
       args->do_trace = true;
@@ -101,7 +101,7 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       exit(-1);
     }
   }
-  if (args->uhd_rx_freq < 0 || args->uhd_tx_freq < 0) {
+  if (args->rf_rx_freq < 0 || args->rf_tx_freq < 0) {
     usage(args, argv[0]);
     exit(-1);
   }
@@ -533,9 +533,9 @@ int main(int argc, char *argv[])
   // Init Radio and PHY
   radio.init();
   phy.init(&radio, &mac, &phy_log);
-  if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio.set_rx_gain(prog_args.uhd_rx_gain);
-    radio.set_tx_gain(prog_args.uhd_tx_gain);
+  if (prog_args.rf_rx_gain > 0 && prog_args.rf_tx_gain > 0) {
+    radio.set_rx_gain(prog_args.rf_rx_gain);
+    radio.set_tx_gain(prog_args.rf_tx_gain);
   } else {
     radio.start_agc(false);
     radio.set_tx_rx_gain_offset(10);
@@ -545,8 +545,8 @@ int main(int argc, char *argv[])
   mac.init(&phy, &my_rlc, &mac_log);
     
   // Set RX freq
-  radio.set_rx_freq(prog_args.uhd_rx_freq);
-  radio.set_tx_freq(prog_args.uhd_tx_freq);
+  radio.set_rx_freq(prog_args.rf_rx_freq);
+  radio.set_tx_freq(prog_args.rf_tx_freq);
   
   
   while(1) {
