@@ -184,7 +184,7 @@ void mac::run_thread() {
       
       // Check if there is pending CCCH SDU in Mux unit 
       if (mux_unit.is_pending_ccch_sdu()) {
-        if (!ra_procedure.in_progress() && !ra_procedure.is_successful()) {
+        if (!ra_procedure.in_progress()) {
           ra_procedure.start_rlc_order();
         }
       }

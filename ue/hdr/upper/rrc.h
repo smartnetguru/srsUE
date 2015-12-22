@@ -58,6 +58,7 @@ static const char rrc_state_text[RRC_STATE_N_ITEMS][100] = {"IDLE",
 
 class rrc
     :public rrc_interface_nas
+    ,public rrc_interface_gw
     ,public rrc_interface_pdcp
     ,public rrc_interface_rlc
 {
@@ -112,6 +113,9 @@ private:
   void write_sdu(uint32_t lcid, byte_buffer_t *sdu);
   uint16_t get_mcc();
   uint16_t get_mnc();
+
+  // GW interface
+  void mo_data();
 
   // PDCP interface
   void write_pdu(uint32_t lcid, byte_buffer_t *pdu);

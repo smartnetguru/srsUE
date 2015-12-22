@@ -55,7 +55,13 @@ void rlc::init(pdcp_interface_rlc *pdcp_,
 }
 
 void rlc::stop()
-{}
+{
+  for(uint32_t i=0;i<SRSUE_N_RADIO_BEARERS;i++)
+  {
+    if(rlc_array[i])
+      delete rlc_array[i];
+  }
+}
 
 void rlc::reset()
 {

@@ -68,6 +68,15 @@ void pdcp_entity::init(rlc_interface_pdcp            *rlc_,
   }
 }
 
+void pdcp_entity::reset()
+{
+  tx_count    = 0;
+  rx_count    = 0;
+  do_security = false;
+  sn_len      = 12;
+  active      = false;
+}
+
 bool pdcp_entity::is_active()
 {
   return active;

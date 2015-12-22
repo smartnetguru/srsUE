@@ -69,9 +69,10 @@ emm_state_t nas::get_state()
 void nas::notify_connection_setup()
 {
   nas_log->debug("State = %s\n", emm_state_text[state]);
-  if(EMM_STATE_DEREGISTERED == state)
-  {
+  if(EMM_STATE_DEREGISTERED == state) {
     send_attach_request();
+  } else {
+    send_service_request();
   }
 }
 
@@ -123,6 +124,17 @@ void nas::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 uint32_t  nas::get_ul_count()
 {
   return count_ul;
+}
+
+bool      nas::get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi)
+{
+  if(is_guti_set) {
+    s_tmsi->mmec   = guti.mme_code;
+    s_tmsi->m_tmsi = guti.m_tmsi;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
@@ -334,6 +346,7 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
   nas_log->info("Received Security Mode Command\n");
   liblte_mme_unpack_security_mode_command_msg((LIBLTE_BYTE_MSG_STRUCT*)pdu, &sec_mode_cmd);
 
+  ksi = sec_mode_cmd.nas_ksi.nas_ksi;
   // FIXME: Handle nonce_ue, nonce_mme
   // FIXME: Currently only handling ciphering EEA0 (null) and integrity EIA2
   // FIXME: Use selected_nas_sec_algs to choose correct algos
@@ -474,7 +487,24 @@ void nas::gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT *msg)
 }
 
 void nas::send_identity_response(){}
-void nas::send_service_request(){}
+
+void nas::send_service_request()
+{
+  LIBLTE_MME_SERVICE_REQUEST_MSG_STRUCT service_req;
+  byte_buffer_t                        *msg = pool->allocate();
+
+  count_ul++;
+  service_req.ksi_and_seq_num.ksi = ksi;
+  service_req.ksi_and_seq_num.seq_num = count_ul;
+  service_req.short_mac = 0; // TODO
+
+  // Pack the message
+  liblte_mme_pack_service_request_msg(&service_req, (LIBLTE_BYTE_MSG_STRUCT*)msg);
+
+  nas_log->info("Sending service request\n");
+  rrc->write_sdu(RB_ID_SRB1, msg);
+}
+
 void nas::send_esm_information_response(){}
 
 } // namespace srsue

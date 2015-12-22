@@ -178,7 +178,7 @@ bool ue::init(all_args_t *args_)
   pdcp.init(&rlc, &rrc, &gw, &pdcp_log);
   rrc.init(&phy, &mac, &rlc, &pdcp, &nas, &usim, &rrc_log);
   nas.init(&usim, &rrc, &gw, &nas_log);
-  gw.init(&pdcp, this, &gw_log);
+  gw.init(&pdcp, &rrc, this, &gw_log);
   usim.init(&args->usim, &usim_log);
 
   started = true;

@@ -51,13 +51,10 @@ class gw
 {
 public:
   gw();
-  void init(pdcp_interface_gw *pdcp_, ue_interface *ue_, srslte::log *gw_log_);
+  void init(pdcp_interface_gw *pdcp_, rrc_interface_gw *rrc_, ue_interface *ue_, srslte::log *gw_log_);
   void stop();
 
   void get_metrics(gw_metrics_t *m){}
-
-  // UE interface
-  bool check_ul_buffers();
 
   // PDCP interface
   void write_pdu(uint32_t lcid, byte_buffer_t *pdu);
@@ -72,13 +69,13 @@ private:
   buffer_pool        *pool;
   srslte::log        *gw_log;
   pdcp_interface_gw  *pdcp;
+  rrc_interface_gw   *rrc;
   ue_interface       *ue;
   bool                running;
   int32               tun_fd;
   struct ifreq        ifr;
   int32               sock;
   bool                if_up;
-  msg_queue           rx_sdu_queue;
 
   void                run_thread();
   error_t             init_if(char *err_str);

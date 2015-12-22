@@ -48,6 +48,7 @@ public:
   void stop();
 
   // RRC interface
+  void reset();
   void write_sdu(uint32_t lcid, byte_buffer_t *sdu);
   void add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg = NULL);
   void config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int);

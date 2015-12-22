@@ -106,6 +106,19 @@ uint16_t rrc::get_mnc()
 }
 
 /*******************************************************************************
+  GW interface
+*******************************************************************************/
+
+void rrc::mo_data()
+{
+  if(RRC_STATE_IDLE == state) {
+    rrc_log->info("RRC in IDLE state - sending connection request.\n");
+    state = RRC_STATE_WAIT_FOR_CON_SETUP;
+    send_con_request();
+  }
+}
+
+/*******************************************************************************
   PDCP interface
 *******************************************************************************/
 
@@ -204,11 +217,17 @@ void rrc::send_con_request()
 {
   rrc_log->debug("Preparing RRC Connection Request");
   LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
+  LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
 
   // Prepare ConnectionRequest packet
   ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REQ;
-  ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE;
-  ul_ccch_msg.msg.rrc_con_req.ue_id.random = 1000;
+  if(nas->get_s_tmsi(&s_tmsi)) {
+    ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI;
+    ul_ccch_msg.msg.rrc_con_req.ue_id.s_tmsi = s_tmsi;
+  } else {
+    ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE;
+    ul_ccch_msg.msg.rrc_con_req.ue_id.random = 1000;
+  }
   ul_ccch_msg.msg.rrc_con_req.cause = LIBLTE_RRC_CON_REQ_EST_CAUSE_MO_SIGNALLING;
   liblte_rrc_pack_ul_ccch_msg(&ul_ccch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
 
@@ -517,7 +536,10 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_RRC_CON_RELEASE:
     state = RRC_STATE_IDLE;
-    rrc_log->console("RRC Connection released, reconnection not enabled.\n");
+    mac->reset();
+    rlc->reset();
+    pdcp->reset();
+    rrc_log->console("RRC Connection released.\n");
     break;
   default:
     break;

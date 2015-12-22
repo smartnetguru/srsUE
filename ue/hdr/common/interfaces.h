@@ -92,6 +92,7 @@ public:
   virtual void      notify_connection_setup() = 0;
   virtual void      write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual uint32_t  get_ul_count() = 0;
+  virtual bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi) = 0;
 };
 
 // RRC interface for NAS
@@ -102,6 +103,13 @@ public:
   virtual uint16_t get_mcc() = 0;
   virtual uint16_t get_mnc() = 0;
   virtual void enable_capabilities() = 0;
+};
+
+// RRC interface for GW
+class rrc_interface_gw
+{
+public:
+  virtual void mo_data() = 0;
 };
 
 // RRC interface for PDCP
@@ -131,6 +139,7 @@ public:
 class pdcp_interface_rrc
 {
 public:
+  virtual void reset() = 0;
   virtual void write_sdu(uint32_t lcid, byte_buffer_t *sdu) = 0;
   virtual void add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg=NULL) = 0;
   virtual void config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int) = 0;
@@ -150,6 +159,7 @@ public:
 class rlc_interface_rrc
 {
 public:
+  virtual void reset() = 0;
   virtual void add_bearer(uint32_t lcid) = 0;
   virtual void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg) = 0;
 };
