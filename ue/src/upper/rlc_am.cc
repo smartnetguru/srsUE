@@ -90,8 +90,10 @@ void rlc_am::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
 void rlc_am::reset()
 {
   reordering_timeout.reset();
-  tx_sdu->reset();
-  rx_sdu->reset();
+  if(tx_sdu)
+    tx_sdu->reset();
+  if(rx_sdu)
+    rx_sdu->reset();
 
   vt_a    = 0;
   vt_ms   = RLC_AM_WINDOW_SIZE;

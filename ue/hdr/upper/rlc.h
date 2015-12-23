@@ -60,7 +60,6 @@ public:
             srslte::log        *rlc_log_, 
             mac_interface_timers *mac_timers_);
   void stop();
-  void reset();
 
   void get_metrics(rlc_metrics_t *m){}
 

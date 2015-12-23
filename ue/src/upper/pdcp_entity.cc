@@ -56,6 +56,10 @@ void pdcp_entity::init(rlc_interface_pdcp            *rlc_,
   lcid    = lcid_;
   active  = true;
 
+  tx_count    = 0;
+  rx_count    = 0;
+  do_security = false;
+
   if(cnfg)
   {
     if(LIBLTE_RRC_PDCP_SN_SIZE_12_BITS == cnfg->rlc_um_pdcp_sn_size)
@@ -70,10 +74,6 @@ void pdcp_entity::init(rlc_interface_pdcp            *rlc_,
 
 void pdcp_entity::reset()
 {
-  tx_count    = 0;
-  rx_count    = 0;
-  do_security = false;
-  sn_len      = 12;
   active      = false;
 }
 

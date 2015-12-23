@@ -496,10 +496,23 @@ void nas::send_service_request()
   count_ul++;
   service_req.ksi_and_seq_num.ksi = ksi;
   service_req.ksi_and_seq_num.seq_num = count_ul;
-  service_req.short_mac = 0; // TODO
 
-  // Pack the message
+  // Pack message
   liblte_mme_pack_service_request_msg(&service_req, (LIBLTE_BYTE_MSG_STRUCT*)msg);
+  uint8_t mac[4];
+  liblte_security_128_eia2(k_nas_int,
+                           count_ul,
+                           RB_ID_SRB1,
+                           LIBLTE_SECURITY_DIRECTION_UPLINK,
+                           &msg->msg[0],
+                           2,
+                           &mac[0]);
+
+  nas_log->info_hex(&mac[0], 4, "Generated MAC\n");
+
+  // Set the short MAC directly
+  msg->msg[2] = mac[2];
+  msg->msg[3] = mac[3];
 
   nas_log->info("Sending service request\n");
   rrc->write_sdu(RB_ID_SRB1, msg);

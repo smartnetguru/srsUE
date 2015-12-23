@@ -39,6 +39,10 @@ void rlc_entity::init(rlc_mode_t            mode,
                       rrc_interface_rlc    *rrc_,
                       mac_interface_timers *mac_timers_)
 {
+  tm.reset();
+  um.reset();
+  am.reset();
+
   switch(mode)
   {
   case RLC_MODE_TM:
@@ -67,8 +71,6 @@ void rlc_entity::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
 
 void rlc_entity::reset()
 {
-  if(rlc)
-    rlc->reset();
   rlc = NULL;
 }
 
