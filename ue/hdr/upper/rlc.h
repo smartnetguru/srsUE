@@ -60,6 +60,7 @@ public:
             srslte::log        *rlc_log_, 
             mac_interface_timers *mac_timers_);
   void stop();
+  void reset();
 
   void get_metrics(rlc_metrics_t *m){}
 
@@ -84,7 +85,7 @@ private:
   rrc_interface_rlc  *rrc;
   mac_interface_timers *mac_timers; 
   ue_interface       *ue;
-  rlc_entity         *rlc_array[SRSUE_N_RADIO_BEARERS];
+  rlc_entity          rlc_array[SRSUE_N_RADIO_BEARERS];
 
   bool valid_lcid(uint32_t lcid);
 };

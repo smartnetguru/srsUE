@@ -51,17 +51,19 @@ void rlc::init(pdcp_interface_rlc *pdcp_,
   rlc_log = rlc_log_;
   mac_timers = mac_timers_;
 
-  for(uint32_t i=0;i<SRSUE_N_RADIO_BEARERS;i++)
-  {
-    rlc_array[i] = NULL;
-  }
-
-  rlc_array[0] = new rlc_tm;
-  rlc_array[0]->init(rlc_log, RB_ID_SRB0, pdcp, rrc, mac_timers); // SRB0
+  rlc_array[0].init(RLC_MODE_TM, rlc_log, RB_ID_SRB0, pdcp, rrc, mac_timers); // SRB0
 }
 
 void rlc::stop()
 {}
+
+void rlc::reset()
+{
+  for(uint32_t i=0; i<SRSUE_N_RADIO_BEARERS; i++) {
+    if(rlc_array[i].active())
+      rlc_array[i].reset();
+  }
+}
 
 /*******************************************************************************
   PDCP interface
@@ -69,7 +71,7 @@ void rlc::stop()
 void rlc::write_sdu(uint32_t lcid, byte_buffer_t *sdu)
 {
   if(valid_lcid(lcid)) {
-    rlc_array[lcid]->write_sdu(sdu);
+    rlc_array[lcid].write_sdu(sdu);
   }
 }
 
@@ -79,7 +81,7 @@ void rlc::write_sdu(uint32_t lcid, byte_buffer_t *sdu)
 uint32_t rlc::get_buffer_state(uint32_t lcid)
 {
   if(valid_lcid(lcid)) {
-    return rlc_array[lcid]->get_buffer_state();
+    return rlc_array[lcid].get_buffer_state();
   } else {
     return 0;
   }
@@ -88,14 +90,14 @@ uint32_t rlc::get_buffer_state(uint32_t lcid)
 int rlc::read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 {
   if(valid_lcid(lcid)) {
-    return rlc_array[lcid]->read_pdu(payload, nof_bytes);
+    return rlc_array[lcid].read_pdu(payload, nof_bytes);
   }
 }
 
 void rlc::write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 {
   if(valid_lcid(lcid)) {
-    rlc_array[lcid]->write_pdu(payload, nof_bytes);
+    rlc_array[lcid].write_pdu(payload, nof_bytes);
   }
 }
 
@@ -153,24 +155,23 @@ void rlc::add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
   switch(cnfg->rlc_mode)
   {
   case LIBLTE_RRC_RLC_MODE_AM:
-    rlc_array[lcid] = new rlc_am;
+    rlc_array[lcid].init(RLC_MODE_AM, rlc_log, lcid, pdcp, rrc, mac_timers);
     break;
   case LIBLTE_RRC_RLC_MODE_UM_BI:
-    rlc_array[lcid] = new rlc_um;
+    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
     break;
   case LIBLTE_RRC_RLC_MODE_UM_UNI_UL:
-    rlc_array[lcid] = new rlc_um;
+    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
     break;
   case LIBLTE_RRC_RLC_MODE_UM_UNI_DL:
-    rlc_array[lcid] = new rlc_um;
+    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
     break;
   default:
     rlc_log->error("Cannot add RLC entity - invalid mode\n");
     return;
   }
-  rlc_array[lcid]->init(rlc_log, lcid, pdcp, rrc, mac_timers);
-  if(cnfg)
-    rlc_array[lcid]->configure(cnfg);
+
+  rlc_array[lcid].configure(cnfg);
 
 }
 
@@ -182,7 +183,7 @@ bool rlc::valid_lcid(uint32_t lcid)
   if(lcid < 0 || lcid >= SRSUE_N_RADIO_BEARERS) {
     return false;
   }
-  if(!rlc_array[lcid]) {
+  if(!rlc_array[lcid].active()) {
     return false;
   }
   return true;
