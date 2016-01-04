@@ -70,11 +70,14 @@ void pdcp_entity::init(rlc_interface_pdcp            *rlc_,
     }
     // TODO: handle remainder of cnfg
   }
+  log->debug("Init %s\n", rb_id_text[lcid]);
 }
 
 void pdcp_entity::reset()
 {
   active      = false;
+  if(log)
+    log->debug("Reset %s\n", rb_id_text[lcid]);
 }
 
 bool pdcp_entity::is_active()
@@ -85,7 +88,7 @@ bool pdcp_entity::is_active()
 // RRC interface
 void pdcp_entity::write_sdu(byte_buffer_t *sdu)
 {
-  log->info_hex(sdu->msg, sdu->N_bytes, "UL %s SDU", rb_id_text[lcid]);
+  log->info_hex(sdu->msg, sdu->N_bytes, "UL %s SDU, do_security = %s", rb_id_text[lcid], (do_security)?"true":"false");
 
   // Handle SRB messages
   switch(lcid)

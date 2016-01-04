@@ -490,29 +490,29 @@ void nas::send_identity_response(){}
 
 void nas::send_service_request()
 {
-  LIBLTE_MME_SERVICE_REQUEST_MSG_STRUCT service_req;
-  byte_buffer_t                        *msg = pool->allocate();
-
+  byte_buffer_t *msg = pool->allocate();
   count_ul++;
-  service_req.ksi_and_seq_num.ksi = ksi;
-  service_req.ksi_and_seq_num.seq_num = count_ul;
 
-  // Pack message
-  liblte_mme_pack_service_request_msg(&service_req, (LIBLTE_BYTE_MSG_STRUCT*)msg);
+  // Pack the service request message directly
+  msg->msg[0]  = (LIBLTE_MME_SECURITY_HDR_TYPE_SERVICE_REQUEST << 4) | (LIBLTE_MME_PD_EPS_MOBILITY_MANAGEMENT);
+  msg->N_bytes++;
+  msg->msg[1]  = (ksi & 0x07) << 5;
+  msg->msg[1] |= count_ul & 0x1F;
+  msg->N_bytes++;
+
   uint8_t mac[4];
-  liblte_security_128_eia2(k_nas_int,
+  liblte_security_128_eia2(&k_nas_int[16],
                            count_ul,
-                           RB_ID_SRB1,
+                           RB_ID_SRB1-1,
                            LIBLTE_SECURITY_DIRECTION_UPLINK,
                            &msg->msg[0],
                            2,
                            &mac[0]);
-
-  nas_log->info_hex(&mac[0], 4, "Generated MAC\n");
-
-  // Set the short MAC directly
+  // Set the short MAC
   msg->msg[2] = mac[2];
+  msg->N_bytes++;
   msg->msg[3] = mac[3];
+  msg->N_bytes++;
 
   nas_log->info("Sending service request\n");
   rrc->write_sdu(RB_ID_SRB1, msg);

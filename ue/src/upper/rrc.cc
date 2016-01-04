@@ -962,7 +962,8 @@ void rrc::add_srb(LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT *srb_cnfg)
 {
   // Setup PDCP
   pdcp->add_bearer(srb_cnfg->srb_id);
-  pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int);
+  if(RB_ID_SRB2 == srb_cnfg->srb_id)
+    pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int);
 
   // Setup RLC
   if(srb_cnfg->rlc_cnfg_present)
