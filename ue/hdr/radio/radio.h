@@ -43,6 +43,9 @@ namespace srslte {
       bool init(char *args = NULL, char *devname = NULL);
       bool start_agc(bool tx_gain_same_rx);
       
+      void set_burst_preamble(int preamble_us);
+      void set_tx_adv(int tx_adv_us);
+      
       void get_time(srslte_timestamp_t *now);
       bool tx(void *buffer, uint32_t nof_samples, srslte_timestamp_t tx_time);
       bool tx_end();
@@ -87,14 +90,15 @@ namespace srslte {
       
       srslte_rf_t rf_device; 
       
-      static const double burst_settle_time = 0;//0.4e-3; // Start of burst settle time (off->on RF transition time)      
-      const static uint32_t burst_settle_max_samples = 30720000;  // 30.72 MHz is maximum frequency
-
+      double tx_adv_sec; // Transmission time advance to compensate for antenna->timestamp delay
+      
+      const static uint32_t burst_preamble_max_samples = 30720000;  // 30.72 MHz is maximum frequency
+      double burst_preamble_sec;// Start of burst preamble time (off->on RF transition time)      
       srslte_timestamp_t end_of_burst_time; 
       bool is_start_of_burst; 
-      uint32_t burst_settle_samples; 
-      double burst_settle_time_rounded; // settle time rounded to sample time
-      cf_t zeros[burst_settle_max_samples]; 
+      uint32_t burst_preamble_samples; 
+      double burst_preamble_time_rounded; // preamble time rounded to sample time
+      cf_t zeros[burst_preamble_max_samples]; 
       double cur_tx_srate;
       
       trace<uint32_t> tr_local_time;

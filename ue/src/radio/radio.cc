@@ -41,15 +41,26 @@ bool radio::init(char *args, char *devname)
   }
   
   agc_enabled = false; 
-  burst_settle_samples = 0; 
-  burst_settle_time_rounded = 0; 
+  burst_preamble_samples = 0; 
+  burst_preamble_time_rounded = 0; 
+  cur_tx_srate = 0; 
   is_start_of_burst = true; 
-  bzero(zeros, burst_settle_max_samples*sizeof(cf_t));
+  bzero(zeros, burst_preamble_max_samples*sizeof(cf_t));
   return true;    
 }
 
 void radio::set_tx_rx_gain_offset(float offset) {
   srslte_rf_set_tx_rx_gain_offset(&rf_device, offset);  
+}
+
+void radio::set_burst_preamble(int preamble_us)
+{
+  burst_preamble_sec = (double) preamble_us/1e6; 
+}
+
+void radio::set_tx_adv(int tx_adv_us)
+{
+  tx_adv_sec = (double) tx_adv_us/1e6;;
 }
 
 void radio::tx_offset(int offset_)
@@ -66,8 +77,7 @@ bool radio::start_agc(bool tx_gain_same_rx)
   }
 
   agc_enabled = true; 
-  bzero(zeros, burst_settle_max_samples*sizeof(cf_t));
-
+ 
   return true;    
 }
 bool radio::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_time)
@@ -120,13 +130,15 @@ bool radio::has_rssi()
 
 bool radio::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_time)
 {
+  srslte_timestamp_sub(&tx_time, 0, tx_adv_sec);
+  
   if (is_start_of_burst) {
-    if (burst_settle_samples != 0) {
+    if (burst_preamble_samples != 0) {
       srslte_timestamp_t tx_time_pad; 
       srslte_timestamp_copy(&tx_time_pad, &tx_time);
-      srslte_timestamp_sub(&tx_time_pad, 0, burst_settle_time_rounded); 
+      srslte_timestamp_sub(&tx_time_pad, 0, burst_preamble_time_rounded); 
       save_trace(1, &tx_time_pad);
-      srslte_rf_send_timed2(&rf_device, zeros, burst_settle_samples, tx_time_pad.full_secs, tx_time_pad.frac_secs, true, false);
+      srslte_rf_send_timed2(&rf_device, zeros, burst_preamble_samples, tx_time_pad.full_secs, tx_time_pad.frac_secs, true, false);
       is_start_of_burst = false; 
     }        
   }
@@ -240,12 +252,12 @@ float radio::get_rx_gain()
 void radio::set_tx_srate(float srate)
 {
   cur_tx_srate = srslte_rf_set_tx_srate(&rf_device, srate);
-  burst_settle_samples = (uint32_t) (cur_tx_srate * burst_settle_time);
-  if (burst_settle_samples > burst_settle_max_samples) {
-    burst_settle_samples = burst_settle_max_samples;
+  burst_preamble_samples = (uint32_t) (cur_tx_srate * burst_preamble_sec);
+  if (burst_preamble_samples > burst_preamble_max_samples) {
+    burst_preamble_samples = burst_preamble_max_samples;
     fprintf(stderr, "Error setting TX srate %.1f MHz. Maximum frequency for zero prepadding is 30.72 MHz\n", srate*1e-6);
   }
-  burst_settle_time_rounded = (double) burst_settle_samples/cur_tx_srate;
+  burst_preamble_time_rounded = (double) burst_preamble_samples/cur_tx_srate;
 }
 
 void radio::start_rx()

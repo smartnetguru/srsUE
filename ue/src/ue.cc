@@ -132,16 +132,31 @@ bool ue::init(all_args_t *args_)
   set_expert_parameters();
 
   // Init layers
-  char *c_str = new char[args->usrp_args.size() + 1];
-  strcpy(c_str, args->usrp_args.c_str());
   
-  /* Start Radio/PHY with AGC if rx_gain argument is negative */
-  if(!radio.init(c_str))
+  /* Start Radio */
+  char *dev_name = NULL;
+  if (args->rf.device_name.compare("auto")) {
+    dev_name = (char*) args->rf.device_name.c_str();
+  }
+  
+  char *dev_args = NULL;
+  if (args->rf.device_args.compare("auto")) {
+    dev_args = (char*) args->rf.device_args.c_str();
+  }
+  
+  if(!radio.init(dev_name, dev_args))
   {
-    printf("Failed to find usrp with args=%s\n",c_str);
-    delete [] c_str;
+    printf("Failed to find device %s with args %s\n",
+           args->rf.device_name.c_str(), args->rf.device_args.c_str());
     return false;
   }    
+  
+  // Set RF options
+  radio.set_tx_adv(args->rf.time_adv_us);
+  if (args->rf.burst_preamble.compare("auto")) {
+    radio.set_burst_preamble(atoi(args->rf.burst_preamble.c_str()));    
+  }
+  
   phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
   
   if (args->rf.rx_gain < 0) {
@@ -161,8 +176,6 @@ bool ue::init(all_args_t *args_)
                 "Warning: TX gain was not set. " << 
                 "Using open-loop power control (not working properly)" << std::endl << std::endl; 
   }
-
-  delete [] c_str;
 
   radio.register_error_handler(rf_msg);
 

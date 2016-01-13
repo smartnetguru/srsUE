@@ -65,6 +65,10 @@ typedef struct {
   float         ul_freq;
   float         rx_gain;
   float         tx_gain;
+  std::string   device_name; 
+  std::string   device_args; 
+  int           time_adv_us; 
+  std::string   burst_preamble; 
 }rf_args_t;
 
 typedef struct {

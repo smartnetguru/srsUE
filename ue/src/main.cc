@@ -61,11 +61,15 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
     // Command line or config file options
     bpo::options_description common("Configuration options");
     common.add_options()
-        ("usrp_args",         bpo::value<string>(&args->usrp_args),   "USRP args")
         ("rf.dl_freq",        bpo::value<float>(&args->rf.dl_freq)->default_value(2680000000),  "Downlink centre frequency")
         ("rf.ul_freq",        bpo::value<float>(&args->rf.ul_freq)->default_value(2560000000),  "Uplink centre frequency")
         ("rf.rx_gain",        bpo::value<float>(&args->rf.rx_gain)->default_value(-1),          "Front-end receiver gain")
         ("rf.tx_gain",        bpo::value<float>(&args->rf.tx_gain)->default_value(-1),          "Front-end transmitter gain")
+
+        ("rf.device_name",       bpo::value<string>(&args->rf.device_name)->default_value("auto"),       "Front-end device name")
+        ("rf.device_args",       bpo::value<string>(&args->rf.device_args)->default_value("auto"),       "Front-end device arguments")
+        ("rf.time_adv_us",       bpo::value<int>(&args->rf.time_adv_us)->default_value(0),               "Transmission time advance")
+        ("rf.burst_preamble_us", bpo::value<string>(&args->rf.burst_preamble)->default_value("auto"), "Transmission time advance")
 
         ("pcap.enable",       bpo::value<bool>(&args->pcap.enable)->default_value(false),           "Enable MAC packet captures for wireshark")
         ("pcap.filename",     bpo::value<string>(&args->pcap.filename)->default_value("ue.pcap"),   "MAC layer capture filename")
@@ -123,7 +127,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("expert.continuous_tx",      bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continues transmission (default off)")
         ("expert.nof_phy_threads",    bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
         
-        ("expert.#equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("zf"), "Equalizer mode")
+        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("zf"), "Equalizer mode")
         
     ;
 
