@@ -29,6 +29,7 @@ extern "C" {
 #include "srslte/rf/rf.h"
 }
 #include "radio/radio.h"
+#include <string.h>
 
 namespace srslte {
 
@@ -46,6 +47,16 @@ bool radio::init(char *args, char *devname)
   cur_tx_srate = 0; 
   is_start_of_burst = true; 
   bzero(zeros, burst_preamble_max_samples*sizeof(cf_t));
+  
+  /* Set default values each known device */
+  if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
+    burst_preamble_sec = uhd_default_burst_preamble_sec;
+    tx_adv_sec         = uhd_default_tx_adv_sec;
+  } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
+    burst_preamble_sec = blade_default_burst_preamble_sec;
+    tx_adv_sec         = blade_default_tx_adv_sec;
+  }
+  
   return true;    
 }
 

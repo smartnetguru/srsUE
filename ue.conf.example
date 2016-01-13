@@ -14,7 +14,7 @@
 #              Default for UHD: "recv_frame_size=9232,num_recv_frames=64,send_frame_size=9232,num_send_frames=64"
 #              Default for bladeRF: ""
 # time_adv_us: Transmission time advance to compensate for RF delay from antenna to timestamp insertion. 
-#              Default 0
+#              Default "auto" choses the best depending on the hardware, otherwise select a non-negative integer
 # burst_preamble_us: Preamble length to transmit before start of burst. Default is "auto" otherwise any non-negative integer 
 #              Note: In USRP the option "auto" sets a default value of 400 us, which 
 #              is needed to compensate for the RF circuits OFF->ON transition time. 
@@ -26,7 +26,7 @@ tx_gain = 70
 
 #device_name = auto
 #device_args = auto
-#time_adv_us = 32
+#time_adv_us = auto
 #burst_preamble_us = auto
 
 

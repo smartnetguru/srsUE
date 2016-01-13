@@ -100,6 +100,15 @@ namespace srslte {
       double burst_preamble_time_rounded; // preamble time rounded to sample time
       cf_t zeros[burst_preamble_max_samples]; 
       double cur_tx_srate;
+  
+      // Define default values for known radios
+      const static double uhd_default_burst_preamble_sec = 0.4e-3;
+      const static double uhd_default_tx_adv_sec         = 0.0; 
+      
+      const static double blade_default_burst_preamble_sec = 0.0;
+      const static double blade_default_tx_adv_sec         = 0.0; 
+      
+
       
       trace<uint32_t> tr_local_time;
       trace<uint32_t> tr_usrp_time;
