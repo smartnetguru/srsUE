@@ -58,11 +58,15 @@ void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* pa
   params_db = params_db_;
   timers_db = timers_db_; 
   initiated = true;
+  // Enable CCCH
+  lcg[0] = 0; 
+  priorities[0] = 99; 
 }
 
 void bsr_proc::reset()
 {
   triggered_bsr_type = NONE; 
+  
 }
 
 /* Process Periodic BSR */

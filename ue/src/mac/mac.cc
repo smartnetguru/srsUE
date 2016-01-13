@@ -178,17 +178,9 @@ void mac::run_thread() {
 
       // Check SR if we need to start RA 
       if (sr_procedure.need_random_access()) {
-        Warning("Starting RA procedure by MAC order is DISABLED\n");
-        //ra_procedure.start_mac_order();
+        ra_procedure.start_mac_order();
       }
-      
-      // Check if there is pending CCCH SDU in Mux unit 
-      if (mux_unit.is_pending_ccch_sdu()) {
-        if (!ra_procedure.in_progress() && !ra_procedure.is_successful()) {
-          ra_procedure.start_rlc_order();
-        }
-      }
-      
+            
       ra_procedure.step(tti);
       //phr_procedure.step(tti);
 

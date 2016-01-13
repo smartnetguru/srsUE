@@ -65,6 +65,7 @@ bool ra_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* param
 void ra_proc::reset() {
   state = IDLE;
   msg3_transmitted = false;
+  started_by_pdcch = false; 
 }
 
 void ra_proc::start_pcap(mac_pcap* pcap_)
@@ -423,8 +424,7 @@ void ra_proc::step_contention_resolution() {
     {
       rInfo("PDCCH for C-RNTI received\n");
       // Random Access initiated by MAC itself or PDCCH order (transmission of MAC C-RNTI CE)
-      if (start_mode == MAC_ORDER && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT ||
-          start_mode == PDCCH_ORDER) 
+      if ((!started_by_pdcch && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT) || started_by_pdcch) 
       {
         timers_db->get(mac::CONTENTION_TIMER)->stop();
         params_db->set_param(mac_interface_params::RNTI_TEMP, 0);
@@ -489,7 +489,7 @@ void ra_proc::step(uint32_t tti_)
 void ra_proc::start_mac_order()
 {
   if (state == IDLE || state == COMPLETION || state == RA_PROBLEM) {
-    start_mode = MAC_ORDER;
+    started_by_pdcch = false;
     state = INITIALIZATION;    
     Info("Starting PRACH by MAC order\n");
     run();
@@ -499,19 +499,9 @@ void ra_proc::start_mac_order()
 void ra_proc::start_pdcch_order()
 {
   if (state == IDLE || state == COMPLETION || state == RA_PROBLEM) {
-    start_mode = PDCCH_ORDER;
+    started_by_pdcch = true;
     state = INITIALIZATION;    
     Info("Starting PRACH by PDCCH order\n");
-    run();
-  }
-}
-
-void ra_proc::start_rlc_order()
-{
-  if (state == IDLE || state == COMPLETION || state == RA_PROBLEM) {
-    start_mode = RLC_ORDER;
-    state = INITIALIZATION;    
-    Info("Starting PRACH by RLC CCCH SDU order\n");
     run();
   }
 }

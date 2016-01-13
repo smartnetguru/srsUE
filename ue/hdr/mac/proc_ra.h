@@ -52,7 +52,6 @@ class ra_proc : public proc, srslte::timer_callback
     bool init(phy_interface *phy_h, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
     void reset();
     void start_pdcch_order();
-    void start_rlc_order();
     void start_mac_order();
     void step(uint32_t tti);
     bool is_successful(); 
@@ -156,11 +155,7 @@ private:
        PDCCH_CRNTI_DL_GRANT      
     } pdcch_to_crnti_received;
 
-    enum {
-      PDCCH_ORDER = 0, 
-      RLC_ORDER, 
-      MAC_ORDER
-    } start_mode; 
+    bool started_by_pdcch; 
     uint32_t rar_grant_nbytes;
     uint32_t rar_grant_tti;
     bool msg3_flushed;
