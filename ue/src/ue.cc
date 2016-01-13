@@ -215,6 +215,13 @@ void ue::set_expert_parameters() {
   phy.set_param(phy_interface_params::CONTINUOUS_TX, args->expert.continuous_tx?1:0);
   phy.set_param(phy_interface_params::PDSCH_MAX_ITS, args->expert.pdsch_max_its);
     
+  if (!args->expert.equalizer_mode.compare("zf")) {
+    phy.set_param(phy_interface_params::EQUALIZER_COEFF, 0);
+  } else if (!args->expert.equalizer_mode.compare("mmse")) {
+    phy.set_param(phy_interface_params::EQUALIZER_COEFF, -1);    
+  } else {
+    phy.set_param(phy_interface_params::EQUALIZER_COEFF, atof(args->expert.equalizer_mode.c_str()));
+  }
 }
 
 void ue::stop()

@@ -256,8 +256,15 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
       return false; 
     }        
   }
-  if (decode_pdcch) { /* and not in DRX mode */ 
-    if (srslte_pdcch_extract_llr(&ue_dl.pdcch, ue_dl.sf_symbols, ue_dl.ce, 0, tti%10, cfi)) {
+  if (decode_pdcch) { /* and not in DRX mode */
+    
+    float noise_estimate = 1./srslte_chest_dl_get_snr(&ue_dl.chest);
+    
+    if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
+      noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
+    }
+    
+    if (srslte_pdcch_extract_llr(&ue_dl.pdcch, ue_dl.sf_symbols, ue_dl.ce, noise_estimate, tti%10, cfi)) {
       Error("Extracting PDCCH LLR\n");
       return false; 
     }
@@ -337,7 +344,11 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
   if (!srslte_ue_dl_cfg_grant(&ue_dl, grant, cfi, tti%10, rv)) {
     if (ue_dl.pdsch_cfg.grant.mcs.mod > 0 && ue_dl.pdsch_cfg.grant.mcs.tbs >= 0) {
       
-      float noise_estimate = 0.01;//1./srslte_chest_dl_get_snr(&ue_dl.chest)/4;
+      float noise_estimate = 1./srslte_chest_dl_get_snr(&ue_dl.chest);
+      
+      if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
+        noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
+      }
       
 #ifdef LOG_EXECTIME
       struct timeval t[3];

@@ -91,6 +91,11 @@ imei = 353490069873319
 # continuous_tx:        Enable/disable continuous transmission mode (true/false)
 #                        Default disabled.
 # nof_phy_threads:      Selects the number of PHY threads (maximum 4, minimum 1, default 2)
+#
+# equalizer_mode:       Selects equalizer mode. Valid modes are: "mmse", "zf" or any 
+#                       non-negative real number to indicate a regularized zf coefficient.
+#                       Default is zf. 
+#
 #####################################################################
 [expert]
 #prach_gain = 60
@@ -105,4 +110,4 @@ imei = 353490069873319
 #enable_64qam_attach = false
 #continuous_tx = false
 #nof_phy_threads = 2
-
+#equalizer_mode = mmse
