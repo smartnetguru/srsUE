@@ -121,8 +121,8 @@ typedef struct {
 }expert_args_t;
 
 typedef struct {
-  std::string   usrp_args;
   rf_args_t     rf;
+  rf_cal_t      rf_cal; 
   pcap_args_t   pcap;
   trace_args_t  trace;
   log_args_t    log;

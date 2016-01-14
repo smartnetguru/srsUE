@@ -144,7 +144,7 @@ bool ue::init(all_args_t *args_)
     dev_args = (char*) args->rf.device_args.c_str();
   }
   
-  if(!radio.init(dev_name, dev_args))
+  if(!radio.init(dev_args, dev_name))
   {
     printf("Failed to find device %s with args %s\n",
            args->rf.device_name.c_str(), args->rf.device_args.c_str());
@@ -153,11 +153,13 @@ bool ue::init(all_args_t *args_)
   
   // Set RF options
   if (args->rf.time_adv_us.compare("auto")) {
-    radio.set_tx_adv(atoi(args->rf.time_adv_us.c_str()));
+    radio.set_tx_adv(atof(args->rf.time_adv_us.c_str()));
   }  
   if (args->rf.burst_preamble.compare("auto")) {
-    radio.set_burst_preamble(atoi(args->rf.burst_preamble.c_str()));    
+    radio.set_burst_preamble(atof(args->rf.burst_preamble.c_str()));    
   }
+  
+  radio.set_manual_calibration(&args->rf_cal);
   
   phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
   

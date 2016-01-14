@@ -31,6 +31,17 @@
 #ifndef RADIO_H
 #define RADIO_H
 
+typedef struct {
+  float         tx_corr_dc_gain;
+  float         tx_corr_dc_phase;
+  float         tx_corr_iq_i;
+  float         tx_corr_iq_q; 
+  float         rx_corr_dc_gain;
+  float         rx_corr_dc_phase;
+  float         rx_corr_iq_i;
+  float         rx_corr_iq_q; 
+}rf_cal_t; 
+
 
 namespace srslte {
   
@@ -43,8 +54,10 @@ namespace srslte {
       bool init(char *args = NULL, char *devname = NULL);
       bool start_agc(bool tx_gain_same_rx);
       
-      void set_burst_preamble(int preamble_us);
-      void set_tx_adv(int tx_adv_us);
+      void set_burst_preamble(double preamble_us);
+      void set_tx_adv(double tx_adv_us);
+      
+      void set_manual_calibration(rf_cal_t *calibration);
       
       void get_time(srslte_timestamp_t *now);
       bool tx(void *buffer, uint32_t nof_samples, srslte_timestamp_t tx_time);
@@ -102,11 +115,11 @@ namespace srslte {
       double cur_tx_srate;
   
       // Define default values for known radios
-      const static double uhd_default_burst_preamble_sec = 0.4e-3;
-      const static double uhd_default_tx_adv_sec         = 0.0; 
+      const static double uhd_default_burst_preamble_sec = 600*1e-6;
+      const static double uhd_default_tx_adv_sec         = 20.83*1e-6; 
       
       const static double blade_default_burst_preamble_sec = 0.0;
-      const static double blade_default_tx_adv_sec         = 0.0; 
+      const static double blade_default_tx_adv_sec         = 7.29*1e-6; 
       
 
       

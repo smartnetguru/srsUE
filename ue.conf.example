@@ -9,15 +9,14 @@
 # rx_gain: Optional receive gain (dB). Disables AGC if enabled
 #
 # Optional parameters: 
-# device_name: Supported options are "auto", "UHD" or "bladeRF" 
-# device_args: Arguments for the device. Options are "auto" or any string. 
-#              Default for UHD: "recv_frame_size=9232,num_recv_frames=64,send_frame_size=9232,num_send_frames=64"
+# device_name: Device driver family. Supported options: "auto" (uses first found), "UHD" or "bladeRF" 
+# device_args: Arguments for the device driver. Options are "auto" or any string. 
+#              Default for UHD: "recv_frame_size=9232,send_frame_size=9232"
 #              Default for bladeRF: ""
 # time_adv_us: Transmission time advance to compensate for RF delay from antenna to timestamp insertion. 
-#              Default "auto" choses the best depending on the hardware, otherwise select a non-negative integer
-# burst_preamble_us: Preamble length to transmit before start of burst. Default is "auto" otherwise any non-negative integer 
-#              Note: In USRP the option "auto" sets a default value of 400 us, which 
-#              is needed to compensate for the RF circuits OFF->ON transition time. 
+#              Default "auto". B210 USRP: 20.8 us, bladeRF: 7.8 us.
+# burst_preamble_us: Preamble length to transmit before start of burst. 
+#              Default "auto". B210 USRP: 400 us, bladeRF: 0 us. 
 #####################################################################
 [rf]
 dl_freq = 2680000000
@@ -132,10 +131,10 @@ imei = 353490069873319
 
 
 #####################################################################
-# bladeRF calibration
+# Manual RF calibration
 #
 # Applies DC offset and IQ imbalance to TX and RX modules. 
-# This configuration is only used if the detected device is a bladeRF
+# Currently this configuration is only used if the detected device is a bladeRF
 #
 # tx_corr_dc_gain: TX DC offset gain correction
 # tx_corr_dc_phase: TX DC offset phase correction
@@ -143,7 +142,7 @@ imei = 353490069873319
 # tx_corr_iq_q: TX IQ imbalance quadrature correction
 # same can be configured for rx_*
 #####################################################################
-[bladerf_correction]
+[rf_calibration]
 tx_corr_dc_gain = 20
 tx_corr_dc_phase = 184
 tx_corr_iq_i = 19
