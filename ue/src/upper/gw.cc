@@ -207,7 +207,9 @@ void gw::run_thread()
             {
               gw_log->info_hex(pdu->msg, pdu->N_bytes, "UL PDU");
 
-              rrc->mo_data();
+              while(!rrc->rrc_connected() || !rrc->have_drb()) {
+                usleep(1000);
+              }
               
               // Send PDU directly to PDCP
               pdcp->write_sdu(RB_ID_DRB1, pdu);

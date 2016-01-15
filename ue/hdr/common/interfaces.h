@@ -109,7 +109,8 @@ public:
 class rrc_interface_gw
 {
 public:
-  virtual void mo_data() = 0;
+  virtual bool rrc_connected() = 0;
+  virtual bool have_drb() = 0;
 };
 
 // RRC interface for PDCP

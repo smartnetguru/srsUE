@@ -91,6 +91,7 @@ private:
 
   rrc_state_t           state;
   uint8_t               transaction_id;
+  bool                  drb_up;
 
   uint8_t               k_rrc_enc[32];
   uint8_t               k_rrc_int[32];
@@ -115,7 +116,8 @@ private:
   uint16_t get_mnc();
 
   // GW interface
-  void mo_data();
+  bool rrc_connected();
+  bool have_drb();
 
   // PDCP interface
   void write_pdu(uint32_t lcid, byte_buffer_t *pdu);
