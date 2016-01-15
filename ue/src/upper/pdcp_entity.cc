@@ -62,11 +62,10 @@ void pdcp_entity::init(rlc_interface_pdcp            *rlc_,
 
   if(cnfg)
   {
-    if(LIBLTE_RRC_PDCP_SN_SIZE_12_BITS == cnfg->rlc_um_pdcp_sn_size)
-    {
-      sn_len = 12;
-    } else {
-      sn_len = 7;
+    if(cnfg->rlc_um_pdcp_sn_size_present) {
+      if(LIBLTE_RRC_PDCP_SN_SIZE_7_BITS == cnfg->rlc_um_pdcp_sn_size) {
+        sn_len = 7;
+      }
     }
     // TODO: handle remainder of cnfg
   }
