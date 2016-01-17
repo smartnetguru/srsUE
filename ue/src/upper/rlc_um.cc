@@ -102,6 +102,32 @@ void rlc_um::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
   }
 }
 
+void rlc_um::reset()
+{
+  mac_timers->get(reordering_timeout_id)->stop();
+  vt_us    = 0;
+  vr_ur    = 0;
+  vr_ux    = 0;
+  vr_uh    = 0;
+  pdu_lost = false;
+  rx_sdu->reset();
+  tx_sdu->reset();
+
+  // Drop all messages in TX SDU queue
+  byte_buffer_t *buf;
+  while(tx_sdu_queue.size() > 0) {
+    tx_sdu_queue.read(&buf);
+    pool->deallocate(buf);
+  }
+
+  // Drop all messages in RX window
+  std::map<uint32_t, rlc_umd_pdu_t>::iterator it;
+  for(it = rx_window.begin(); it != rx_window.end(); it++) {
+    pool->deallocate(it->second.buf);
+  }
+  rx_window.clear();
+}
+
 rlc_mode_t rlc_um::get_mode()
 {
   return RLC_MODE_UM;
