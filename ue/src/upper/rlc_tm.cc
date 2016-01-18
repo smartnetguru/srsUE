@@ -76,6 +76,7 @@ uint32_t rlc_tm::get_bearer()
 // PDCP interface
 void rlc_tm::write_sdu(byte_buffer_t *sdu)
 {
+  log->info_hex(sdu->msg, sdu->N_bytes, "%s Tx SDU", rb_id_text[lcid]);
   ul_queue.write(sdu);
 }
 

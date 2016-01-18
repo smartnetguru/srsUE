@@ -180,7 +180,6 @@ void mac::run_thread() {
       if (sr_procedure.need_random_access()) {
         ra_procedure.start_mac_order();
       }
-            
       ra_procedure.step(tti);
       //phr_procedure.step(tti);
 

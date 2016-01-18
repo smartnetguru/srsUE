@@ -55,7 +55,9 @@ void rlc::init(pdcp_interface_rlc *pdcp_,
 }
 
 void rlc::stop()
-{}
+{
+  reset();
+}
 
 void rlc::reset()
 {
@@ -63,6 +65,8 @@ void rlc::reset()
     if(rlc_array[i].active())
       rlc_array[i].reset();
   }
+
+  rlc_array[0].init(RLC_MODE_TM, rlc_log, RB_ID_SRB0, pdcp, rrc, mac_timers); // SRB0
 }
 
 /*******************************************************************************

@@ -47,6 +47,15 @@ void pdcp::init(rlc_interface_pdcp *rlc_, rrc_interface_pdcp *rrc_, gw_interface
 void pdcp::stop()
 {}
 
+void pdcp::reset()
+{
+  for(uint32_t i=0;i<SRSUE_N_RADIO_BEARERS;i++) {
+    pdcp_array[i].reset();
+  }
+
+  pdcp_array[0].init(rlc, rrc, gw, pdcp_log, RB_ID_SRB0); // SRB0
+}
+
 /*******************************************************************************
   RRC/GW interface
 *******************************************************************************/
@@ -100,7 +109,7 @@ bool pdcp::valid_lcid(uint32_t lcid)
     return false;
   }
   if(!pdcp_array[lcid].is_active()) {
-    pdcp_log->error("RLC entity for logical channel %d has not been activated", lcid);
+    pdcp_log->error("PDCP entity for logical channel %d has not been activated\n", lcid);
     return false;
   }
   return true;

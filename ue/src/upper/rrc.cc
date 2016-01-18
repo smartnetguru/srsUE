@@ -37,6 +37,7 @@ namespace srsue{
 
 rrc::rrc()
   :state(RRC_STATE_IDLE)
+  ,drb_up(false)
 {}
 
 void rrc::init(phy_interface_rrc     *phy_,
@@ -103,6 +104,28 @@ uint16_t rrc::get_mnc()
     return sib1.plmn_id[0].id.mnc;
   else
     return 0;
+}
+
+/*******************************************************************************
+  GW interface
+*******************************************************************************/
+
+bool rrc::rrc_connected()
+{
+  if(RRC_STATE_RRC_CONNECTED == state) {
+    return true;
+  }
+  if(RRC_STATE_IDLE == state) {
+    rrc_log->info("RRC in IDLE state - sending connection request.\n");
+    state = RRC_STATE_WAIT_FOR_CON_SETUP;
+    send_con_request();
+  }
+  return false;
+}
+
+bool rrc::have_drb()
+{
+  return drb_up;
 }
 
 /*******************************************************************************
@@ -204,11 +227,17 @@ void rrc::send_con_request()
 {
   rrc_log->debug("Preparing RRC Connection Request");
   LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
+  LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
 
   // Prepare ConnectionRequest packet
   ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REQ;
-  ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE;
-  ul_ccch_msg.msg.rrc_con_req.ue_id.random = 1000;
+  if(nas->get_s_tmsi(&s_tmsi)) {
+    ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI;
+    ul_ccch_msg.msg.rrc_con_req.ue_id.s_tmsi = s_tmsi;
+  } else {
+    ul_ccch_msg.msg.rrc_con_req.ue_id_type = LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE;
+    ul_ccch_msg.msg.rrc_con_req.ue_id.random = 1000;
+  }
   ul_ccch_msg.msg.rrc_con_req.cause = LIBLTE_RRC_CON_REQ_EST_CAUSE_MO_SIGNALLING;
   liblte_rrc_pack_ul_ccch_msg(&ul_ccch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
 
@@ -263,8 +292,9 @@ void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
   srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
   pdcp_buf->N_bytes = bit_buf.N_bits/8;
 
-  rrc_log->info("Sending RRC Connection Setup Complete\n");
   state = RRC_STATE_RRC_CONNECTED;
+  rrc_log->console("RRC Connected\n");
+  rrc_log->info("Sending RRC Connection Setup Complete\n");
   pdcp->write_sdu(RB_ID_SRB1, pdcp_buf);
 }
 
@@ -516,8 +546,12 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
     }
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_RRC_CON_RELEASE:
-    state = RRC_STATE_IDLE;
-    rrc_log->console("RRC Connection released, reconnection not enabled.\n");
+    drb_up = false;
+    state  = RRC_STATE_IDLE;
+    mac->reset();
+    rlc->reset();
+    pdcp->reset();
+    rrc_log->console("RRC Connection released.\n");
     break;
   default:
     break;
@@ -940,7 +974,8 @@ void rrc::add_srb(LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT *srb_cnfg)
 {
   // Setup PDCP
   pdcp->add_bearer(srb_cnfg->srb_id);
-  pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int);
+  if(RB_ID_SRB2 == srb_cnfg->srb_id)
+    pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int);
 
   // Setup RLC
   if(srb_cnfg->rlc_cnfg_present)
@@ -1025,6 +1060,7 @@ void rrc::add_drb(LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT *drb_cnfg)
   mac->setup_lcid(lcid, 3, 2, prioritized_bit_rate, bucket_size_duration);
 
   drbs[lcid] = *drb_cnfg;
+  drb_up     = true;
   rrc_log->info("Added radio bearer %s\n", rb_id_text[lcid]);
 }
 
