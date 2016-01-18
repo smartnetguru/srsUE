@@ -67,7 +67,7 @@ void sr_proc::step(uint32_t tti)
             phy_h->sr_send();
           }
         } else {
-          // TODO: Instruct higher-layers to release PUCCH/SRS, clear downlink assignments and uplink grants
+          params_db->set_param(mac_interface_params::SR_PUCCH_CONFIGURED, 0);
           do_ra = true; 
           reset(); 
         }

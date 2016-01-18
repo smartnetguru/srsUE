@@ -109,6 +109,8 @@ void mac::reconfiguration()
 void mac::reset()
 {
   bzero(&metrics, sizeof(mac_metrics_t));
+ 
+  Info("Resetting MAC\n");
   
   timers_db.stop_all();
   upper_timers_thread.reset();
@@ -137,6 +139,8 @@ void mac::reset()
   
   params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_ST, -1);
   params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_LEN, -1);
+  
+  params_db.set_param(mac_interface_params::SR_PUCCH_CONFIGURED, 0);
 }
 
 void mac::run_thread() {

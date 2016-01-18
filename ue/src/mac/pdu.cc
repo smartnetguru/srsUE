@@ -201,7 +201,7 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
   }
 
   if (log_h) {
-    log_h->info("Wrote PDU: pdu_len=%d, header_and_ce=%d (%d+%d), nof_subh=%d, last_sdu=%d, sdu_len=%d, onepad=%d, multi=%d\n", 
+    log_h->debug("Wrote PDU: pdu_len=%d, header_and_ce=%d (%d+%d), nof_subh=%d, last_sdu=%d, sdu_len=%d, onepad=%d, multi=%d\n", 
          pdu_len, header_sz+ce_payload_sz, header_sz, ce_payload_sz, 
          nof_subheaders, last_sdu_idx, total_sdu_len, onetwo_padding, rem_len);
   } else {

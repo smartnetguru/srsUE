@@ -588,8 +588,8 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
   snprintf(timestr, 64, ", total_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-  Info("PUSCH: power=%.2f dBm, gain=%.1f dB, tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s%s\n", 
-         tx_power, gain, (tti+4)%10240,
+  Info("PUSCH: power=%.2f dBm, tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s%s\n", 
+         tx_power, (tti+4)%10240,
          grant->L_prb, grant->n_prb[0], 
          grant->mcs.tbs/8, grant->mcs.mod, grant->mcs.idx, rv,
          uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",
@@ -664,7 +664,7 @@ void phch_worker::encode_srs()
   float gain = set_power(tx_power);
   uint32_t fi = srslte_vec_max_fi((float*) signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb));
   float *f = (float*) signal_buffer;
-  Info("SRS: power=%.2f dBm, gain=%.1f, amp=%.1f, tti_tx=%d%s\n", tx_power, gain, f[fi], (tti+4)%10240, timestr);
+  Info("SRS: power=%.2f dBm, tti_tx=%d%s\n", tx_power, (tti+4)%10240, timestr);
   
 }
 
