@@ -60,6 +60,7 @@ void bsr_proc::reset()
   timer_retx = false; 
   params_db->set_param(mac_interface_params::BSR_TIMER_RETX, 0);
   reset_sr = false; 
+  sr_is_sent = false; 
   triggered_bsr_type = NONE; 
   for (int i=0;i<MAX_LCID;i++)  {
     lcg[i]        = -1; 
