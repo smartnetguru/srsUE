@@ -39,14 +39,6 @@
 bsr_proc::bsr_proc()
 {
   initiated = false; 
-  timer_periodic = false; 
-  timer_retx = false; 
-  reset_sr = false; 
-  for (int i=0;i<MAX_LCID;i++)  {
-    lcg[i]        = -1; 
-    priorities[i] = -1; 
-    last_pending_data[i] = 0; 
-  }        
   last_print = 0; 
   triggered_bsr_type=NONE; 
 }
@@ -57,16 +49,23 @@ void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* pa
   rlc       = rlc_; 
   params_db = params_db_;
   timers_db = timers_db_; 
+  reset();
   initiated = true;
-  // Enable CCCH
-  lcg[0] = 0; 
-  priorities[0] = 99; 
 }
 
 void bsr_proc::reset()
 {
+  timer_periodic = false; 
+  timer_retx = false; 
+  reset_sr = false; 
   triggered_bsr_type = NONE; 
-  
+  for (int i=0;i<MAX_LCID;i++)  {
+    lcg[i]        = -1; 
+    priorities[i] = -1; 
+    last_pending_data[i] = 0; 
+  }        
+  lcg[0] = 0; 
+  priorities[0] = 99;   
 }
 
 /* Process Periodic BSR */
