@@ -263,7 +263,7 @@ void ra_proc::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_p
 
 void ra_proc::tb_decoded_ok() {
   if (pcap) {
-    pcap->write_dl_crnti(rar_pdu_buffer, rar_grant_nbytes, ra_rnti, true, rar_grant_tti);            
+    pcap->write_dl_ranti(rar_pdu_buffer, rar_grant_nbytes, ra_rnti, true, rar_grant_tti);            
   }
   
   rDebug("RAR decoded successfully TBS=%d\n", rar_grant_nbytes);
