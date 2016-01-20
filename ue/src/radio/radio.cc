@@ -48,13 +48,12 @@ bool radio::init(char *args, char *devname)
   is_start_of_burst = true; 
   bzero(zeros, burst_preamble_max_samples*sizeof(cf_t));
   
-  /* Set default values each known device */
+  tx_adv_auto = true; 
+  /* Set default preamble length each known device */
   if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
     burst_preamble_sec = uhd_default_burst_preamble_sec;
-    tx_adv_sec         = uhd_default_tx_adv_sec;
   } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
     burst_preamble_sec = blade_default_burst_preamble_sec;
-    tx_adv_sec         = blade_default_tx_adv_sec;
   }
   
   return true;    
@@ -82,6 +81,7 @@ void radio::set_burst_preamble(double preamble_us)
 void radio::set_tx_adv(double tx_adv_us)
 {
   printf("Set time advance %f us\n", tx_adv_us);
+  tx_adv_auto = false;
   tx_adv_sec = tx_adv_us/1e6;;
 }
 
@@ -280,6 +280,34 @@ void radio::set_tx_srate(float srate)
     fprintf(stderr, "Error setting TX srate %.1f MHz. Maximum frequency for zero prepadding is 30.72 MHz\n", srate*1e-6);
   }
   burst_preamble_time_rounded = (double) burst_preamble_samples/cur_tx_srate;  
+  
+  /* Set time advance for each known device if in auto mode */
+  if (tx_adv_auto) {
+    if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
+      double srate_khz = round(cur_tx_srate/1e3);
+      if (srate_khz == 1.92e3) {
+        tx_adv_sec = 109*16*SRSLTE_LTE_TS;
+      } else if (srate_khz == 3.84e3) {
+        tx_adv_sec = 56*16*SRSLTE_LTE_TS;
+      } else if (srate_khz == 5.76e3) {
+        tx_adv_sec = 40*16*SRSLTE_LTE_TS;
+      } else if (srate_khz == 11.52e3) {
+        tx_adv_sec = 33*16*SRSLTE_LTE_TS;
+      } else if (srate_khz == 15.36e3) {
+        tx_adv_sec = 25*16*SRSLTE_LTE_TS;
+      } else if (srate_khz == 23.04e3) {
+        tx_adv_sec = 18*16*SRSLTE_LTE_TS;
+      } else {
+        printf("interpolating, srate=%f kHz\n", srate_khz);
+        /* Interpolate from known values */
+        tx_adv_sec = uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec;        
+      }
+      printf("tx_adv=%f us, ta=%f\n", tx_adv_sec*1e6, tx_adv_sec/(16*SRSLTE_LTE_TS));
+    } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
+      tx_adv_sec = blade_default_tx_adv_sec;
+    }
+  }
+  
 }
 
 void radio::start_rx()

@@ -115,8 +115,10 @@ namespace srslte {
       double cur_tx_srate;
   
       // Define default values for known radios
+      bool tx_adv_auto;
       const static double uhd_default_burst_preamble_sec = 600*1e-6;
-      const static double uhd_default_tx_adv_sec         = 20.83*1e-6; 
+      const static double uhd_default_tx_adv_samples     = 98;
+      const static double uhd_default_tx_adv_offset_sec  = 4*1e-6; 
       
       const static double blade_default_burst_preamble_sec = 0.0;
       const static double blade_default_tx_adv_sec         = 7.29*1e-6; 
