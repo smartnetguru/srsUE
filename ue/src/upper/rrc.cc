@@ -509,6 +509,7 @@ void rrc::parse_dl_ccch(byte_buffer_t *pdu)
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;
   pool->deallocate(pdu);
+  bzero(&dl_ccch_msg, sizeof(LIBLTE_RRC_DL_CCCH_MSG_STRUCT));
   liblte_rrc_unpack_dl_ccch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &dl_ccch_msg);
 
   rrc_log->info("SRB0 - Received %s\n",
