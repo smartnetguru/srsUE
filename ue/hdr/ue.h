@@ -67,7 +67,7 @@ typedef struct {
   float         tx_gain;
   std::string   device_name; 
   std::string   device_args; 
-  std::string   time_adv_us; 
+  std::string   time_adv_nsamples; 
   std::string   burst_preamble; 
 }rf_args_t;
 

@@ -55,7 +55,7 @@ namespace srslte {
       bool start_agc(bool tx_gain_same_rx);
       
       void set_burst_preamble(double preamble_us);
-      void set_tx_adv(double tx_adv_us);
+      void set_tx_adv(uint32_t nsamples);
       
       void set_manual_calibration(rf_cal_t *calibration);
       
@@ -103,7 +103,6 @@ namespace srslte {
       
       srslte_rf_t rf_device; 
       
-      double tx_adv_sec; // Transmission time advance to compensate for antenna->timestamp delay
       
       const static uint32_t burst_preamble_max_samples = 30720000;  // 30.72 MHz is maximum frequency
       double burst_preamble_sec;// Start of burst preamble time (off->on RF transition time)      
@@ -113,7 +112,10 @@ namespace srslte {
       double burst_preamble_time_rounded; // preamble time rounded to sample time
       cf_t zeros[burst_preamble_max_samples]; 
       double cur_tx_srate;
-  
+
+      double   tx_adv_sec; // Transmission time advance to compensate for antenna->timestamp delay
+      uint32_t tx_adv_nsamples; // Transmision time advance in number of samples
+      
       // Define default values for known radios
       bool tx_adv_auto;
       const static double uhd_default_burst_preamble_sec = 600*1e-6;
@@ -121,7 +123,8 @@ namespace srslte {
       const static double uhd_default_tx_adv_offset_sec  = 4*1e-6; 
       
       const static double blade_default_burst_preamble_sec = 0.0;
-      const static double blade_default_tx_adv_sec         = 7.29*1e-6; 
+      const static double blade_default_tx_adv_samples     = 27;
+      const static double blade_default_tx_adv_offset_sec  = 1e-6; 
       
 
       
