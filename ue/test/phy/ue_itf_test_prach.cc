@@ -207,6 +207,9 @@ public:
   }
   
   bool rar_rnti_set;
+
+  void pch_decoded_ok(uint32_t len) {} 
+
   
   void tti_clock(uint32_t tti) {
     if (!rar_rnti_set) {

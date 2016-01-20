@@ -481,16 +481,18 @@ public:
         printf("SIB1 received %d bytes, CellID=%d, si_window=%d, sib2_period=%d\n", 
                 nof_bytes, dlsch_msg.sibs[0].sib.sib1.cell_id&0xfff, si_window_len, sib2_period);          
         sib1_decoded = true;         
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+        mac.bcch_stop_rx();        
       } else if (dlsch_msg.sibs[0].sib_type == LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2) {
         
         printf("SIB2 received %d bytes\n", nof_bytes);
         setup_mac_phy_sib2(&dlsch_msg.sibs[0].sib.sib2, &mac, &phy);        
         sib2_decoded = true; 
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+        mac.bcch_stop_rx();
       }
     }
   }
+  
+  void write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes) {}
   
 private:
   LIBLTE_BIT_MSG_STRUCT  bit_msg; 
@@ -555,13 +557,11 @@ int main(int argc, char *argv[])
       if (!my_rlc.sib1_decoded) {
         usleep(10000);
         tti = mac.get_current_tti();           
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, sib_start_tti(tti, 2, 5));
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, 1);                
+        mac.bcch_start_rx(sib_start_tti(tti, 2, 5), 1);        
       } else if (!my_rlc.sib2_decoded) {        
         usleep(10000);
         tti = mac.get_current_tti(); 
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, sib_start_tti(tti, my_rlc.sib2_period, 0));
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, my_rlc.si_window_len);              
+        mac.bcch_start_rx(sib_start_tti(tti, my_rlc.sib2_period, 0), my_rlc.si_window_len);                     
       }
     }
     usleep(50000);

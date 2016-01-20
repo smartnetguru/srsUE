@@ -120,6 +120,7 @@ public:
   virtual void write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual void write_pdu_bcch_bch(byte_buffer_t *pdu) = 0;
   virtual void write_pdu_bcch_dlsch(byte_buffer_t *pdu) = 0;
+  virtual void write_pdu_pcch(byte_buffer_t *pdu) = 0;
 };
 
 // RRC interface for RLC
@@ -154,6 +155,7 @@ public:
   virtual void write_pdu(uint32_t lcid, byte_buffer_t *sdu) = 0;
   virtual void write_pdu_bcch_bch(byte_buffer_t *sdu) = 0;
   virtual void write_pdu_bcch_dlsch(byte_buffer_t *sdu) = 0;
+  virtual void write_pdu_pcch(byte_buffer_t *sdu) = 0;
 };
 
 // RLC interface for RRC
@@ -193,6 +195,7 @@ public:
   virtual void write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes) = 0;
   virtual void write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes) = 0;
   virtual void write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes) = 0;
+  virtual void write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes) = 0;
 };
 
 } // namespace srsue

@@ -103,6 +103,9 @@ public:
   /* Indicate successfull decoding of BCH TB through PBCH */
   virtual void bch_decoded_ok(uint8_t *payload, uint32_t len) = 0;  
   
+  /* Indicate successfull decoding of PCH TB through PDSCH */
+  virtual void pch_decoded_ok(uint32_t len) = 0;  
+  
   /* Function called every start of a subframe (TTI). Warning, this function is called 
    * from a high priority thread and should terminate asap 
    */
@@ -120,11 +123,6 @@ public:
       
       RNTI_TEMP,
       RNTI_C,
-      
-      BCCH_SI_WINDOW_ST,
-      BCCH_SI_WINDOW_LEN,
-
-      PCCH_RECEIVE,
       
       CONTENTION_ID, // Transmitted UE Contention ID
       
@@ -183,7 +181,16 @@ class mac_interface_rrc
     :public mac_interface_params
 {
 public:
+  
+  /* Instructs the MAC to start receiving BCCH */
+  virtual void    bcch_start_rx() = 0; 
+  virtual void    bcch_stop_rx() = 0; 
+  virtual void    bcch_start_rx(int si_window_start, int si_window_length) = 0;
 
+  /* Instructs the MAC to start receiving PCCH */
+  virtual void    pcch_start_rx() = 0; 
+  virtual void    pcch_stop_rx() = 0; 
+  
   /* RRC configures a logical channel */
   virtual void    setup_lcid(uint32_t lcid, uint32_t lcg, uint32_t priority, int PBR_x_tti, uint32_t BSD) = 0;
 

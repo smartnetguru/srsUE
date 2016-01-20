@@ -60,6 +60,8 @@ public:
   void start_pcap(mac_pcap* pcap);
   int  get_current_tbs(uint32_t harq_pid);
 
+  void set_si_window_length(int si_window_length);
+  
 private:  
   
   
@@ -101,6 +103,7 @@ private:
   srslte::log     *log_h;
   mac_pcap        *pcap; 
   uint16_t         last_temporal_crnti;
+  int si_window_length;
 };
 
 } // namespace srsue

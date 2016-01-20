@@ -99,6 +99,11 @@ void pdcp::write_pdu_bcch_dlsch(byte_buffer_t *sdu)
   rrc->write_pdu_bcch_dlsch(sdu);
 }
 
+void pdcp::write_pdu_pcch(byte_buffer_t *sdu)
+{
+  rrc->write_pdu_pcch(sdu);
+}
+
 /*******************************************************************************
   Helpers
 *******************************************************************************/

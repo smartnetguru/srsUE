@@ -47,9 +47,6 @@ mac::mac() : ttisync(10240),
 {
   started = false;  
   pcap    = NULL;   
-  si_search_in_progress = false; 
-  si_window_length = -1; 
-  si_window_start  = -1; 
   signals_pregenerated = false; 
 }
   
@@ -63,6 +60,8 @@ bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, srslte::log *log_h_)
   is_synchronized = false;   
   last_temporal_crnti = 0; 
   phy_rnti = 0; 
+  
+  srslte_softbuffer_rx_init(&pch_softbuffer, 100);
   
   bsr_procedure.init(       rlc_h, log_h, &params_db, &timers_db);
   phr_procedure.init(phy_h,        log_h, &params_db, &timers_db);
@@ -137,9 +136,6 @@ void mac::reset()
   signals_pregenerated = false; 
   is_first_ul_grant = true; 
   
-  params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_ST, -1);
-  params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_LEN, -1);
-  
   params_db.set_param(mac_interface_params::SR_PUCCH_CONFIGURED, 0);
 }
 
@@ -162,8 +158,6 @@ void mac::run_thread() {
     if (started) {
       log_h->step(tti);
         
-      search_si_rnti();
-      
       // Step all procedures 
       bsr_procedure.step(tti);
       phr_procedure.step(tti);
@@ -207,36 +201,38 @@ void mac::run_thread() {
   }  
 }
 
-void mac::search_si_rnti() 
+void mac::bcch_start_rx()
 {
-
-  // Cancel expired SI searches
-  if ((tti >= si_window_start + si_window_length + 2) && si_search_in_progress) {
-    si_search_in_progress = false; 
-    phy_h->pdcch_dl_search_reset();
-    Debug("SI search window expired (%d >= %d+%d)\n", tti, si_window_start, si_window_length);
-    params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_ST, -1);
-    params_db.set_param(mac_interface_params::BCCH_SI_WINDOW_LEN, -1);
-  }
-
-  // Setup PDCCH search
-  int _si_window_start  = params_db.get_param(mac_interface_params::BCCH_SI_WINDOW_ST); 
-  int _si_window_length = params_db.get_param(mac_interface_params::BCCH_SI_WINDOW_LEN); 
-  
-
-  if (_si_window_length > 0 && _si_window_start >= 0 && !si_search_in_progress) {     
-    si_window_length = _si_window_length;
-    si_window_start  = _si_window_start;
-    Debug("Searching for DL grant for SI-RNTI window_st=%d, window_len=%d\n", si_window_start, si_window_length);
-    phy_h->pdcch_dl_search(SRSLTE_RNTI_SI, 0xffff, si_window_start, si_window_start+si_window_length);
-    si_search_in_progress = true; 
-  } 
-  if ((_si_window_length < 0 || _si_window_start < 0) && si_search_in_progress) {
-    phy_h->pdcch_dl_search_reset();
-    si_search_in_progress = false; 
-    Debug("SI search interrupted by higher layers\n");
-  }
+  bcch_start_rx(tti, -1);
 }
+
+void mac::bcch_start_rx(int si_window_start, int si_window_length)
+{
+  if (si_window_length >= 0 && si_window_start >= 0) {
+    dl_harq.set_si_window_length(si_window_length);
+    phy_h->pdcch_dl_search(SRSLTE_RNTI_SI, SRSLTE_SIRNTI, si_window_start, si_window_start+si_window_length);
+  } else {
+    phy_h->pdcch_dl_search(SRSLTE_RNTI_SI, SRSLTE_SIRNTI, si_window_start);
+  }
+  Info("Searching for DL grant for SI-RNTI window_st=%d, window_len=%d\n", si_window_start, si_window_length);  
+}
+
+void mac::bcch_stop_rx()
+{
+  phy_h->pdcch_dl_search_reset();
+}
+
+void mac::pcch_start_rx()
+{
+  phy_h->pdcch_dl_search(SRSLTE_RNTI_PCH, SRSLTE_PRNTI);
+  Info("Searching for DL grant for P-RNTI\n");  
+}
+
+void mac::pcch_stop_rx()
+{
+  phy_h->pdcch_dl_search_reset();
+}
+
 
 void mac::tti_clock(uint32_t tti)
 {
@@ -246,11 +242,21 @@ void mac::tti_clock(uint32_t tti)
 
 void mac::bch_decoded_ok(uint8_t* payload, uint32_t len)
 {
-  // Send MIB to RRC 
+  // Send MIB to RLC 
   rlc_h->write_pdu_bcch_bch(payload, len);
   
   if (pcap) {
     pcap->write_dl_bch(payload, len, true, phy_h->get_current_tti());
+  }
+}
+
+void mac::pch_decoded_ok(uint32_t len)
+{
+  // Send PCH payload to RLC 
+  rlc_h->write_pdu_pcch(pch_payload_buffer, len);
+  
+  if (pcap) {
+    pcap->write_dl_pch(pch_payload_buffer, len, true, phy_h->get_current_tti());
   }
 }
 
@@ -269,6 +275,20 @@ void mac::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::
 {
   if (grant.rnti_type == SRSLTE_RNTI_RAR) {
     ra_procedure.new_grant_dl(grant, action);
+  } else if (grant.rnti_type == SRSLTE_RNTI_PCH) {
+
+    memcpy(&action->phy_grant, &grant.phy_grant, sizeof(srslte_phy_grant_t));
+    action->generate_ack = false; 
+    action->decode_enabled = true; 
+    srslte_softbuffer_rx_reset_cb(&pch_softbuffer, 1);
+    action->payload_ptr = pch_payload_buffer;
+    action->softbuffer  = &pch_softbuffer;
+    action->rnti = grant.rnti;
+    action->rv   = grant.rv; 
+    if (grant.n_bytes > pch_payload_buffer_sz) {
+      Error("Received grant for PCH (%d bytes) exceeds buffer (%d bytes)\n", grant.n_bytes, pch_payload_buffer_sz);
+      action->decode_enabled = false; 
+    }
   } else {
     // If PDCCH for C-RNTI and RA procedure in Contention Resolution, notify it
     if (grant.rnti_type == SRSLTE_RNTI_USER) {
@@ -277,8 +297,8 @@ void mac::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::
       }
     }
     dl_harq.new_grant_dl(grant, action);
+    metrics.rx_pkts++;
   }
-  metrics.rx_pkts++;
 }
 
 uint32_t mac::get_current_tti()

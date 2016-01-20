@@ -236,7 +236,11 @@ void phch_worker::work_imp()
   phy->worker_end(tx_tti, signal_ready, signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb), tx_time);
   
   if (dl_action.decode_enabled && !dl_action.generate_ack_callback) {
-    phy->mac->tb_decoded(dl_ack, dl_mac_grant.rnti_type, dl_mac_grant.pid);
+    if (dl_mac_grant.rnti_type == SRSLTE_RNTI_PCH) {
+      phy->mac->pch_decoded_ok(dl_mac_grant.n_bytes);
+    } else {
+      phy->mac->tb_decoded(dl_ack, dl_mac_grant.rnti_type, dl_mac_grant.pid);
+    }
   }
 
   update_measurements();
@@ -373,7 +377,7 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
 
       // Store metrics
       dl_metrics.mcs    = grant->mcs.idx;
-
+      
       return ack; 
     } else {
       Warning("Received grant for TBS=0\n");

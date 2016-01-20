@@ -123,6 +123,15 @@ void rlc::write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes)
   pdcp->write_pdu_bcch_dlsch(buf);
 }
 
+void rlc::write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes)
+{
+  rlc_log->info_hex(payload, nof_bytes, "PCCH message received.");
+  byte_buffer_t *buf = pool->allocate();
+  memcpy(buf->msg, payload, nof_bytes);
+  buf->N_bytes = nof_bytes;
+  pdcp->write_pdu_pcch(buf);
+}
+
 /*******************************************************************************
   RRC interface
 *******************************************************************************/

@@ -194,7 +194,7 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
                        ss.str().c_str());
       
       state = RRC_STATE_SIB2_SEARCH;
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+      mac->bcch_stop_rx();
       //TODO: Use all SIB1 info
 
     } else if (LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2 == dlsch_msg.sibs[0].sib_type && RRC_STATE_SIB2_SEARCH == state) {
@@ -203,10 +203,34 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
       rrc_log->console("SIB2 received\n");
       rrc_log->info("SIB2 received\n");
       state = RRC_STATE_WAIT_FOR_CON_SETUP;
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+      mac->bcch_stop_rx();
       apply_sib2_configs();
       send_con_request();
     }
+  }
+}
+
+void rrc::write_pdu_pcch(byte_buffer_t *pdu)
+{
+  rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
+  LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
+  srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
+  bit_buf.N_bits = pdu->N_bytes*8;
+  pool->deallocate(pdu);
+  liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
+  
+  printf("Received paging hex: ");
+  srslte_vec_fprint_hex(stdout, bit_buf.msg, bit_buf.N_bits);
+  
+  if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
+    pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
+  }
+  
+  for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
+    rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i, pcch_msg.paging_record_list_size, 
+                  pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+    rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i, pcch_msg.paging_record_list_size, 
+                     pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
   }
 }
 
@@ -295,6 +319,7 @@ void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
   state = RRC_STATE_RRC_CONNECTED;
   rrc_log->console("RRC Connected\n");
   rrc_log->info("Sending RRC Connection Setup Complete\n");
+  mac->pcch_stop_rx();
   pdcp->write_sdu(RB_ID_SRB1, pdcp_buf);
 }
 
@@ -552,6 +577,7 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
     rlc->reset();
     pdcp->reset();
     rrc_log->console("RRC Connection released.\n");
+    mac->pcch_start_rx();
     break;
   default:
     break;
@@ -584,11 +610,10 @@ void rrc::sib_search()
       while(!phy->status_is_sync()){
         usleep(50000);
       }
-      usleep(10000);
+      usleep(10000); 
       tti          = mac->get_current_tti();
       si_win_start = sib_start_tti(tti, 2, 5);
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, si_win_start);
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, 1);
+      mac->bcch_start_rx(si_win_start, 1);
       rrc_log->debug("Instructed MAC to search for SIB1, win_start=%d, win_len=%d\n",
                      si_win_start, 1);
 
@@ -601,8 +626,7 @@ void rrc::sib_search()
       si_win_start = sib_start_tti(tti, period, 0);
       si_win_len   = liblte_rrc_si_window_length_num[sib1.si_window_length];
 
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST,  si_win_start);
-      mac->set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, si_win_len);
+      mac->bcch_start_rx(si_win_start, si_win_len);
       rrc_log->debug("Instructed MAC to search for SIB2, win_start=%d, win_len=%d\n",
                      si_win_start, si_win_len);
 

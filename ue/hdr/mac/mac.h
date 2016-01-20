@@ -68,11 +68,17 @@ public:
   void harq_recv(uint32_t tti, bool ack, tb_action_ul_t *action);
   void new_grant_dl(mac_grant_t grant, tb_action_dl_t *action);
   void tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t harq_pid);
-  void bch_decoded_ok(uint8_t *payload, uint32_t len);  
+  void bch_decoded_ok(uint8_t *payload, uint32_t len);
+  void pch_decoded_ok(uint32_t len);    
   void tti_clock(uint32_t tti);
 
   
   /******** Interface from RLC (RLC -> MAC) ****************/ 
+  void bcch_start_rx(); 
+  void bcch_stop_rx(); 
+  void bcch_start_rx(int si_window_start, int si_window_length);
+  void pcch_start_rx(); 
+  void pcch_stop_rx(); 
   void setup_lcid(uint32_t lcid, uint32_t lcg, uint32_t priority, int PBR_x_tti, uint32_t BSD);
   void reconfiguration(); 
   void reset(); 
@@ -104,9 +110,7 @@ public:
   
 private:  
   void run_thread(); 
-  void search_si_rnti();
   
-
   static const int MAC_MAIN_THREAD_PRIO = 5; 
   static const int MAC_PDU_THREAD_PRIO  = 6;
 
@@ -138,6 +142,11 @@ private:
   bsr_proc      bsr_procedure; 
   phr_proc      phr_procedure; 
   
+  /* Buffers for PCH reception (not included in DL HARQ) */
+  const static uint32_t  pch_payload_buffer_sz = 8*1024;
+  srslte_softbuffer_rx_t pch_softbuffer;
+  uint8_t                pch_payload_buffer[pch_payload_buffer_sz]; 
+  
   /* Functions for MAC Timers */
   srslte::timers  timers_db;
   void            setup_timers();
@@ -145,9 +154,6 @@ private:
   
   // pointer to MAC PCAP object
   mac_pcap* pcap;
-  bool si_search_in_progress;
-  int si_window_length;
-  int si_window_start;
   bool signals_pregenerated;
   bool is_first_ul_grant;
 
