@@ -179,9 +179,7 @@ void mac::run_thread() {
         ra_procedure.start_mac_order();
       }
       ra_procedure.step(tti);
-      //phr_procedure.step(tti);
 
-      // FIXME: Do here DTX and look for UL grants only when needed
       if (ra_procedure.is_successful() && !signals_pregenerated) {
         // Configure PHY to look for UL C-RNTI grants
         uint16_t crnti = params_db.get_param(mac_interface_params::RNTI_C);
@@ -189,10 +187,8 @@ void mac::run_thread() {
         phy_h->pdcch_dl_search(SRSLTE_RNTI_USER, crnti);
         
         // Pregenerate UL signals and C-RNTI scrambling sequences
-        Info("Pre-generating UL signals and C-RNTI scrambling sequences\n");
-        ((phy*) phy_h)->enable_pregen_signals(true);
+        Info("Pre-computing C-RNTI scrambling sequences for C-RNTI=0x%x\n", crnti);
         ((phy*) phy_h)->set_crnti(crnti);
-        Info("Done\n");
         signals_pregenerated = true; 
       }
       

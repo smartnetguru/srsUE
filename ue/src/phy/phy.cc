@@ -78,6 +78,9 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, srslte::lo
   // Warning this must be initialized after all workers have been added to the pool
   sf_recv.init(radio_handler, mac, &prach_buffer, &workers_pool, &workers_common, log_h, SF_RECV_THREAD_PRIO);
 
+  // Enable UL signal pregeneration by default
+  enable_pregen_signals(true);
+
   return true; 
 }
 

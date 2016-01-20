@@ -102,6 +102,7 @@ bool phch_common::ul_rnti_active(uint32_t tti) {
 }
 
 bool phch_common::dl_rnti_active(uint32_t tti) {
+  Debug("tti=%d, dl_rnti_start=%d, dl_rnti_end=%d, dl_rnti=%d\n", tti, dl_rnti_start, dl_rnti_end, dl_rnti);
   if (((tti >= dl_rnti_start && dl_rnti_start >= 0)  || dl_rnti_start < 0) && 
       ((tti <  dl_rnti_end   && dl_rnti_end   >= 0)  || dl_rnti_end   < 0))
   {
@@ -182,9 +183,7 @@ void phch_common::set_dl_rnti(srslte_rnti_type_t type, uint16_t rnti_value, int 
   dl_rnti_type  = type;
   dl_rnti_start = tti_start;
   dl_rnti_end   = tti_end;
-  if (rnti_value) {
-    Debug("Set DL rnti: start=%d, end=%d, value=0x%x\n", tti_start, tti_end, rnti_value);
-  }
+  Debug("Set DL rnti: start=%d, end=%d, value=0x%x\n", tti_start, tti_end, rnti_value);  
 }
 
 void phch_common::reset_pending_ack(uint32_t tti) {
