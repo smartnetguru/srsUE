@@ -219,9 +219,6 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
   pool->deallocate(pdu);
   liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
   
-  printf("Received paging hex: ");
-  srslte_vec_fprint_hex(stdout, bit_buf.msg, bit_buf.N_bits);
-  
   if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
     pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
   }
