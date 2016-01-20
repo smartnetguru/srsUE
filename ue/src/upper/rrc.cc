@@ -225,12 +225,30 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
   if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
     pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
   }
+
+  LIBLTE_RRC_S_TMSI_STRUCT s_tmsi;
+  if(!nas->get_s_tmsi(&s_tmsi)) {
+    rrc_log->info("No S-TMSI present in NAS\n");
+    return;
+  }
   
+  LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi_paged;
   for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
-    rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i, pcch_msg.paging_record_list_size, 
+    s_tmsi_paged = &pcch_msg.paging_record_list[i].ue_identity.s_tmsi;
+    rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
                   pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
-    rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i, pcch_msg.paging_record_list_size, 
+    rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
                      pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+    if(s_tmsi.mmec == s_tmsi_paged->mmec && s_tmsi.m_tmsi == s_tmsi_paged->m_tmsi) {
+      rrc_log->info("S-TMSI match in paging message\n");
+      rrc_log->console("S-TMSI match in paging message\n");
+      mac->pcch_stop_rx();
+      if(RRC_STATE_IDLE == state) {
+        rrc_log->info("RRC in IDLE state - sending connection request.\n");
+        state = RRC_STATE_WAIT_FOR_CON_SETUP;
+        send_con_request();
+      }
+    }
   }
 }
 
@@ -319,7 +337,6 @@ void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
   state = RRC_STATE_RRC_CONNECTED;
   rrc_log->console("RRC Connected\n");
   rrc_log->info("Sending RRC Connection Setup Complete\n");
-  mac->pcch_stop_rx();
   pdcp->write_sdu(RB_ID_SRB1, pdcp_buf);
 }
 
