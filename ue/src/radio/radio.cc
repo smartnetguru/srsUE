@@ -35,7 +35,6 @@ namespace srslte {
 
 bool radio::init(char *args, char *devname)
 {
-  printf("Opening RF device...\n");
   if (srslte_rf_open_devname(&rf_device, devname, args)) {
     fprintf(stderr, "Error opening RF device\n");
     return false;
@@ -80,7 +79,6 @@ void radio::set_burst_preamble(double preamble_us)
 
 void radio::set_tx_adv(uint32_t nsamples)
 {
-  printf("Set time advance %d samples\n", nsamples);
   tx_adv_auto = false;
   tx_adv_nsamples = nsamples;;
 }
@@ -92,7 +90,6 @@ void radio::tx_offset(int offset_)
 
 bool radio::start_agc(bool tx_gain_same_rx)
 {
-  printf("Starting AGC thread...\n");
   if (srslte_rf_start_gain_thread(&rf_device, tx_gain_same_rx)) {
     fprintf(stderr, "Error opening RF device\n");
     return false;
@@ -298,17 +295,15 @@ void radio::set_tx_srate(float srate)
       } else if (srate_khz == 23.04e3) {
         tx_adv_sec = 18*16*SRSLTE_LTE_TS;
       } else {
-        printf("interpolating, srate=%f kHz\n", srate_khz);
         /* Interpolate from known values */
         tx_adv_sec = uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec;        
       }
-      printf("tx_adv=%f us, ta=%f\n", tx_adv_sec*1e6, tx_adv_sec/(16*SRSLTE_LTE_TS));
     } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
         tx_adv_sec = 30*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 16*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 15*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
         tx_adv_sec = 14*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
@@ -322,12 +317,10 @@ void radio::set_tx_srate(float srate)
         /* Interpolate from known values */
         tx_adv_sec = blade_default_tx_adv_samples * (1/cur_tx_srate) + blade_default_tx_adv_offset_sec;        
       }
-      printf("tx_adv=%f us, ta=%f\n", tx_adv_sec*1e6, tx_adv_sec/(16*SRSLTE_LTE_TS));
     }
   } else {
     tx_adv_sec = tx_adv_nsamples * (1/cur_tx_srate);
   }
-  
 }
 
 void radio::start_rx()
