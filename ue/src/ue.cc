@@ -161,7 +161,7 @@ bool ue::init(all_args_t *args_)
   
   radio.set_manual_calibration(&args->rf_cal);
   
-  phy.init(&radio, &mac, &phy_log, args->expert.nof_phy_threads);
+  phy.init(&radio, &mac, &rrc, &phy_log, args->expert.nof_phy_threads);
   
   if (args->rf.rx_gain < 0) {
     radio.start_agc(false);    
@@ -188,7 +188,7 @@ bool ue::init(all_args_t *args_)
 
   phy_log.console("Setting frequency: DL=%.1f Mhz, UL=%.1f MHz\n", args->rf.dl_freq/1e6, args->rf.ul_freq/1e6);
 
-  mac.init(&phy, &rlc, &mac_log);
+  mac.init(&phy, &rlc, &rrc, &mac_log);
   rlc.init(&pdcp, &rrc, this, &rlc_log, &mac);
   pdcp.init(&rlc, &rrc, &gw, &pdcp_log);
   rrc.init(&phy, &mac, &rlc, &pdcp, &nas, &usim, &rrc_log);

@@ -40,6 +40,7 @@
 #include "common/task_dispatcher.h"
 #include "common/trace.h"
 #include "common/mac_interface.h"
+#include "common/interfaces.h"
 
 namespace srsue {
     
@@ -51,7 +52,7 @@ class phy
 {
 public:
   phy();
-  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
+  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phymac *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
   void stop();
 
   void set_agc_enable(bool enabled);
@@ -137,7 +138,7 @@ private:
   
   /* Current time advance */
   uint32_t     n_ta;
-  
+    
   bool init_(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, bool do_agc, uint32_t nof_workers);
 
 };

@@ -56,7 +56,7 @@ class mac
 {
 public:
   mac();
-  bool init(phy_interface *phy, rlc_interface_mac *rlc, srslte::log *log_h);
+  bool init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_phymac* rrc, srslte::log *log_h);
   void stop();
 
   void get_metrics(mac_metrics_t &m);
@@ -115,10 +115,10 @@ private:
   static const int MAC_PDU_THREAD_PRIO  = 6;
 
   // Interaction with PHY 
-  tti_sync_cv        ttisync; 
-  phy_interface     *phy_h; 
-  rlc_interface_mac *rlc_h; 
-  srslte::log       *log_h;
+  tti_sync_cv          ttisync; 
+  phy_interface        *phy_h; 
+  rlc_interface_mac    *rlc_h; 
+  srslte::log          *log_h;
   
   mac_params    params_db; 
   

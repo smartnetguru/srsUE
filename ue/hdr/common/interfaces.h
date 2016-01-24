@@ -95,6 +95,13 @@ public:
   virtual bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi) = 0;
 };
 
+// RRC interface for PHY/MAC
+class rrc_interface_phymac
+{
+public:
+  virtual void connection_release() = 0;
+};
+
 // RRC interface for NAS
 class rrc_interface_nas
 {

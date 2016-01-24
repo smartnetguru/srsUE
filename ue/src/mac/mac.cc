@@ -50,11 +50,11 @@ mac::mac() : ttisync(10240),
   signals_pregenerated = false; 
 }
   
-bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, srslte::log *log_h_)
+bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_phymac *rrc, srslte::log *log_h_)
 {
   started = false; 
   phy_h = phy;
-  rlc_h = rlc; 
+  rlc_h = rlc;   
   log_h = log_h_; 
   tti = 0; 
   is_synchronized = false;   
@@ -68,7 +68,7 @@ bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, srslte::log *log_h_)
   mux_unit.init     (       rlc_h, log_h,                         &bsr_procedure, &phr_procedure);
   demux_unit.init   (phy_h, rlc_h, log_h,             &timers_db);
   ra_procedure.init (phy_h,        log_h, &params_db, &timers_db, &mux_unit, &demux_unit);
-  sr_procedure.init (phy_h,        log_h, &params_db);
+  sr_procedure.init (phy_h, rrc,   log_h, &params_db);
   ul_harq.init      (              log_h, &params_db, &timers_db, &mux_unit);
   dl_harq.init      (              log_h, &params_db, &timers_db, &demux_unit);
 

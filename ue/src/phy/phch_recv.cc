@@ -43,12 +43,14 @@ phch_recv::phch_recv() {
   running = false; 
 }
 
-bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, prach* _prach_buffer, srslte::thread_pool* _workers_pool,
+bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc_interface_phymac *_rrc, 
+                     prach* _prach_buffer, srslte::thread_pool* _workers_pool,
                      phch_common* _worker_com, srslte::log* _log_h, uint32_t prio)
 {
   radio_h      = _radio_handler;
   log_h        = _log_h;     
-  mac          = _mac; 
+  mac          = _mac;
+  rrc          = _rrc; 
   workers_pool = _workers_pool;
   worker_com   = _worker_com;
   prach_buffer = _prach_buffer; 
@@ -361,10 +363,11 @@ void phch_recv::run_thread()
             workers_pool->start_worker(worker);             
             mac->tti_clock(tti);
           } else {
-            log_h->console("Sync Error!\n");
+            log_h->console("Sync error: releasing RRC connection...\n");
             worker->release();
             phy_state = SYNCING;
             worker_com->reset_ul();
+            rrc->connection_release();
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here

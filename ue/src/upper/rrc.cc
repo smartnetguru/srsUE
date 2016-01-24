@@ -107,6 +107,16 @@ uint16_t rrc::get_mnc()
 }
 
 /*******************************************************************************
+  PHY/MAC interface
+*******************************************************************************/
+/* Forces a UE-initiated connection release after a synchronization error or SR timeout */
+void rrc::connection_release()
+{
+  rrc_connection_release(); 
+}
+
+
+/*******************************************************************************
   GW interface
 *******************************************************************************/
 
@@ -586,13 +596,7 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
     }
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_RRC_CON_RELEASE:
-    drb_up = false;
-    state  = RRC_STATE_IDLE;
-    mac->reset();
-    rlc->reset();
-    pdcp->reset();
-    rrc_log->console("RRC Connection released.\n");
-    mac->pcch_start_rx();
+    rrc_connection_release();
     break;
   default:
     break;
@@ -602,6 +606,16 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
 /*******************************************************************************
   Helpers
 *******************************************************************************/
+
+void rrc::rrc_connection_release() {
+    drb_up = false;
+    state  = RRC_STATE_IDLE;
+    mac->reset();
+    rlc->reset();
+    pdcp->reset();
+    rrc_log->console("RRC Connection released.\n");
+    mac->pcch_start_rx();
+}
 
 void* rrc::start_sib_thread(void *rrc_)
 {

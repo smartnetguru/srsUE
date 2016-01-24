@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 
   // Init Radio and PHY
   radio.init();
-  my_phy.init(&radio, &my_mac, &log);
+  my_phy.init(&radio, &my_mac, NULL, &log);
   if (prog_args.rf_gain > 0) {
     radio.set_rx_gain(prog_args.rf_gain);     
   } else {
