@@ -203,7 +203,7 @@ void rlc_um::timer_expired(uint32_t timeout_id)
     log->debug("%s reordering timeout expiry - updating vr_ur and reassembling\n",
                rb_id_text[lcid]);
 
-    log->warning("Lost PDU SN: %d", vr_ur);
+    log->warning("Lost PDU SN: %d\n", vr_ur);
     pdu_lost = true;
     rx_sdu->reset();
     while(RX_MOD_BASE(vr_ur) < RX_MOD_BASE(vr_ux))

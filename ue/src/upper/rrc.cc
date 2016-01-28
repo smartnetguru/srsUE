@@ -811,6 +811,16 @@ void rrc::apply_sib2_configs()
 
 void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
 {
+  // PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_ACK, 10);
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_CQI, 15);
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_RI, 12);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUSCH, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_MCS_EN, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_ACC_EN, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUCCH, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_SRS_OFFSET, 7);
+
   LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg = &setup->rr_cnfg;
   if(cnfg->phy_cnfg_ded_present)
   {
@@ -818,16 +828,16 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
       LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT *phy_cnfg = &cnfg->phy_cnfg_ded;
       if(phy_cnfg->pucch_cnfg_ded_present)
       {
-          //TODO
+        //TODO
       }
       if(phy_cnfg->pusch_cnfg_ded_present)
       {
-          phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_ACK,
-                         phy_cnfg->pusch_cnfg_ded.beta_offset_ack_idx);
-          phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_CQI,
-                         phy_cnfg->pusch_cnfg_ded.beta_offset_cqi_idx);
-          phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_RI,
-                         phy_cnfg->pusch_cnfg_ded.beta_offset_ri_idx);
+        phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_ACK,
+                       phy_cnfg->pusch_cnfg_ded.beta_offset_ack_idx);
+        phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_CQI,
+                       phy_cnfg->pusch_cnfg_ded.beta_offset_cqi_idx);
+        phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_RI,
+                       phy_cnfg->pusch_cnfg_ded.beta_offset_ri_idx);
       }
       if(phy_cnfg->ul_pwr_ctrl_ded_present)
       {
@@ -920,6 +930,10 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
                    phy_cnfg->srs_ul_cnfg_ded.cyclic_shift);
   }
 
+  // MAC MAIN CONFIG Defaults (3GPP 36.331 v10 9.2.2)
+  mac->set_param(srsue::mac_interface_params::HARQ_MAXTX, 5);
+  mac->set_param(srsue::mac_interface_params::BSR_TIMER_PERIODIC, -1);
+  mac->set_param(srsue::mac_interface_params::BSR_TIMER_RETX, 2560);
 
   if(cnfg->mac_main_cnfg_present && !cnfg->mac_main_cnfg.default_value)
   {
