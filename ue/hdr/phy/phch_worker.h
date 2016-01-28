@@ -96,6 +96,8 @@ private:
   srslte::trace<uint32_t> tr_exec;
   bool trace_enabled; 
   
+  const static float SNR_FILTER_COEFF = 0.5; 
+
   /* Common objects */  
   phch_common    *phy;
   srslte_cell_t  cell; 
@@ -130,14 +132,14 @@ private:
   uint32_t                          I_sr; 
   float                             cfo;
   bool                              rar_cqi_request;
-  double snr;
-
+  
   // Metrics
   dl_metrics_t dl_metrics;
   ul_metrics_t ul_metrics;
   
 #ifdef LOG_EXECTIME
   struct timeval logtime_start[3]; 
+  bool chest_done;
 #endif
   
 };

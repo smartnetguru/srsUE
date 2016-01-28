@@ -79,7 +79,8 @@ namespace srsue {
     float cur_pusch_power;
     float rsrp_filtered;
     float rx_gain_offset;
-
+    float avg_snr_db; 
+    
     phch_common(uint32_t max_mutex);
     void init(phy_params *_params, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac);
     

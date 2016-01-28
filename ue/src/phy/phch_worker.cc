@@ -90,8 +90,6 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   
   cell_initiated = true; 
   
-  snr = 0; 
-  
   return true; 
 }
 
@@ -259,6 +257,9 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
       Error("Getting PDCCH FFT estimate\n");
       return false; 
     }        
+    chest_done = true; 
+  } else {
+    chest_done = false; 
   }
   if (decode_pdcch) { /* and not in DRX mode */
     
@@ -524,16 +525,17 @@ void phch_worker::set_uci_periodic_cqi()
       if (period_cqi.format_is_subband) {
         // TODO: Implement subband periodic reports
         cqi_report.type = SRSLTE_CQI_TYPE_SUBBAND;
-        snr = SRSLTE_VEC_EMA(10*log10f(srslte_chest_dl_get_snr(&ue_dl.chest)), snr, 0.2);
-        cqi_report.subband.subband_cqi = srslte_cqi_from_snr(snr);
+        cqi_report.subband.subband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);
         cqi_report.subband.subband_label = 0;
         phy->log_h->console("Warning: Subband CQI periodic reports not implemented\n");
-        Info("CQI: subband snr=%.1f dB, cqi=%d\n", snr, cqi_report.subband.subband_cqi);
+        Info("CQI: subband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.subband.subband_cqi);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        snr = SRSLTE_VEC_EMA(10*log10f(srslte_chest_dl_get_snr(&ue_dl.chest)), snr, 0.2);
-        cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(snr);        
-        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", snr, cqi_report.wideband.wideband_cqi);
+        cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);        
+        if (cqi_report.wideband.wideband_cqi > 15) {
+          cqi_report.wideband.wideband_cqi = 15;
+        }
+        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.wideband.wideband_cqi);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       
@@ -807,66 +809,81 @@ float phch_worker::set_power(float tx_power) {
 
 void phch_worker::update_measurements() 
 {
+  if (chest_done) {
     /* Compute ADC/RX gain offset every 20 ms */
-  if ((tti%20) == 0 || phy->rx_gain_offset == 0) {
-    float rx_gain_offset = 0; 
-    if (phy->get_radio()->has_rssi()) {
-      float rssi_all_signal = srslte_chest_dl_get_rssi(&ue_dl.chest);          
-      if (rssi_all_signal) {
-        rx_gain_offset = 10*log10(rssi_all_signal)-phy->get_radio()->get_rssi();
+    if ((tti%20) == 0 || phy->rx_gain_offset == 0) {
+      float rx_gain_offset = 0; 
+      if (phy->get_radio()->has_rssi()) {
+        float rssi_all_signal = srslte_chest_dl_get_rssi(&ue_dl.chest);          
+        if (rssi_all_signal) {
+          rx_gain_offset = 10*log10(rssi_all_signal)-phy->get_radio()->get_rssi();
+        } else {
+          rx_gain_offset = 0; 
+        }
       } else {
-        rx_gain_offset = 0; 
+        if (phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET) > 0) {
+          rx_gain_offset = (float) phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET);
+        } else {
+          rx_gain_offset = phy->get_radio()->get_rx_gain();
+        }
       }
-    } else {
-      if (phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET) > 0) {
-        rx_gain_offset = (float) phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET);
+      if (phy->rx_gain_offset) {
+        phy->rx_gain_offset = SRSLTE_VEC_EMA(phy->rx_gain_offset, rx_gain_offset, 0.1);
       } else {
-        rx_gain_offset = phy->get_radio()->get_rx_gain();
+        phy->rx_gain_offset = rx_gain_offset; 
       }
     }
+    
+    if (isnan(phy->avg_snr_db)) {
+      phy->avg_snr_db = 0; 
+    }
+
+    // Average SNR 
+    float cur_snr = 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest));
+    if (!isnan(cur_snr)) {
+      if (phy->avg_snr_db) {       
+        phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);
+      } else {
+        phy->avg_snr_db = cur_snr;
+      }
+    }
+        
+    // Adjust measurements with RX gain offset    
     if (phy->rx_gain_offset) {
-      phy->rx_gain_offset = SRSLTE_VEC_EMA(phy->rx_gain_offset, rx_gain_offset, 0.1);
-    } else {
-      phy->rx_gain_offset = rx_gain_offset; 
+      float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
+      float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
+      float rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
+
+      
+      // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
+      if (!phy->rsrp_filtered) {
+        phy->rsrp_filtered = rsrp;
+      } else {
+        uint32_t k = 4; // Set by RRC reconfiguration message
+        float coeff = pow(0.5,(float) k/4);
+        phy->rsrp_filtered = SRSLTE_VEC_EMA(phy->rsrp_filtered, rsrp, coeff);
+        if (isnan(phy->rsrp_filtered) || isinf(phy->rsrp_filtered)) {
+          phy->rsrp_filtered = 0; 
+        }
+      }    
+      // Compute PL
+      float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
+      phy->pathloss = tx_crs_power - phy->rsrp_filtered;
+
+      // Store metrics
+      dl_metrics.n      = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+      dl_metrics.rsrp   = phy->rsrp_filtered;
+      dl_metrics.rsrq   = rsrq;
+      dl_metrics.rssi   = rssi;
+      dl_metrics.pathloss = phy->pathloss;
+      dl_metrics.sinr   = phy->avg_snr_db;
+      dl_metrics.turbo_iters = srslte_pdsch_last_noi(&ue_dl.pdsch);
+      phy->set_dl_metrics(dl_metrics);
+      
+      phy->set_ul_metrics(ul_metrics);
+
     }
   }
-  
-  // Adjust measurements with RX gain offset    
-  if (phy->rx_gain_offset) {
-    float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-    float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-    float rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
-
-    
-    // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
-    if (!phy->rsrp_filtered) {
-      phy->rsrp_filtered = rsrp;
-    } else {
-      uint32_t k = 4; // Set by RRC reconfiguration message
-      float coeff = pow(0.5,(float) k/4);
-      phy->rsrp_filtered = SRSLTE_VEC_EMA(phy->rsrp_filtered, rsrp, coeff);
-      if (isnan(phy->rsrp_filtered) || isinf(phy->rsrp_filtered)) {
-        phy->rsrp_filtered = 0; 
-      }
-    }    
-    // Compute PL
-    float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
-    phy->pathloss = tx_crs_power - phy->rsrp_filtered;
-
-    // Store metrics
-    dl_metrics.n      = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-    dl_metrics.rsrp   = phy->rsrp_filtered;
-    dl_metrics.rsrq   = rsrq;
-    dl_metrics.rssi   = rssi;
-    dl_metrics.pathloss = phy->pathloss;
-    dl_metrics.sinr   = 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest));
-    dl_metrics.turbo_iters = srslte_pdsch_last_noi(&ue_dl.pdsch);
-    phy->set_dl_metrics(dl_metrics);
-    
-    phy->set_ul_metrics(ul_metrics);
-
-  }
-
 }
 
 

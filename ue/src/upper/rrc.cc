@@ -112,7 +112,9 @@ uint16_t rrc::get_mnc()
 /* Forces a UE-initiated connection release after a synchronization error or SR timeout */
 void rrc::connection_release()
 {
-  rrc_connection_release(); 
+  if (state == RRC_STATE_RRC_CONNECTED) {
+    rrc_connection_release(); 
+  }
 }
 
 
