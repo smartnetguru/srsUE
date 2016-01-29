@@ -38,6 +38,7 @@
 
 namespace srsue {
 
+
 phch_worker::phch_worker() : tr_exec(10240)
 {
   phy = NULL; 
@@ -367,7 +368,7 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
       get_time_interval(t);
       snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
 #endif
-      
+            
       Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
              grant->nof_prb, harq_pid, 
              grant->mcs.tbs/8, grant->mcs.idx, rv, 
@@ -834,20 +835,20 @@ void phch_worker::update_measurements()
       }
     }
     
-    if (isnan(phy->avg_snr_db)) {
+    if (isnan(phy->avg_snr_db) || isinf(phy->avg_snr_db)) {
       phy->avg_snr_db = 0; 
     }
 
     // Average SNR 
     float cur_snr = 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest));
-    if (!isnan(cur_snr)) {
+    if (!isnan(cur_snr) && !isinf(cur_snr)) {
       if (phy->avg_snr_db) {       
         phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);
       } else {
         phy->avg_snr_db = cur_snr;
       }
     }
-        
+    
     // Adjust measurements with RX gain offset    
     if (phy->rx_gain_offset) {
       float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
