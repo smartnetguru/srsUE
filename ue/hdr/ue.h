@@ -37,7 +37,7 @@
 #include <string>
 #include <pthread.h>
 
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 #include "phy/phy.h"
 #include "mac/mac.h"
 #include "upper/rlc.h"
@@ -65,6 +65,10 @@ typedef struct {
   float         ul_freq;
   float         rx_gain;
   float         tx_gain;
+  std::string   device_name; 
+  std::string   device_args; 
+  std::string   time_adv_nsamples; 
+  std::string   burst_preamble; 
 }rf_args_t;
 
 typedef struct {
@@ -113,11 +117,12 @@ typedef struct {
   bool enable_64qam_attach; 
   bool continuous_tx;
   int nof_phy_threads;  
+  std::string equalizer_mode; 
 }expert_args_t;
 
 typedef struct {
-  std::string   usrp_args;
   rf_args_t     rf;
+  rf_cal_t      rf_cal; 
   pcap_args_t   pcap;
   trace_args_t  trace;
   log_args_t    log;
@@ -139,8 +144,8 @@ public:
 
   bool init(all_args_t *args_);
   void stop();
-  static void uhd_msg(const char* msg);
-  void handle_uhd_msg(const char* msg);
+  static void rf_msg(srslte_rf_error_t error);
+  void handle_rf_msg(srslte_rf_error_t error);
 
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
@@ -150,7 +155,7 @@ private:
   ue();
   ~ue();
 
-  srslte::radio_uhd radio_uhd;
+  srslte::radio radio;
   srsue::phy        phy;
   srsue::mac        mac;
   srsue::mac_pcap   mac_pcap;
@@ -162,7 +167,7 @@ private:
   srsue::usim       usim;
 
   srsue::logger     logger;
-  srsue::log_filter uhd_log;
+  srsue::log_filter rf_log;
   srsue::log_filter phy_log;
   srsue::log_filter mac_log;
   srsue::log_filter rlc_log;
@@ -176,7 +181,7 @@ private:
 
   all_args_t       *args;
   bool              started;
-  uhd_metrics_t     uhd_metrics;
+  rf_metrics_t     rf_metrics;
 
   srslte::LOG_LEVEL_ENUM level(std::string l);
   

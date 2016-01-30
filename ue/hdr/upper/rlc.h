@@ -72,8 +72,10 @@ public:
   void     write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes);
+  void     write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes);
 
   // RRC interface
+  void reset();
   void add_bearer(uint32_t lcid);
   void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg=NULL);
 
@@ -84,7 +86,7 @@ private:
   rrc_interface_rlc  *rrc;
   mac_interface_timers *mac_timers; 
   ue_interface       *ue;
-  rlc_entity         *rlc_array[SRSUE_N_RADIO_BEARERS];
+  rlc_entity          rlc_array[SRSUE_N_RADIO_BEARERS];
 
   bool valid_lcid(uint32_t lcid);
 };

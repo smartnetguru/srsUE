@@ -57,16 +57,8 @@ phy::phy() : workers_pool(MAX_WORKERS),
 {
 }
 
-bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, srslte::log *log_h, uint32_t nof_workers) {
-  return init_(radio_handler_, mac, log_h, false, nof_workers);
-}
-
-bool phy::init_agc(srslte::radio* radio_handler_, mac_interface_phy *mac, srslte::log *log_h, uint32_t nof_workers) {
-  return init_(radio_handler_, mac, log_h, true, nof_workers);
-}
-
-
-bool phy::init_(srslte::radio* radio_handler_, mac_interface_phy *mac, srslte::log *log_h_, bool do_agc, uint32_t nof_workers_)
+bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phymac *rrc, 
+               srslte::log *log_h_, uint32_t nof_workers_)
 {
 
   mlockall(MCL_CURRENT | MCL_FUTURE);
@@ -85,10 +77,19 @@ bool phy::init_(srslte::radio* radio_handler_, mac_interface_phy *mac, srslte::l
   workers_common.init(&params_db, log_h, radio_handler, mac);
   
   // Warning this must be initialized after all workers have been added to the pool
-  sf_recv.init(radio_handler, mac, &prach_buffer, &workers_pool, &workers_common, log_h, do_agc, SF_RECV_THREAD_PRIO);
+  sf_recv.init(radio_handler, mac, rrc, &prach_buffer, &workers_pool, &workers_common, log_h, SF_RECV_THREAD_PRIO);
+
+  // Enable UL signal pregeneration by default
+  enable_pregen_signals(true);
 
   return true; 
 }
+
+void phy::set_agc_enable(bool enabled)
+{
+  sf_recv.set_agc_enable(enabled);
+}
+
 void phy::start_trace()
 {
   for (int i=0;i<nof_workers;i++) {

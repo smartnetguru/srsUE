@@ -33,14 +33,14 @@
 namespace srsue {
 
 typedef struct {
-  uint32_t uhd_o;
-  uint32_t uhd_u;
-  uint32_t uhd_l;
-  bool     uhd_error;
-}uhd_metrics_t;
+  uint32_t rf_o;
+  uint32_t rf_u;
+  uint32_t rf_l;
+  bool     rf_error;
+}rf_metrics_t;
 
 typedef struct {
-  uhd_metrics_t uhd;
+  rf_metrics_t rf;
   phy_metrics_t phy;
   mac_metrics_t mac;
 }ue_metrics_t;

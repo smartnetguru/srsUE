@@ -49,7 +49,6 @@ public:
   void     reset();
   void     init(rlc_interface_mac *rlc, srslte::log *log_h, bsr_proc *bsr_procedure, phr_proc *phr_procedure_);
 
-  bool     is_pending_ccch_sdu();
   bool     is_pending_any_sdu();
   bool     is_pending_sdu(uint32_t lcid); 
   

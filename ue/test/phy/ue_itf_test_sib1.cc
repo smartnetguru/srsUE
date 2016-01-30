@@ -30,7 +30,7 @@
 #include "phy/phy.h"
 #include "common/log_stdout.h"
 #include "common/mac_interface.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 
 
 /**********************************************************************
@@ -38,8 +38,8 @@
  ***********************************************************************/
 
 typedef struct {
-  float uhd_freq; 
-  float uhd_gain;
+  float rf_freq; 
+  float rf_gain;
 }prog_args_t;
 
 uint32_t srsapps_verbose = 0; 
@@ -47,13 +47,13 @@ uint32_t srsapps_verbose = 0;
 prog_args_t prog_args; 
 
 void args_default(prog_args_t *args) {
-  args->uhd_freq = -1.0;
-  args->uhd_gain = -1.0; 
+  args->rf_freq = -1.0;
+  args->rf_gain = -1.0; 
 }
 
 void usage(prog_args_t *args, char *prog) {
   printf("Usage: %s [gv] -f rx_frequency (in Hz)\n", prog);
-  printf("\t-g UHD RX gain [Default AGC]\n");
+  printf("\t-g RF RX gain [Default AGC]\n");
   printf("\t-v [increase verbosity, default none]\n");
 }
 
@@ -63,10 +63,10 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
   while ((opt = getopt(argc, argv, "gfv")) != -1) {
     switch (opt) {
     case 'g':
-      args->uhd_gain = atof(argv[optind]);
+      args->rf_gain = atof(argv[optind]);
       break;
     case 'f':
-      args->uhd_freq = atof(argv[optind]);
+      args->rf_freq = atof(argv[optind]);
       break;
     case 'v':
       srsapps_verbose++;
@@ -76,7 +76,7 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       exit(-1);
     }
   }
-  if (args->uhd_freq < 0) {
+  if (args->rf_freq < 0) {
     usage(args, argv[0]);
     exit(-1);
   }
@@ -122,11 +122,15 @@ public:
     }
   }
   
+  
+  
   void tb_decoded(bool ack, srslte_rnti_type_t rnti, uint32_t harq_pid) {
     if (ack) {
       total_oks++;     
     }
   }
+  
+  void pch_decoded_ok(uint32_t len) {}
 
   void bch_decoded_ok(uint8_t *payload, uint32_t len) {
     printf("BCH decoded\n");
@@ -142,7 +146,7 @@ public:
 
 
 testmac         my_mac;
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
 
 
 
@@ -154,13 +158,13 @@ int main(int argc, char *argv[])
   parse_args(&prog_args, argc, argv);
 
   // Init Radio and PHY
-  if (prog_args.uhd_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_gain);    
-    my_phy.init(&radio_uhd, &my_mac, &log);
+  radio.init();
+  my_phy.init(&radio, &my_mac, NULL, &log);
+  if (prog_args.rf_gain > 0) {
+    radio.set_rx_gain(prog_args.rf_gain);     
   } else {
-    radio_uhd.init_agc();
-    my_phy.init_agc(&radio_uhd, &my_mac, &log);
+    radio.start_agc(false);
+    my_phy.set_agc_enable(true);
   }
   
   if (srsapps_verbose == 1) {
@@ -176,7 +180,7 @@ int main(int argc, char *argv[])
   sleep(1);
     
   // Set RX freq and gain
-  radio_uhd.set_rx_freq(prog_args.uhd_freq);
+  radio.set_rx_freq(prog_args.rf_freq);
   
   my_phy.sync_start();
   
@@ -194,9 +198,9 @@ int main(int argc, char *argv[])
     usleep(30000);    
     if (bch_decoded && my_phy.status_is_sync() && total_pkts > 0) {
       if (srslte_verbose == SRSLTE_VERBOSE_NONE && srsapps_verbose == 0) {
-        float gain = prog_args.uhd_gain; 
+        float gain = prog_args.rf_gain; 
         if (gain < 0) {
-          gain = radio_uhd.get_rx_gain();
+          gain = radio.get_rx_gain();
         }
         printf("PDCCH BLER %.1f \%% PDSCH BLER %.1f \%% (total pkts: %5u) Gain: %.1f dB\r", 
             100-(float) 100*total_dci/total_pkts, 
@@ -206,5 +210,5 @@ int main(int argc, char *argv[])
     }
   }
   my_phy.stop();
-  radio_uhd.stop_rx();
+  radio.stop_rx();
 }

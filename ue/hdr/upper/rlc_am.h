@@ -30,9 +30,10 @@
 #include "common/buffer_pool.h"
 #include "common/log.h"
 #include "common/common.h"
+#include "common/interfaces.h"
 #include "common/msg_queue.h"
 #include "common/timeout.h"
-#include "upper/rlc_entity.h"
+#include "upper/rlc_common.h"
 #include <boost/thread/mutex.hpp>
 #include <map>
 #include <queue>
@@ -53,7 +54,7 @@ struct rlc_amd_tx_pdu_t{
 };
 
 class rlc_am
-    :public rlc_entity
+    :public rlc_common
 {
 public:
   rlc_am();
@@ -63,6 +64,7 @@ public:
             rrc_interface_rlc    *rrc_,
             mac_interface_timers *mac_timers);
   void configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg);
+  void reset();
 
   rlc_mode_t    get_mode();
   uint32_t      get_bearer();

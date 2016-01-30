@@ -35,6 +35,7 @@
 #include "phy/prach.h"
 #include "phy/phch_worker.h"
 #include "phy/phch_common.h"
+#include "common/interfaces.h"
 
 namespace srsue {
     
@@ -44,9 +45,11 @@ class phch_recv : public thread
 {
 public:
   phch_recv();
-  bool init(srslte::radio* radio_handler, mac_interface_phy *mac, prach *prach_buffer, srslte::thread_pool *_workers_pool,
-            phch_common *_worker_com, srslte::log* _log_h, bool do_agc, uint32_t prio);
+  bool init(srslte::radio* radio_handler, mac_interface_phy *mac,rrc_interface_phymac *rrc, 
+            prach *prach_buffer, srslte::thread_pool *_workers_pool,
+            phch_common *_worker_com, srslte::log* _log_h, uint32_t prio);
   void stop();
+  void set_agc_enable(bool enable);
   
   uint32_t get_current_tti();
   
@@ -66,12 +69,13 @@ private:
   
   bool   running; 
   
-  srslte::radio       *radio_h;
-  mac_interface_phy   *mac;
-  srslte::log         *log_h;
-  srslte::thread_pool *workers_pool;
-  phch_common         *worker_com;
-  prach               *prach_buffer;
+  srslte::radio        *radio_h;
+  mac_interface_phy    *mac;
+  rrc_interface_phymac *rrc;
+  srslte::log          *log_h;
+  srslte::thread_pool  *workers_pool;
+  phch_common          *worker_com;
+  prach                *prach_buffer;
   
   srslte_ue_sync_t    ue_sync;
   srslte_ue_mib_t     ue_mib;

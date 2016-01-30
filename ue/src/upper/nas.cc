@@ -69,9 +69,10 @@ emm_state_t nas::get_state()
 void nas::notify_connection_setup()
 {
   nas_log->debug("State = %s\n", emm_state_text[state]);
-  if(EMM_STATE_DEREGISTERED == state)
-  {
+  if(EMM_STATE_DEREGISTERED == state) {
     send_attach_request();
+  } else {
+    send_service_request();
   }
 }
 
@@ -123,6 +124,17 @@ void nas::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 uint32_t  nas::get_ul_count()
 {
   return count_ul;
+}
+
+bool      nas::get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi)
+{
+  if(is_guti_set) {
+    s_tmsi->mmec   = guti.mme_code;
+    s_tmsi->m_tmsi = guti.m_tmsi;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
@@ -334,6 +346,7 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
   nas_log->info("Received Security Mode Command\n");
   liblte_mme_unpack_security_mode_command_msg((LIBLTE_BYTE_MSG_STRUCT*)pdu, &sec_mode_cmd);
 
+  ksi = sec_mode_cmd.nas_ksi.nas_ksi;
   // FIXME: Handle nonce_ue, nonce_mme
   // FIXME: Currently only handling ciphering EEA0 (null) and integrity EIA2
   // FIXME: Use selected_nas_sec_algs to choose correct algos
@@ -474,7 +487,37 @@ void nas::gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT *msg)
 }
 
 void nas::send_identity_response(){}
-void nas::send_service_request(){}
+
+void nas::send_service_request()
+{
+  byte_buffer_t *msg = pool->allocate();
+  count_ul++;
+
+  // Pack the service request message directly
+  msg->msg[0]  = (LIBLTE_MME_SECURITY_HDR_TYPE_SERVICE_REQUEST << 4) | (LIBLTE_MME_PD_EPS_MOBILITY_MANAGEMENT);
+  msg->N_bytes++;
+  msg->msg[1]  = (ksi & 0x07) << 5;
+  msg->msg[1] |= count_ul & 0x1F;
+  msg->N_bytes++;
+
+  uint8_t mac[4];
+  liblte_security_128_eia2(&k_nas_int[16],
+                           count_ul,
+                           RB_ID_SRB1-1,
+                           LIBLTE_SECURITY_DIRECTION_UPLINK,
+                           &msg->msg[0],
+                           2,
+                           &mac[0]);
+  // Set the short MAC
+  msg->msg[2] = mac[2];
+  msg->N_bytes++;
+  msg->msg[3] = mac[3];
+  msg->N_bytes++;
+
+  nas_log->info("Sending service request\n");
+  rrc->write_sdu(RB_ID_SRB1, msg);
+}
+
 void nas::send_esm_information_response(){}
 
 } // namespace srsue

@@ -39,14 +39,6 @@
 bsr_proc::bsr_proc()
 {
   initiated = false; 
-  timer_periodic = false; 
-  timer_retx = false; 
-  reset_sr = false; 
-  for (int i=0;i<MAX_LCID;i++)  {
-    lcg[i]        = -1; 
-    priorities[i] = -1; 
-    last_pending_data[i] = 0; 
-  }        
   last_print = 0; 
   triggered_bsr_type=NONE; 
 }
@@ -57,12 +49,26 @@ void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* pa
   rlc       = rlc_; 
   params_db = params_db_;
   timers_db = timers_db_; 
+  reset();
   initiated = true;
 }
 
 void bsr_proc::reset()
 {
+  timer_periodic = false; 
+  params_db->set_param(mac_interface_params::BSR_TIMER_PERIODIC, 0);
+  timer_retx = false; 
+  params_db->set_param(mac_interface_params::BSR_TIMER_RETX, 0);
+  reset_sr = false; 
+  sr_is_sent = false; 
   triggered_bsr_type = NONE; 
+  for (int i=0;i<MAX_LCID;i++)  {
+    lcg[i]        = -1; 
+    priorities[i] = -1; 
+    last_pending_data[i] = 0; 
+  }        
+  lcg[0] = 0; 
+  priorities[0] = 99;   
 }
 
 /* Process Periodic BSR */
@@ -72,13 +78,13 @@ void bsr_proc::timer_expired(uint32_t timer_id) {
       if (triggered_bsr_type == NONE) {
         // Check condition 4 in Sec 5.4.5 
         triggered_bsr_type = PERIODIC; 
-        Debug("Triggering BSR PERIODIC\n");
+        Info("Triggering BSR PERIODIC\n");
       }
       break;
     case mac::BSR_TIMER_RETX:
       // Enable reTx of SR 
       triggered_bsr_type = REGULAR; 
-      Debug("Triggering BSR reTX\n");
+      Info("Triggering BSR reTX\n");
       sr_is_sent = false; 
       break;      
   }
@@ -145,7 +151,7 @@ bool bsr_proc::check_single_channel() {
     // If there is new data available for this logical channel 
     if (nbytes > last_pending_data[pending_data_lcid]) {
       triggered_bsr_type = REGULAR; 
-      Debug("Triggered REGULAR BSR for single LCID=%d\n", pending_data_lcid);
+      Info("Triggered REGULAR BSR for single LCID=%d\n", pending_data_lcid);
       return true; 
     } 
   }

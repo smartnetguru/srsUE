@@ -87,6 +87,58 @@ void rlc_am::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
             t_reordering, t_status_prohibit);
 }
 
+void rlc_am::reset()
+{
+  reordering_timeout.reset();
+  if(tx_sdu)
+    tx_sdu->reset();
+  if(rx_sdu)
+    rx_sdu->reset();
+
+  vt_a    = 0;
+  vt_ms   = RLC_AM_WINDOW_SIZE;
+  vt_s    = 0;
+  poll_sn = 0;
+
+  vr_r    = 0;
+  vr_mr   = RLC_AM_WINDOW_SIZE;
+  vr_x    = 0;
+  vr_ms   = 0;
+  vr_h    = 0;
+
+  pdu_without_poll  = 0;
+  byte_without_poll = 0;
+
+  poll_received = false;
+  do_status     = false;
+
+  // Drop all messages in TX SDU queue
+  byte_buffer_t *buf;
+  while(tx_sdu_queue.size() > 0) {
+    tx_sdu_queue.read(&buf);
+    pool->deallocate(buf);
+  }
+
+  // Drop all messages in RX window
+  std::map<uint32_t, rlc_amd_rx_pdu_t>::iterator rxit;
+  for(rxit = rx_window.begin(); rxit != rx_window.end(); rxit++) {
+    pool->deallocate(rxit->second.buf);
+  }
+  rx_window.clear();
+
+  // Drop all messages in TX window
+  std::map<uint32_t, rlc_amd_tx_pdu_t>::iterator txit;
+  for(txit = tx_window.begin(); txit != tx_window.end(); txit++) {
+    pool->deallocate(txit->second.buf);
+  }
+  tx_window.clear();
+
+  // Drop all messages in RETX queue
+  while(retx_queue.size() > 0)
+    retx_queue.pop();
+
+}
+
 rlc_mode_t rlc_am::get_mode()
 {
   return RLC_MODE_AM;

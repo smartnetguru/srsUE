@@ -252,6 +252,9 @@ void ul_harq_entity::ul_harq_process::run_tti(uint32_t tti_tx, mac_interface_phy
     generate_retx(tti_tx, action);
   }
   if (harq_entity->pcap && grant) {
+    if (grant->is_from_rar) {
+      grant->rnti = harq_entity->params_db->get_param(mac_interface_params::RNTI_TEMP);
+    }
     harq_entity->pcap->write_ul_crnti(pdu_ptr, grant->n_bytes, grant->rnti, get_nof_retx(), tti_tx);
   }
 

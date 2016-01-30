@@ -139,6 +139,8 @@ public:
     CONTINUOUS_TX,
     PDSCH_MAX_ITS,
     
+    EQUALIZER_COEFF,
+    
     NOF_PARAMS,    
   } phy_param_t;
 
