@@ -4,6 +4,8 @@ srsUE
 srsUE is a software radio LTE UE. It is written in C++ and builds upon the srsLTE library (https://github.com/srslte/srslte). Running on an Intel Core i7-4790, srsUE achieves up to 60Mbps DL with a 20Mhz bandwidth SISO configuration.
 srsUE is released under the AGPLv3 license and uses software from the OpenLTE project (http://sourceforge.net/projects/openlte) for some security functions and for RRC/NAS message parsing.
 
+*News*: We have just released srsUE 1.1 now supporting the bladeRF hardware. We have also added Paging and improved general stability.  
+
 Features
 --------
 
@@ -37,9 +39,12 @@ Features
 Hardware
 --------
 
-srsUE currently supports Ettus Research USRP RF front-ends through the USRP Hardware Driver (UHD). Host sample rate conversion is not supported, therefore the hardware should support configurable clock rates. We recommend the USRP B2X0 range.
+The library currently supports the Ettus Universal Hardware Driver (UHD) and the bladeRF driver. Thus, any hardware supported by UHD or bladeRF can be used. There is no sampling rate conversion, therefore the hardware should support 30.72 MHz clock in order to work correctly with LTE sampling frequencies and decode signals from live LTE base stations. 
 
-*News*: We have recently added support for the bladeRF in the `next` branch. It's still experimental so any feedback will be very appreciated. You need to compile against the srsLTE `next` branch too, in order to support the bladeRF. 
+We have tested the following hardware: 
+ * USRP B210
+ * USRP X300
+ * bladeRF
 
 Download & Install Instructions
 -------------------------------
