@@ -71,7 +71,6 @@ void sr_proc::step(uint32_t tti)
           Info("Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", sr_counter, dsr_transmax);
           log_h->console("Scheduling request failed: releasing RRC connection...\n");
           rrc->connection_release();
-          do_ra = true; 
           reset(); 
         }
       } else {

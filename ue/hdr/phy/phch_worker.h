@@ -96,7 +96,7 @@ private:
   srslte::trace<uint32_t> tr_exec;
   bool trace_enabled; 
   
-  const static float SNR_FILTER_COEFF = 0.5; 
+  const static float SNR_FILTER_COEFF = 0.1; 
 
   /* Common objects */  
   phch_common    *phy;

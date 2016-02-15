@@ -52,7 +52,6 @@ phch_common::phch_common(uint32_t max_mutex_) : tx_mutex(max_mutex_)
   rar_grant_pending = false; 
   pathloss = 0; 
   cur_pathloss = 0; 
-  rsrp_filtered = 0; 
   cur_pusch_power = 0; 
   p0_preamble = 0; 
   cur_radio_power = 0; 

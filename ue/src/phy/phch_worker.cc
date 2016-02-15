@@ -262,9 +262,9 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   } else {
     chest_done = false; 
   }
-  if (decode_pdcch) { /* and not in DRX mode */
+  if (decode_pdcch || (tti%5) == 0) { /* and not in DRX mode */
     
-    float noise_estimate = 1./srslte_chest_dl_get_snr(&ue_dl.chest);
+    float noise_estimate = phy->avg_noise;
     
     if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
       noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
@@ -835,46 +835,62 @@ void phch_worker::update_measurements()
       }
     }
     
-    if (isnan(phy->avg_snr_db) || isinf(phy->avg_snr_db)) {
-      phy->avg_snr_db = 0; 
-    }
-
-    // Average SNR 
-    float cur_snr = 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest));
-    if (!isnan(cur_snr) && !isinf(cur_snr)) {
-      if (phy->avg_snr_db) {       
-        phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);
-      } else {
-        phy->avg_snr_db = cur_snr;
-      }
-    }
-    
     // Adjust measurements with RX gain offset    
     if (phy->rx_gain_offset) {
+      float cur_rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
+      if (isnormal(cur_rsrq)) {
+        phy->avg_rsrq_db = SRSLTE_VEC_EMA(phy->avg_rsrq_db, cur_rsrq, SNR_FILTER_COEFF);
+      }
+      
+      float cur_rsrp = srslte_chest_dl_get_rsrp(&ue_dl.chest);
+      if (isnormal(cur_rsrp)) {
+        phy->avg_rsrp = SRSLTE_VEC_EMA(phy->avg_rsrp, cur_rsrp, SNR_FILTER_COEFF);
+      }
+      
+      /* Correct absolute power measurements by RX gain offset */
       float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
       float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-      float rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
-
       
       // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
-      if (!phy->rsrp_filtered) {
-        phy->rsrp_filtered = rsrp;
-      } else {
-        uint32_t k = 4; // Set by RRC reconfiguration message
-        float coeff = pow(0.5,(float) k/4);
-        phy->rsrp_filtered = SRSLTE_VEC_EMA(phy->rsrp_filtered, rsrp, coeff);
-        if (isnan(phy->rsrp_filtered) || isinf(phy->rsrp_filtered)) {
-          phy->rsrp_filtered = 0; 
-        }
-      }    
+      if (isnormal(rsrp)) {
+        if (!phy->avg_rsrp_db) {
+          phy->avg_rsrp_db = rsrp;
+        } else {
+          uint32_t k = 4; // Set by RRC reconfiguration message
+          float coeff = pow(0.5,(float) k/4);
+          phy->avg_rsrp_db = SRSLTE_VEC_EMA(phy->avg_rsrp_db, rsrp, coeff);          
+        }    
+      }
       // Compute PL
       float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
-      phy->pathloss = tx_crs_power - phy->rsrp_filtered;
+      phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
 
+      // Average noise in subframes 0 and 5
+      if ((tti%5) == 0) {
+        float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+        if (isnormal(cur_noise)) {
+          if (!phy->avg_noise) {
+            phy->avg_noise = cur_noise;
+          } else {
+            phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);            
+          }
+        }
+      }
+      
+      // Compute SNR
+      float cur_snr = 10*log10(phy->avg_rsrp/phy->avg_noise);      
+      if (isnormal(cur_snr)) {
+        if (!phy->avg_snr_db) {
+          phy->avg_snr_db = cur_snr; 
+        } else if (isnormal(cur_snr)) {
+          phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);        
+        }        
+      }
+      
       // Store metrics
-      dl_metrics.n      = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-      dl_metrics.rsrp   = phy->rsrp_filtered;
-      dl_metrics.rsrq   = rsrq;
+      dl_metrics.n      = phy->avg_noise;
+      dl_metrics.rsrp   = phy->avg_rsrp_db;
+      dl_metrics.rsrq   = phy->avg_rsrq_db;
       dl_metrics.rssi   = rssi;
       dl_metrics.pathloss = phy->pathloss;
       dl_metrics.sinr   = phy->avg_snr_db;
