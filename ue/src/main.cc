@@ -38,6 +38,7 @@
 
 #include "version.h"
 #include "ue.h"
+#include "metrics_stdout.h"
 
 using namespace std;
 using namespace srsue;
@@ -294,7 +295,7 @@ int main(int argc, char *argv[])
 {
   signal(SIGINT, sig_int_handler);
   all_args_t     args;
-  metrics_accord metrics;
+  metrics_stdout metrics;
   ue            *ue = ue::get_instance();
 
   cout << "---  Software Radio Systems LTE UE  ---" << endl << endl;
