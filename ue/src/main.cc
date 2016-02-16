@@ -38,7 +38,6 @@
 
 #include "version.h"
 #include "ue.h"
-#include "metrics_accord/metrics_accord.h"
 
 using namespace std;
 using namespace srsue;
@@ -274,7 +273,7 @@ void sig_int_handler(int signo)
 
 void *input_loop(void *m)
 {
-  metrics_accord *metrics = (metrics_accord*)m;
+  metrics_stdout *metrics = (metrics_stdout*)m;
   char key;
   while(running) {
     cin >> key;
@@ -316,14 +315,6 @@ int main(int argc, char *argv[])
       if (!plot_started && args.gui.enable) {
         ue->start_plot();
         plot_started = true; 
-      }
-      
-      // ACCORD branch only
-      if (!ch_emu_started && args.ch_emu.enable) {
-        ue->start_channel_emulator(args.ch_emu.filename.c_str(), args.ch_emu.path_tap.data(),
-                                   args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
-                                   args.ch_emu.nof_samples, args.ch_emu.nof_tti);
-        ch_emu_started = true; 
       }
     }
     sleep(1);

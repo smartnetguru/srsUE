@@ -169,9 +169,6 @@ public:
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
 
-  // ACCORD branch only
-  void start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
-
 
 private:
   static ue *instance;
