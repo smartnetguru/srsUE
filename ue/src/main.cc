@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
         plot_started = true; 
       }
       
+      // ACCORD branch only
       if (!ch_emu_started && args.ch_emu.enable) {
         ue->start_channel_emulator(args.ch_emu.filename.c_str(), args.ch_emu.path_tap.data(),
                                    args.ch_emu.nof_paths, args.ch_emu.nof_coeffs, 
