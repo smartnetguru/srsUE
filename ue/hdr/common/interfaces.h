@@ -92,6 +92,14 @@ public:
   virtual void      notify_connection_setup() = 0;
   virtual void      write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual uint32_t  get_ul_count() = 0;
+  virtual bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi) = 0;
+};
+
+// RRC interface for PHY/MAC
+class rrc_interface_phymac
+{
+public:
+  virtual void connection_release() = 0;
 };
 
 // RRC interface for NAS
@@ -104,6 +112,14 @@ public:
   virtual void enable_capabilities() = 0;
 };
 
+// RRC interface for GW
+class rrc_interface_gw
+{
+public:
+  virtual bool rrc_connected() = 0;
+  virtual bool have_drb() = 0;
+};
+
 // RRC interface for PDCP
 class rrc_interface_pdcp
 {
@@ -111,6 +127,7 @@ public:
   virtual void write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual void write_pdu_bcch_bch(byte_buffer_t *pdu) = 0;
   virtual void write_pdu_bcch_dlsch(byte_buffer_t *pdu) = 0;
+  virtual void write_pdu_pcch(byte_buffer_t *pdu) = 0;
 };
 
 // RRC interface for RLC
@@ -131,6 +148,7 @@ public:
 class pdcp_interface_rrc
 {
 public:
+  virtual void reset() = 0;
   virtual void write_sdu(uint32_t lcid, byte_buffer_t *sdu) = 0;
   virtual void add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg=NULL) = 0;
   virtual void config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int) = 0;
@@ -144,12 +162,14 @@ public:
   virtual void write_pdu(uint32_t lcid, byte_buffer_t *sdu) = 0;
   virtual void write_pdu_bcch_bch(byte_buffer_t *sdu) = 0;
   virtual void write_pdu_bcch_dlsch(byte_buffer_t *sdu) = 0;
+  virtual void write_pdu_pcch(byte_buffer_t *sdu) = 0;
 };
 
 // RLC interface for RRC
 class rlc_interface_rrc
 {
 public:
+  virtual void reset() = 0;
   virtual void add_bearer(uint32_t lcid) = 0;
   virtual void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg) = 0;
 };
@@ -182,6 +202,7 @@ public:
   virtual void write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes) = 0;
   virtual void write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes) = 0;
   virtual void write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes) = 0;
+  virtual void write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes) = 0;
 };
 
 } // namespace srsue

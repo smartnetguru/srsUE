@@ -65,7 +65,8 @@ public:
   }
   void write_pdu_bcch_bch(byte_buffer_t *sdu) {}
   void write_pdu_bcch_dlsch(byte_buffer_t *sdu) {}
-
+  void write_pdu_pcch(byte_buffer_t *sdu) {}
+  
   // RRC interface
   void max_retx_attempted(){}
 

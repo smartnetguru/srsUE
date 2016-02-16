@@ -40,9 +40,10 @@ sr_proc::sr_proc() {
   initiated = false; 
 }
   
-void sr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* params_db_)
+void sr_proc::init(phy_interface* phy_h_, rrc_interface_phymac *rrc_, srslte::log* log_h_, mac_params* params_db_)
 {
   log_h     = log_h_;
+  rrc       = rrc_; 
   params_db = params_db_; 
   phy_h     = phy_h_;
   initiated = true; 
@@ -67,8 +68,9 @@ void sr_proc::step(uint32_t tti)
             phy_h->sr_send();
           }
         } else {
-          // TODO: Instruct higher-layers to release PUCCH/SRS, clear downlink assignments and uplink grants
-          do_ra = true; 
+          Info("Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", sr_counter, dsr_transmax);
+          log_h->console("Scheduling request failed: releasing RRC connection...\n");
+          rrc->connection_release();
           reset(); 
         }
       } else {

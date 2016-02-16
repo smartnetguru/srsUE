@@ -58,6 +58,8 @@ static const char rrc_state_text[RRC_STATE_N_ITEMS][100] = {"IDLE",
 
 class rrc
     :public rrc_interface_nas
+    ,public rrc_interface_phymac
+    ,public rrc_interface_gw
     ,public rrc_interface_pdcp
     ,public rrc_interface_rlc
 {
@@ -90,6 +92,7 @@ private:
 
   rrc_state_t           state;
   uint8_t               transaction_id;
+  bool                  drb_up;
 
   uint8_t               k_rrc_enc[32];
   uint8_t               k_rrc_int[32];
@@ -113,10 +116,18 @@ private:
   uint16_t get_mcc();
   uint16_t get_mnc();
 
+  // PHY and MAC interface
+  void connection_release();
+
+  // GW interface
+  bool rrc_connected();
+  bool have_drb();
+
   // PDCP interface
   void write_pdu(uint32_t lcid, byte_buffer_t *pdu);
   void write_pdu_bcch_bch(byte_buffer_t *pdu);
   void write_pdu_bcch_dlsch(byte_buffer_t *pdu);
+  void write_pdu_pcch(byte_buffer_t *pdu);
 
   // RLC interface
   void max_retx_attempted();
@@ -135,6 +146,7 @@ private:
   void parse_dl_info_transfer(uint32_t lcid, byte_buffer_t *pdu);
 
   // Helpers
+  void          rrc_connection_release();
   static void*  start_sib_thread(void *rrc_);
   void          sib_search();
   uint32_t      sib_start_tti(uint32_t tti, uint32_t period, uint32_t x);

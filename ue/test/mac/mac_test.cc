@@ -29,7 +29,7 @@
 #include <signal.h>
 
 #include "liblte/hdr/liblte_rrc.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 #include "phy/phy.h"
 #include "common/mac_interface.h"
 #include "common/log_stdout.h"
@@ -42,20 +42,20 @@
  *  Program arguments processing
  ***********************************************************************/
 typedef struct {
-  float uhd_rx_freq;
-  float uhd_tx_freq; 
-  float uhd_rx_gain;
-  float uhd_tx_gain;
+  float rf_rx_freq;
+  float rf_tx_freq; 
+  float rf_rx_gain;
+  float rf_tx_gain;
   int   verbose; 
   bool  do_trace; 
   bool  do_pcap; 
 }prog_args_t;
 
 void args_default(prog_args_t *args) {
-  args->uhd_rx_freq = -1.0;
-  args->uhd_tx_freq = -1.0;
-  args->uhd_rx_gain = -1; // set to autogain
-  args->uhd_tx_gain = -1; 
+  args->rf_rx_freq = -1.0;
+  args->rf_tx_freq = -1.0;
+  args->rf_rx_gain = -1; // set to autogain
+  args->rf_tx_gain = -1; 
   args->verbose     = 0; 
   args->do_trace    = false; 
   args->do_pcap     = false; 
@@ -63,8 +63,8 @@ void args_default(prog_args_t *args) {
 
 void usage(prog_args_t *args, char *prog) {
   printf("Usage: %s [gGtpv] -f rx_frequency (in Hz) -F tx_frequency (in Hz)\n", prog);
-  printf("\t-g UHD RX gain [Default AGC]\n");
-  printf("\t-G UHD TX gain [Default same as RX gain (AGC)]\n");
+  printf("\t-g RF RX gain [Default AGC]\n");
+  printf("\t-G RF TX gain [Default same as RX gain (AGC)]\n");
   printf("\t-t Enable trace [Default disabled]\n");
   printf("\t-p Enable PCAP capture [Default disabled]\n");
   printf("\t-v [increase verbosity, default none]\n");
@@ -76,16 +76,16 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
   while ((opt = getopt(argc, argv, "gGftpFv")) != -1) {
     switch (opt) {
     case 'g':
-      args->uhd_rx_gain = atof(argv[optind]);
+      args->rf_rx_gain = atof(argv[optind]);
       break;
     case 'G':
-      args->uhd_tx_gain = atof(argv[optind]);
+      args->rf_tx_gain = atof(argv[optind]);
       break;
     case 'f':
-      args->uhd_rx_freq = atof(argv[optind]);
+      args->rf_rx_freq = atof(argv[optind]);
       break;
     case 'F':
-      args->uhd_tx_freq = atof(argv[optind]);
+      args->rf_tx_freq = atof(argv[optind]);
       break;
     case 't':
       args->do_trace = true;
@@ -101,7 +101,7 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       exit(-1);
     }
   }
-  if (args->uhd_rx_freq < 0 || args->uhd_tx_freq < 0) {
+  if (args->rf_rx_freq < 0 || args->rf_tx_freq < 0) {
     usage(args, argv[0]);
     exit(-1);
   }
@@ -320,7 +320,7 @@ uint32_t lengths[2] = {37, 41};
 uint8_t reply[2] = {0x00, 0x04};
 
 
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
 srsue::phy phy; 
 srsue::mac mac; 
 srsue::mac_pcap mac_pcap; 
@@ -330,7 +330,7 @@ prog_args_t prog_args;
 void sig_int_handler(int signo)
 {
   if (prog_args.do_trace) {
-    //radio_uhd.write_trace("radio");
+    //radio.write_trace("radio");
     phy.write_trace("phy");
   }
   if (prog_args.do_pcap) {
@@ -481,16 +481,18 @@ public:
         printf("SIB1 received %d bytes, CellID=%d, si_window=%d, sib2_period=%d\n", 
                 nof_bytes, dlsch_msg.sibs[0].sib.sib1.cell_id&0xfff, si_window_len, sib2_period);          
         sib1_decoded = true;         
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+        mac.bcch_stop_rx();        
       } else if (dlsch_msg.sibs[0].sib_type == LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2) {
         
         printf("SIB2 received %d bytes\n", nof_bytes);
         setup_mac_phy_sib2(&dlsch_msg.sibs[0].sib.sib2, &mac, &phy);        
         sib2_decoded = true; 
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, -1);
+        mac.bcch_stop_rx();
       }
     }
   }
+  
+  void write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes) {}
   
 private:
   LIBLTE_BIT_MSG_STRUCT  bit_msg; 
@@ -518,7 +520,7 @@ int main(int argc, char *argv[])
   // Capture SIGINT to write traces 
   if (prog_args.do_trace) {
     signal(SIGINT, sig_int_handler);
-    //radio_uhd.start_trace();
+    //radio.start_trace();
     phy.start_trace();
   }
   
@@ -531,22 +533,22 @@ int main(int argc, char *argv[])
   }
   
   // Init Radio and PHY
-  if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_rx_gain);
-    radio_uhd.set_tx_gain(prog_args.uhd_tx_gain);
-    phy.init(&radio_uhd, &mac, &phy_log);
+  radio.init();
+  phy.init(&radio, &mac, NULL, &phy_log);
+  if (prog_args.rf_rx_gain > 0 && prog_args.rf_tx_gain > 0) {
+    radio.set_rx_gain(prog_args.rf_rx_gain);
+    radio.set_tx_gain(prog_args.rf_tx_gain);
   } else {
-    radio_uhd.init_agc();
-    radio_uhd.set_tx_rx_gain_offset(10);
-    phy.init_agc(&radio_uhd, &mac, &phy_log);
+    radio.start_agc(false);
+    radio.set_tx_rx_gain_offset(10);
+    phy.set_agc_enable(true);
   }  
   // Init MAC 
-  mac.init(&phy, &my_rlc, &mac_log);
+  mac.init(&phy, &my_rlc, NULL, &mac_log);
     
   // Set RX freq
-  radio_uhd.set_rx_freq(prog_args.uhd_rx_freq);
-  radio_uhd.set_tx_freq(prog_args.uhd_tx_freq);
+  radio.set_rx_freq(prog_args.rf_rx_freq);
+  radio.set_tx_freq(prog_args.rf_tx_freq);
   
   
   while(1) {
@@ -555,13 +557,11 @@ int main(int argc, char *argv[])
       if (!my_rlc.sib1_decoded) {
         usleep(10000);
         tti = mac.get_current_tti();           
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, sib_start_tti(tti, 2, 5));
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, 1);                
+        mac.bcch_start_rx(sib_start_tti(tti, 2, 5), 1);        
       } else if (!my_rlc.sib2_decoded) {        
         usleep(10000);
         tti = mac.get_current_tti(); 
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_ST, sib_start_tti(tti, my_rlc.sib2_period, 0));
-        mac.set_param(srsue::mac_interface_params::BCCH_SI_WINDOW_LEN, my_rlc.si_window_len);              
+        mac.bcch_start_rx(sib_start_tti(tti, my_rlc.sib2_period, 0), my_rlc.si_window_len);                     
       }
     }
     usleep(50000);

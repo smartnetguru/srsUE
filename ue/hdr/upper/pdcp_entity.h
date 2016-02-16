@@ -66,6 +66,8 @@ public:
             srslte::log                   *log_,
             uint32_t                       lcid_,
             LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg = NULL);
+  void reset();
+
   bool is_active();
 
   // RRC interface

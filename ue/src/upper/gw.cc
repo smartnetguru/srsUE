@@ -41,14 +41,14 @@ using namespace srslte;
 namespace srsue{
 
 gw::gw()
-  :rx_sdu_queue(1024)
-  ,if_up(false)
+  :if_up(false)
 {}
 
-void gw::init(pdcp_interface_gw *pdcp_, ue_interface *ue_, srslte::log *gw_log_)
+void gw::init(pdcp_interface_gw *pdcp_, rrc_interface_gw *rrc_, ue_interface *ue_, srslte::log *gw_log_)
 {
   pool    = buffer_pool::get_instance();
   pdcp    = pdcp_;
+  rrc     = rrc_;
   ue      = ue_;
   gw_log  = gw_log_;
   running = true;
@@ -67,21 +67,6 @@ void gw::stop()
 
     // TODO: tear down TUN device?
   }
-}
-
-/*******************************************************************************
-  UE interface
-*******************************************************************************/
-bool gw::check_ul_buffers()
-{
-  byte_buffer_t *sdu;
-  int n_sdus = rx_sdu_queue.size();
-  for(int i=0;i<n_sdus;i++)
-  {
-    rx_sdu_queue.read(&sdu);
-    pdcp->write_sdu(RB_ID_DRB1, sdu);
-  }
-  return (n_sdus > 0);
 }
 
 /*******************************************************************************
@@ -221,6 +206,10 @@ void gw::run_thread()
             if(ntohs(ip_pkt->tot_len) == pdu->N_bytes)
             {
               gw_log->info_hex(pdu->msg, pdu->N_bytes, "UL PDU");
+
+              while(!rrc->rrc_connected() || !rrc->have_drb()) {
+                usleep(1000);
+              }
               
               // Send PDU directly to PDCP
               pdcp->write_sdu(RB_ID_DRB1, pdu);

@@ -48,8 +48,12 @@ namespace srsue {
     
     phch_common() {
       pathloss = 0; 
+      avg_noise = 0;
+      avg_rsrp = 0; 
+      avg_snr_db = 0; 
       cur_pathloss = 0; 
-      rsrp_filtered = 0; 
+      avg_rsrq_db = 0; 
+      avg_rsrp_db = 0; 
       cur_pusch_power = 0; 
       p0_preamble = 0; 
       cur_radio_power = 0; 
@@ -77,9 +81,13 @@ namespace srsue {
     float p0_preamble;     
     float cur_radio_power; 
     float cur_pusch_power;
-    float rsrp_filtered;
+    float avg_rsrp_db;
+    float avg_rsrq_db; 
     float rx_gain_offset;
-
+    float avg_snr_db; 
+    float avg_noise; 
+    float avg_rsrp; 
+    
     phch_common(uint32_t max_mutex);
     void init(phy_params *_params, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac);
     

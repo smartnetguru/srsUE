@@ -68,11 +68,6 @@ void mux::reset()
   pending_crnti_ce = 0;
 }
 
-bool mux::is_pending_ccch_sdu()
-{
-  return is_pending_sdu(0);
-}
-
 bool mux::is_pending_any_sdu()
 {
   for (int i=0;i<NOF_UL_LCH;i++) {

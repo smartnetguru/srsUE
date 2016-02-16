@@ -29,16 +29,16 @@
 #include "srslte/utils/debug.h"
 #include "phy/phy.h"
 #include "common/log_stdout.h"
-#include "radio/radio_uhd.h"
+#include "radio/radio.h"
 
 /**********************************************************************
  *  Program arguments processing
  ***********************************************************************/
 typedef struct {
-  float uhd_rx_freq;
-  float uhd_tx_freq; 
-  float uhd_rx_gain;
-  float uhd_tx_gain;
+  float rf_rx_freq;
+  float rf_tx_freq; 
+  float rf_rx_gain;
+  float rf_tx_gain;
   bool  continous; 
 }prog_args_t;
 
@@ -46,17 +46,17 @@ prog_args_t prog_args;
 uint32_t srsapps_verbose = 0; 
 
 void args_default(prog_args_t *args) {
-  args->uhd_rx_freq = -1.0;
-  args->uhd_tx_freq = -1.0;
-  args->uhd_rx_gain = -1; // set to autogain
-  args->uhd_tx_gain = -1; 
+  args->rf_rx_freq = -1.0;
+  args->rf_tx_freq = -1.0;
+  args->rf_rx_gain = -1; // set to autogain
+  args->rf_tx_gain = -1; 
   args->continous = false; 
 }
 
 void usage(prog_args_t *args, char *prog) {
   printf("Usage: %s [gGcv] -f rx_frequency -F tx_frequency (in Hz)\n", prog);
-  printf("\t-g UHD RX gain [Default AGC]\n");
-  printf("\t-G UHD TX gain [Default same as RX gain (AGC)]\n");
+  printf("\t-g RF RX gain [Default AGC]\n");
+  printf("\t-G RF TX gain [Default same as RX gain (AGC)]\n");
   printf("\t-c Run continuously [Default only once]\n");
   printf("\t-v [increase verbosity, default none]\n");
 }
@@ -67,16 +67,16 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
   while ((opt = getopt(argc, argv, "gGfFcv")) != -1) {
     switch (opt) {
     case 'g':
-      args->uhd_rx_gain = atof(argv[optind]);
+      args->rf_rx_gain = atof(argv[optind]);
       break;
     case 'G':
-      args->uhd_tx_gain = atof(argv[optind]);
+      args->rf_tx_gain = atof(argv[optind]);
       break;
     case 'f':
-      args->uhd_rx_freq = atof(argv[optind]);
+      args->rf_rx_freq = atof(argv[optind]);
       break;
     case 'F':
-      args->uhd_tx_freq = atof(argv[optind]);
+      args->rf_tx_freq = atof(argv[optind]);
       break;
     case 'c':
       args->continous = true; 
@@ -89,7 +89,7 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       exit(-1);
     }
   }
-  if (args->uhd_rx_freq < 0 || args->uhd_tx_freq < 0) {
+  if (args->rf_rx_freq < 0 || args->rf_tx_freq < 0) {
     usage(args, argv[0]);
     exit(-1);
   }
@@ -207,6 +207,9 @@ public:
   }
   
   bool rar_rnti_set;
+
+  void pch_decoded_ok(uint32_t len) {} 
+
   
   void tti_clock(uint32_t tti) {
     if (!rar_rnti_set) {
@@ -321,7 +324,7 @@ private:
 
 
 testmac         my_mac;
-srslte::radio_uhd radio_uhd; 
+srslte::radio radio; 
   
 int main(int argc, char *argv[])
 {
@@ -330,15 +333,15 @@ int main(int argc, char *argv[])
   parse_args(&prog_args, argc, argv);
 
   // Init Radio and PHY
-  if (prog_args.uhd_rx_gain > 0 && prog_args.uhd_tx_gain > 0) {
-    radio_uhd.init();
-    radio_uhd.set_rx_gain(prog_args.uhd_rx_gain);
-    radio_uhd.set_tx_gain(prog_args.uhd_tx_gain);
-    my_phy.init(&radio_uhd, &my_mac, &log);
+  radio.init();
+  my_phy.init(&radio, &my_mac, NULL, &log);
+  if (prog_args.rf_rx_gain > 0 && prog_args.rf_tx_gain > 0) {
+    radio.set_rx_gain(prog_args.rf_rx_gain);
+    radio.set_tx_gain(prog_args.rf_tx_gain);
   } else {
-    radio_uhd.init_agc();
-    radio_uhd.set_tx_rx_gain_offset(10);
-    my_phy.init_agc(&radio_uhd, &my_mac, &log);
+    radio.start_agc(false);
+    radio.set_tx_rx_gain_offset(10);
+    my_phy.set_agc_enable(true);
   }
   
   if (srsapps_verbose == 1) {
@@ -354,8 +357,8 @@ int main(int argc, char *argv[])
   sleep(1);
   
   // Set RX freq
-  radio_uhd.set_rx_freq(prog_args.uhd_rx_freq);
-  radio_uhd.set_tx_freq(prog_args.uhd_tx_freq);
+  radio.set_rx_freq(prog_args.rf_rx_freq);
+  radio.set_tx_freq(prog_args.rf_tx_freq);
   
   // Instruct the PHY to configure PRACH parameters and sync to current cell 
   my_phy.sync_start();
@@ -376,7 +379,7 @@ int main(int argc, char *argv[])
     sleep(1);
   }
   my_phy.stop();
-  radio_uhd.stop_rx();
+  radio.stop_rx();
 }
 
 
