@@ -79,14 +79,6 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("trace.radio_filename",bpo::value<string>(&args->trace.radio_filename)->default_value("ue.radio_trace"), "Radio timing traces filename")
 
         ("gui.enable",        bpo::value<bool>(&args->gui.enable)->default_value(false),                  "Enable GUI plots")
-
-        ("channel_emulator.enable",          bpo::value<bool>(&args->ch_emu.enable)->default_value(false),    "Enable fading channel emulator")
-        ("channel_emulator.coeff_filename",  bpo::value<string>(&args->ch_emu.filename),                      "Pregenerated channel coefficients filename")
-        ("channel_emulator.nof_paths",       bpo::value<int>(&args->ch_emu.nof_paths),                        "Number of pregenerated channel paths")
-        ("channel_emulator.path_tap",        bpo::value<vector<int> >(&args->ch_emu.path_tap)->multitoken(),  "Tap position per path")
-        ("channel_emulator.nof_coeffs",      bpo::value<int>(&args->ch_emu.nof_coeffs),                       "Number of pregenerated channel coefficients")
-        ("channel_emulator.nof_samples",     bpo::value<int>(&args->ch_emu.nof_samples),                      "Number of samples per TTI (sampling rate/1000)")
-        ("channel_emulator.nof_tti",         bpo::value<int>(&args->ch_emu.nof_tti),                          "Number of TTIs pregenerated in the file")
         
         ("log.phy_level",     bpo::value<string>(&args->log.phy_level),   "PHY log level")
         ("log.phy_hex_limit", bpo::value<int>(&args->log.phy_hex_limit),  "PHY log hex dump limit")
@@ -252,16 +244,6 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         args->log.usim_hex_limit = args->log.all_hex_limit;
       }
     }
-    
-    /* Make sure the number of path taps equal the number of paths */
-    if (args->ch_emu.enable) {
-      if (args->ch_emu.nof_paths != args->ch_emu.path_tap.size()) {
-        cout << "Error: Number path_tap elements must be equal to nof_paths" << endl; 
-        exit(0);
-      }
-    }
-
-
 }
 
 static bool running    = true;
@@ -310,7 +292,6 @@ int main(int argc, char *argv[])
   pthread_create(&input, NULL, &input_loop, &metrics);
 
   bool plot_started   = false; 
-  bool ch_emu_started = false; 
   while(running) {
     if (ue->is_attached()) {
       if (!plot_started && args.gui.enable) {

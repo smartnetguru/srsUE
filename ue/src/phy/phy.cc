@@ -34,7 +34,6 @@
 
 #include "srslte/srslte.h"
 
-#include "radio/radio.h"
 #include "common/threads.h"
 #include "common/log.h"
 #include "phy/phy.h"

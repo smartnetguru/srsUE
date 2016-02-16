@@ -109,16 +109,6 @@ typedef struct {
 }gui_args_t;
 
 typedef struct {
-  bool          enable;
-  std::string   filename;
-  int           nof_paths;
-  std::vector<int> path_tap;
-  int           nof_coeffs;
-  int           nof_samples;
-  int           nof_tti;
-}ch_emu_args_t;
-
-typedef struct {
   float prach_gain;
   float ul_gain;
   float ul_pwr_ctrl_offset;
@@ -141,7 +131,6 @@ typedef struct {
   trace_args_t  trace;
   log_args_t    log;
   gui_args_t    gui;
-  ch_emu_args_t ch_emu;
   usim_args_t   usim;
   expert_args_t expert;
 }all_args_t;
