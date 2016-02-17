@@ -66,6 +66,11 @@ emm_state_t nas::get_state()
   RRC interface
 *******************************************************************************/
 
+bool nas::is_attached()
+{
+  return state == EMM_STATE_REGISTERED;
+}
+
 void nas::notify_connection_setup()
 {
   nas_log->debug("State = %s\n", emm_state_text[state]);
