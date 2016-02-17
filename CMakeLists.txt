@@ -31,7 +31,7 @@ include(SRSUEVersion) #sets version information
 ########################################################################
 # Options
 ########################################################################
-option(ENABLE_GUI "ENABLE_GUI" OFF)
+option(ENABLE_GUI "ENABLE_GUI" ON)
 
 ########################################################################
 # Add general includes and dependencies
