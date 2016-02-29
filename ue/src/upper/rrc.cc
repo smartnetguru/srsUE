@@ -114,6 +114,10 @@ void rrc::connection_release()
 {
   if (state == RRC_STATE_RRC_CONNECTED) {
     rrc_connection_release(); 
+    if (nas->is_attached()) {
+      rrc_log->console("NAS not attached, sending again Connection Request...\n");
+      send_con_request();
+    }
   }
 }
 

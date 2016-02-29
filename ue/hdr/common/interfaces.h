@@ -89,6 +89,7 @@ public:
 class nas_interface_rrc
 {
 public:
+  virtual bool      is_attached() = 0;
   virtual void      notify_connection_setup() = 0;
   virtual void      write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual uint32_t  get_ul_count() = 0;

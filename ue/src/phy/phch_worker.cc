@@ -44,6 +44,8 @@ void init_plots(srsue::phch_worker *worker);
 pthread_t plot_thread; 
 sem_t plot_sem; 
 static int plot_worker_id = -1;
+#else
+#warning Compiling without srsGUI support
 #endif
 /*********************************************/
 
@@ -283,7 +285,7 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   } else {
     chest_done = false; 
   }
-  if (decode_pdcch || (tti%5) == 0) { /* and not in DRX mode */
+  if (decode_pdcch) { /* and not in DRX mode */
     
     float noise_estimate = phy->avg_noise;
     
@@ -885,11 +887,13 @@ void phch_worker::update_measurements()
     
     // Adjust measurements with RX gain offset    
     if (phy->rx_gain_offset) {
+      // Average RSRQ
       float cur_rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
       if (isnormal(cur_rsrq)) {
         phy->avg_rsrq_db = SRSLTE_VEC_EMA(phy->avg_rsrq_db, cur_rsrq, SNR_FILTER_COEFF);
       }
       
+      // Average RSRP
       float cur_rsrp = srslte_chest_dl_get_rsrp(&ue_dl.chest);
       if (isnormal(cur_rsrp)) {
         phy->avg_rsrp = SRSLTE_VEC_EMA(phy->avg_rsrp, cur_rsrp, SNR_FILTER_COEFF);
@@ -913,27 +917,18 @@ void phch_worker::update_measurements()
       float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
       phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
 
-      // Average noise in subframes 0 and 5
-      if ((tti%5) == 0) {
-        float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-        if (isnormal(cur_noise)) {
-          if (!phy->avg_noise) {
-            phy->avg_noise = cur_noise;
-          } else {
-            phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);            
-          }
-        }
+      // Average noise 
+      float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+      if (isnormal(cur_noise)) {
+	if (!phy->avg_noise) {
+	  phy->avg_noise = cur_noise;
+	} else {
+	  phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);            
+	}
       }
       
       // Compute SNR
-      float cur_snr = 10*log10(phy->avg_rsrp/phy->avg_noise);      
-      if (isnormal(cur_snr)) {
-        if (!phy->avg_snr_db) {
-          phy->avg_snr_db = cur_snr; 
-        } else if (isnormal(cur_snr)) {
-          phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);        
-        }        
-      }
+      phy->avg_snr_db = 10*log10(phy->avg_rsrp/phy->avg_noise);      
       
       // Store metrics
       dl_metrics.n      = phy->avg_noise;
