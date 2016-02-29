@@ -997,8 +997,10 @@ void phch_worker::tr_log_end()
 #ifdef ENABLE_GUI
 plot_real_t    pce;
 plot_scatter_t pconst;
-float tmp_plot[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
-cf_t  tmp_plot2[SRSLTE_SLOT_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
+#define SCATTER_PDSCH_BUFFER_LEN   (20*6*SRSLTE_SF_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM))
+#define SCATTER_PDSCH_PLOT_LEN    4000
+float tmp_plot[SCATTER_PDSCH_BUFFER_LEN];
+cf_t  tmp_plot2[SRSLTE_SF_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
 
 void *plot_thread_run(void *arg) {
   srsue::phch_worker *worker = (srsue::phch_worker*) arg; 
@@ -1014,17 +1016,23 @@ void *plot_thread_run(void *arg) {
   plot_scatter_setXAxisScale(&pconst, -4, 4);
   plot_scatter_setYAxisScale(&pconst, -4, 4);
 
-
+  int n; 
+  int readed_pdsch_re=0; 
   while(1) {
     sem_wait(&plot_sem);    
     
-    int n = worker->read_ce_abs(tmp_plot);
-    if (n>0) {
-      plot_real_setNewData(&pce, tmp_plot, n);             
-    }
-    n = worker->read_pdsch_d(tmp_plot2);
-    if (n>0) {
-      plot_scatter_setNewData(&pconst, tmp_plot2, n);
+    if (readed_pdsch_re < SCATTER_PDSCH_PLOT_LEN) {
+      n = worker->read_pdsch_d(&tmp_plot2[readed_pdsch_re]);
+      readed_pdsch_re += n;           
+    } else {
+      n = worker->read_ce_abs(tmp_plot);
+      if (n>0) {
+        plot_real_setNewData(&pce, tmp_plot, n);             
+      }      
+      if (readed_pdsch_re > 0) {
+        plot_scatter_setNewData(&pconst, tmp_plot2, readed_pdsch_re);
+      }
+      readed_pdsch_re = 0; 
     }
   }  
   return NULL;
