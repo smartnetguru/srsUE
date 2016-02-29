@@ -6,7 +6,7 @@
 # dl_freq: Downlink centre frequency (Hz).
 # ul_freq: Uplink centre frequency (Hz).
 # tx_gain: Transmit gain (dB). 
-# rx_gain: Optional receive gain (dB). Disables AGC if enabled
+# rx_gain: Optional receive gain (dB). If disabled, AGC if enabled
 #
 # Optional parameters: 
 # device_name:        Device driver family. Supported options: "auto" (uses first found), "UHD" or "bladeRF" 
@@ -22,7 +22,8 @@
 [rf]
 dl_freq = 2680000000
 ul_freq = 2560000000
-tx_gain = 70
+tx_gain = 60
+rx_gain = 50
 
 #device_name = auto
 #device_args = auto
@@ -114,7 +115,7 @@ enable = true
 #
 # equalizer_mode:       Selects equalizer mode. Valid modes are: "mmse", "zf" or any 
 #                       non-negative real number to indicate a regularized zf coefficient.
-#                       Default is zf. 
+#                       Default is MMSE. 
 #
 #####################################################################
 [expert]

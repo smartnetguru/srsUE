@@ -129,7 +129,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("expert.continuous_tx",      bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continues transmission (default off)")
         ("expert.nof_phy_threads",    bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
         
-        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("zf"), "Equalizer mode")
+        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("mmse"), "Equalizer mode")
      
         
         
