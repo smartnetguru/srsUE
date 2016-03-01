@@ -268,6 +268,15 @@ void ue::stop()
   }
 }
 
+bool ue::is_attached()
+{
+  return (EMM_STATE_REGISTERED == nas.get_state());
+}
+
+void ue::start_plot() {
+  phy.start_plot();
+}
+
 bool ue::get_metrics(ue_metrics_t &m)
 {
   m.rf = rf_metrics;

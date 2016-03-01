@@ -139,7 +139,11 @@ float radio::get_max_tx_power()
 
 float radio::get_rssi()
 {
-  return srslte_rf_get_rssi(&rf_device);
+  //return srslte_rf_get_rssi(&rf_device);
+  
+  // FIXME: RSSI sensor gathering crashes in UHD C API
+  
+  return -50; 
 }
 
 bool radio::has_rssi()
@@ -283,17 +287,17 @@ void radio::set_tx_srate(float srate)
     if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
-        tx_adv_sec = 109*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 105*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 56*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 52*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
-        tx_adv_sec = 40*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 36*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
-        tx_adv_sec = 33*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 29*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 15.36e3) {
-        tx_adv_sec = 25*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 21*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 23.04e3) {
-        tx_adv_sec = 18*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 14*16*SRSLTE_LTE_TS;
       } else {
         /* Interpolate from known values */
         tx_adv_sec = uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec;        
@@ -301,17 +305,17 @@ void radio::set_tx_srate(float srate)
     } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
-        tx_adv_sec = 30*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 27*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 15*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 12*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
-        tx_adv_sec = 14*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 11*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
-        tx_adv_sec = 8*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 5*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 15.36e3) {
-        tx_adv_sec = 5*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 2*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 23.04e3) {
-        tx_adv_sec = 5*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 2*16*SRSLTE_LTE_TS;
       } else {
         printf("interpolating, srate=%f kHz\n", srate_khz);
         /* Interpolate from known values */

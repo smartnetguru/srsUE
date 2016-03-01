@@ -36,6 +36,20 @@
 #define Debug(fmt, ...)   if (SRSLTE_DEBUG_ENABLED) phy->log_h->debug_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 
+/* This is to visualize the channel response */
+#ifdef ENABLE_GUI
+#include "srsgui/srsgui.h"
+#include <semaphore.h>
+void init_plots(srsue::phch_worker *worker);
+pthread_t plot_thread; 
+sem_t plot_sem; 
+static int plot_worker_id = -1;
+#else
+#warning Compiling without srsGUI support
+#endif
+/*********************************************/
+
+
 namespace srsue {
 
 
@@ -144,6 +158,7 @@ void phch_worker::work_imp()
   
   reset_uci();
 
+  bool dl_grant_available = false; 
   bool ul_grant_available = false; 
   bool dl_ack = false; 
   
@@ -162,7 +177,8 @@ void phch_worker::work_imp()
     /***** Downlink Processing *******/
     
     /* PDCCH DL + PDSCH */
-    if(decode_pdcch_dl(&dl_mac_grant)) {
+    dl_grant_available = decode_pdcch_dl(&dl_mac_grant); 
+    if(dl_grant_available) {
       /* Send grant to MAC and get action for this TB */
       phy->mac->new_grant_dl(dl_mac_grant, &dl_action);
       
@@ -243,6 +259,13 @@ void phch_worker::work_imp()
   }
 
   update_measurements();
+  
+  /* Tell the plotting thread to draw the plots */
+#ifdef ENABLE_GUI
+  if (get_id() == plot_worker_id) {
+    sem_post(&plot_sem);    
+  }
+#endif
 }
 
 
@@ -264,7 +287,7 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   }
   if (decode_pdcch) { /* and not in DRX mode */
     
-    float noise_estimate = 1./srslte_chest_dl_get_snr(&ue_dl.chest);
+    float noise_estimate = phy->avg_noise;
     
     if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
       noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
@@ -800,9 +823,36 @@ float phch_worker::set_power(float tx_power) {
   return gain;
 }
 
+void phch_worker::start_plot() {
+#ifdef ENABLE_GUI
+  if (plot_worker_id == -1) {
+    plot_worker_id = get_id();
+    phy->log_h->console("Starting plot for worker_id=%d\n", plot_worker_id);
+    init_plots(this);
+  } else {
+    phy->log_h->console("Trying to start a plot but already started by worker_id=%d\n", plot_worker_id);
+  }
+#else 
+    phy->log_h->console("Trying to start a plot but plots are disabled (ENABLE_GUI constant in phch_worker.cc)\n");
+#endif
+}
 
+int phch_worker::read_ce_abs(float *ce_abs) {
+  int i;
+  for (i = 0; i < 12*cell.nof_prb; i++) {
+    ce_abs[i] = 20 * log10(cabs(ue_dl.ce[0][i]));
+    if (isinf(ce_abs[i])) {
+      ce_abs[i] = -80;
+    }
+  }
+  return i;
+}
 
-
+int phch_worker::read_pdsch_d(cf_t* pdsch_d)
+{
+  memcpy(pdsch_d, ue_dl.pdsch.d, ue_dl.pdsch_cfg.nbits.nof_re*sizeof(cf_t));
+  return ue_dl.pdsch_cfg.nbits.nof_re; 
+}
 
 
 
@@ -835,46 +885,55 @@ void phch_worker::update_measurements()
       }
     }
     
-    if (isnan(phy->avg_snr_db) || isinf(phy->avg_snr_db)) {
-      phy->avg_snr_db = 0; 
-    }
-
-    // Average SNR 
-    float cur_snr = 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest));
-    if (!isnan(cur_snr) && !isinf(cur_snr)) {
-      if (phy->avg_snr_db) {       
-        phy->avg_snr_db = SRSLTE_VEC_EMA(phy->avg_snr_db, cur_snr, SNR_FILTER_COEFF);
-      } else {
-        phy->avg_snr_db = cur_snr;
-      }
-    }
-    
     // Adjust measurements with RX gain offset    
     if (phy->rx_gain_offset) {
+      // Average RSRQ
+      float cur_rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
+      if (isnormal(cur_rsrq)) {
+        phy->avg_rsrq_db = SRSLTE_VEC_EMA(phy->avg_rsrq_db, cur_rsrq, SNR_FILTER_COEFF);
+      }
+      
+      // Average RSRP
+      float cur_rsrp = srslte_chest_dl_get_rsrp(&ue_dl.chest);
+      if (isnormal(cur_rsrp)) {
+        phy->avg_rsrp = SRSLTE_VEC_EMA(phy->avg_rsrp, cur_rsrp, SNR_FILTER_COEFF);
+      }
+      
+      /* Correct absolute power measurements by RX gain offset */
       float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
       float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-      float rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
-
       
       // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
-      if (!phy->rsrp_filtered) {
-        phy->rsrp_filtered = rsrp;
-      } else {
-        uint32_t k = 4; // Set by RRC reconfiguration message
-        float coeff = pow(0.5,(float) k/4);
-        phy->rsrp_filtered = SRSLTE_VEC_EMA(phy->rsrp_filtered, rsrp, coeff);
-        if (isnan(phy->rsrp_filtered) || isinf(phy->rsrp_filtered)) {
-          phy->rsrp_filtered = 0; 
-        }
-      }    
+      if (isnormal(rsrp)) {
+        if (!phy->avg_rsrp_db) {
+          phy->avg_rsrp_db = rsrp;
+        } else {
+          uint32_t k = 4; // Set by RRC reconfiguration message
+          float coeff = pow(0.5,(float) k/4);
+          phy->avg_rsrp_db = SRSLTE_VEC_EMA(phy->avg_rsrp_db, rsrp, coeff);          
+        }    
+      }
       // Compute PL
       float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
-      phy->pathloss = tx_crs_power - phy->rsrp_filtered;
+      phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
 
+      // Average noise 
+      float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+      if (isnormal(cur_noise)) {
+	if (!phy->avg_noise) {
+	  phy->avg_noise = cur_noise;
+	} else {
+	  phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);            
+	}
+      }
+      
+      // Compute SNR
+      phy->avg_snr_db = 10*log10(phy->avg_rsrp/phy->avg_noise);      
+      
       // Store metrics
-      dl_metrics.n      = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-      dl_metrics.rsrp   = phy->rsrp_filtered;
-      dl_metrics.rsrq   = rsrq;
+      dl_metrics.n      = phy->avg_noise;
+      dl_metrics.rsrp   = phy->avg_rsrp_db;
+      dl_metrics.rsrq   = phy->avg_rsrq_db;
       dl_metrics.rssi   = rssi;
       dl_metrics.pathloss = phy->pathloss;
       dl_metrics.sinr   = phy->avg_snr_db;
@@ -886,11 +945,6 @@ void phch_worker::update_measurements()
     }
   }
 }
-
-
-
-
-
 
 
 /********** Execution time trace function ************/
@@ -919,5 +973,85 @@ void phch_worker::tr_log_end()
   }
 }
 
-
 }
+
+
+
+
+
+
+
+
+/***********************************************************
+ * 
+ * PLOT TO VISUALIZE THE CHANNEL RESPONSEE 
+ * 
+ ***********************************************************/
+
+
+#ifdef ENABLE_GUI
+plot_real_t    pce;
+plot_scatter_t pconst;
+#define SCATTER_PDSCH_BUFFER_LEN   (20*6*SRSLTE_SF_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM))
+#define SCATTER_PDSCH_PLOT_LEN    4000
+float tmp_plot[SCATTER_PDSCH_BUFFER_LEN];
+cf_t  tmp_plot2[SRSLTE_SF_LEN_RE(SRSLTE_MAX_PRB, SRSLTE_CP_NORM)];
+
+void *plot_thread_run(void *arg) {
+  srsue::phch_worker *worker = (srsue::phch_worker*) arg; 
+  
+  sdrgui_init();  
+  plot_real_init(&pce);
+  plot_real_setTitle(&pce, (char*) "Channel Response - Magnitude");
+  plot_real_setLabels(&pce, (char*) "Index", (char*) "dB");
+  plot_real_setYAxisScale(&pce, -40, 40);
+  
+  plot_scatter_init(&pconst);
+  plot_scatter_setTitle(&pconst, (char*) "PDSCH - Equalized Symbols");
+  plot_scatter_setXAxisScale(&pconst, -4, 4);
+  plot_scatter_setYAxisScale(&pconst, -4, 4);
+
+  int n; 
+  int readed_pdsch_re=0; 
+  while(1) {
+    sem_wait(&plot_sem);    
+    
+    if (readed_pdsch_re < SCATTER_PDSCH_PLOT_LEN) {
+      n = worker->read_pdsch_d(&tmp_plot2[readed_pdsch_re]);
+      readed_pdsch_re += n;           
+    } else {
+      n = worker->read_ce_abs(tmp_plot);
+      if (n>0) {
+        plot_real_setNewData(&pce, tmp_plot, n);             
+      }      
+      if (readed_pdsch_re > 0) {
+        plot_scatter_setNewData(&pconst, tmp_plot2, readed_pdsch_re);
+      }
+      readed_pdsch_re = 0; 
+    }
+  }  
+  return NULL;
+}
+
+
+void init_plots(srsue::phch_worker *worker) {
+
+  if (sem_init(&plot_sem, 0, 0)) {
+    perror("sem_init");
+    exit(-1);
+  }
+  
+  pthread_attr_t attr;
+  struct sched_param param;
+  param.sched_priority = 0;  
+  pthread_attr_init(&attr);
+  pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+  pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
+  pthread_attr_setschedparam(&attr, &param);
+  if (pthread_create(&plot_thread, &attr, plot_thread_run, worker)) {
+    perror("pthread_create");
+    exit(-1);
+  }  
+}
+#endif
+

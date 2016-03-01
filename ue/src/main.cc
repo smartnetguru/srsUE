@@ -78,6 +78,8 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("trace.phy_filename",bpo::value<string>(&args->trace.phy_filename)->default_value("ue.phy_trace"), "PHY timing traces filename")
         ("trace.radio_filename",bpo::value<string>(&args->trace.radio_filename)->default_value("ue.radio_trace"), "Radio timing traces filename")
 
+        ("gui.enable",        bpo::value<bool>(&args->gui.enable)->default_value(false),                  "Enable GUI plots")
+        
         ("log.phy_level",     bpo::value<string>(&args->log.phy_level),   "PHY log level")
         ("log.phy_hex_limit", bpo::value<int>(&args->log.phy_hex_limit),  "PHY log hex dump limit")
         ("log.mac_level",     bpo::value<string>(&args->log.mac_level),   "MAC log level")
@@ -127,7 +129,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("expert.continuous_tx",      bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continues transmission (default off)")
         ("expert.nof_phy_threads",    bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
         
-        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("zf"), "Equalizer mode")
+        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("mmse"), "Equalizer mode")
      
         
         
@@ -137,7 +139,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("rf_calibration.tx_corr_iq_q",     bpo::value<float>(&args->rf_cal.tx_corr_iq_q)->default_value(0.0),     "TX IQ imbalance quadrature correction")
         
     ;
-
+    
     // Positional options - config file location
     bpo::options_description position("Positional options");
     position.add_options()
@@ -289,7 +291,14 @@ int main(int argc, char *argv[])
   pthread_t input;
   pthread_create(&input, NULL, &input_loop, &metrics);
 
+  bool plot_started   = false; 
   while(running) {
+    if (ue->is_attached()) {
+      if (!plot_started && args.gui.enable) {
+        ue->start_plot();
+        plot_started = true; 
+      }
+    }
     sleep(1);
   }
   pthread_cancel(input);

@@ -71,6 +71,7 @@ public:
   void      notify_connection_setup();
   void      write_pdu(uint32_t lcid, byte_buffer_t *pdu);
   uint32_t  get_ul_count();
+  bool      is_attached();
   bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi);
 
 private:

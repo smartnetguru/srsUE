@@ -66,6 +66,11 @@ emm_state_t nas::get_state()
   RRC interface
 *******************************************************************************/
 
+bool nas::is_attached()
+{
+  return state == EMM_STATE_REGISTERED;
+}
+
 void nas::notify_connection_setup()
 {
   nas_log->debug("State = %s\n", emm_state_text[state]);
@@ -206,7 +211,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
                     act_def_eps_bearer_context_req.pdn_addr.addr[1],
                     act_def_eps_bearer_context_req.pdn_addr.addr[2],
                     act_def_eps_bearer_context_req.pdn_addr.addr[3]);
-
+      
       // Setup GW
       char *err_str;
       if(gw->setup_if_addr(ip_addr, err_str))

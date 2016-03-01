@@ -27,6 +27,8 @@
 #ifndef UE_METRICS_INTERFACE_H
 #define UE_METRICS_INTERFACE_H
 
+#include <stdint.h>
+
 #include "mac/mac_metrics.h"
 #include "phy/phy_metrics.h"
 

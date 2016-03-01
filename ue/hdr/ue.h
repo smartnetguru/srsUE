@@ -105,6 +105,10 @@ typedef struct {
 }log_args_t;
 
 typedef struct {
+  bool          enable;
+}gui_args_t;
+
+typedef struct {
   float prach_gain;
   float ul_gain;
   float ul_pwr_ctrl_offset;
@@ -126,6 +130,7 @@ typedef struct {
   pcap_args_t   pcap;
   trace_args_t  trace;
   log_args_t    log;
+  gui_args_t    gui;
   usim_args_t   usim;
   expert_args_t expert;
 }all_args_t;
@@ -144,11 +149,15 @@ public:
 
   bool init(all_args_t *args_);
   void stop();
+  bool is_attached();
+  void start_plot();
+  
   static void rf_msg(srslte_rf_error_t error);
   void handle_rf_msg(srslte_rf_error_t error);
 
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
+
 
 private:
   static ue *instance;
@@ -192,3 +201,4 @@ private:
 } // namespace srsue
 
 #endif // UE_H
+  

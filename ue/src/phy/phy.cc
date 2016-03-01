@@ -257,12 +257,17 @@ void phy::set_crnti(uint16_t rnti) {
   }    
 }
 
+// Start GUI 
+void phy::start_plot() {
+  ((phch_worker) workers[0]).start_plot();
+}
+
 void phy::enable_pregen_signals(bool enable)
-{
+{  
   for(uint32_t i=0;i<nof_workers;i++) {
     workers[i].enable_pregen_signals(enable);
-  }
-}
+  }  
+} 
 
 
 uint32_t phy::tti_to_SFN(uint32_t tti) {

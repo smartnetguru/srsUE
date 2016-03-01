@@ -367,7 +367,7 @@ void phch_recv::run_thread()
             worker->release();
             phy_state = SYNCING;
             worker_com->reset_ul();
-            rrc->connection_release();
+            //rrc->connection_release();
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here
