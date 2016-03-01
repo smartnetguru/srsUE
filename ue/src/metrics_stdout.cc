@@ -115,7 +115,7 @@ void metrics_stdout::print_metrics()
   cout << float_to_string(metrics.phy.dl.turbo_iters, 2);
   cout << float_to_eng_string((float) metrics.mac.rx_brate/metrics_report_period, 2);
   if (metrics.mac.rx_pkts > 0) {
-    cout << float_to_string((float) 100*metrics.mac.rx_errors/metrics.mac.rx_pkts, 2) << "%";
+    cout << float_to_string((float) 100*metrics.mac.rx_errors/metrics.mac.rx_pkts, 1) << "%";
   } else {
     cout << float_to_string(0, 2) << "%";
   }
@@ -123,8 +123,9 @@ void metrics_stdout::print_metrics()
   cout << float_to_eng_string((float) metrics.mac.ul_buffer, 2);
   cout << float_to_eng_string((float) metrics.mac.tx_brate/metrics_report_period, 2);
   if (metrics.mac.tx_pkts > 0) {
-    cout << float_to_string((float) 100*metrics.mac.tx_errors/metrics.mac.tx_pkts, 2) << "%";
+    cout << float_to_string((float) 100*metrics.mac.tx_errors/metrics.mac.tx_pkts, 1) << "%";
   } else {
+    cout << "mtx_pkts=" << metrics.mac.tx_pkts << endl; 
     cout << float_to_string(0, 2) << "%";
   }
   cout << endl;

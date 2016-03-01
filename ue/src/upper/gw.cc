@@ -79,11 +79,13 @@ void gw::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
   {
     gw_log->warning("TUN/TAP not up - dropping gw DL message\n");
   }else{
-    if(pdu->N_bytes != write(tun_fd, pdu->msg, pdu->N_bytes))
+    int n = write(tun_fd, pdu->msg, pdu->N_bytes); 
+    if(pdu->N_bytes != n)
     {
+      printf("pdu->msg[0]=%d\n",pdu->msg[0]);
       gw_log->error("DL TUN/TAP write failure\n");
-      printf("DL TUN/TAP write failure writting %d bytes\n", pdu->N_bytes);
-    }
+      printf("DL TUN/TAP write failure (%d) writting %d bytes\n", n, pdu->N_bytes);
+    } 
   }
   pool->deallocate(pdu);
 }
@@ -208,6 +210,7 @@ void gw::run_thread()
               gw_log->info_hex(pdu->msg, pdu->N_bytes, "UL PDU");
 
               while(!rrc->rrc_connected() || !rrc->have_drb()) {
+                rrc->rrc_connect();
                 usleep(1000);
               }
               

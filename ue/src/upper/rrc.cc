@@ -109,12 +109,12 @@ uint16_t rrc::get_mnc()
 /*******************************************************************************
   PHY/MAC interface
 *******************************************************************************/
-/* Forces a UE-initiated connection release after a synchronization error or SR timeout */
+/* Forces a UE-initiated connection release after a failed SR */
 void rrc::connection_release()
 {
   if (state == RRC_STATE_RRC_CONNECTED) {
     rrc_connection_release(); 
-    if (nas->is_attached()) {
+    if (!nas->is_attached()) {
       rrc_log->console("NAS not attached, sending again Connection Request...\n");
       send_con_request();
     }
@@ -128,15 +128,15 @@ void rrc::connection_release()
 
 bool rrc::rrc_connected()
 {
-  if(RRC_STATE_RRC_CONNECTED == state) {
-    return true;
-  }
+  return (RRC_STATE_RRC_CONNECTED == state);
+}
+
+void rrc::rrc_connect() {
   if(RRC_STATE_IDLE == state) {
     rrc_log->info("RRC in IDLE state - sending connection request.\n");
     state = RRC_STATE_WAIT_FOR_CON_SETUP;
     send_con_request();
   }
-  return false;
 }
 
 bool rrc::have_drb()
@@ -229,6 +229,9 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
 void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 {
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
+  
+  srslte_vec_fprint_byte(stdout, pdu->msg, pdu->N_bytes);
+  
   LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;

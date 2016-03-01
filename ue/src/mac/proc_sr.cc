@@ -60,7 +60,7 @@ void sr_proc::step(uint32_t tti)
   if (initiated) {
     if (is_pending_sr) {
       if (params_db->get_param(mac_interface_params::SR_PUCCH_CONFIGURED)) {
-        if (sr_counter < dsr_transmax) {
+        if (sr_counter < dsr_transmax + 1) {
           int last_tx_tti = phy_h->sr_last_tx_tti(); 
           if (last_tx_tti >= 0 && last_tx_tti + 4 < tti || sr_counter == 0) {
             sr_counter++;
@@ -71,7 +71,6 @@ void sr_proc::step(uint32_t tti)
           Info("Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", sr_counter, dsr_transmax);
           log_h->console("Scheduling request failed: releasing RRC connection...\n");
           rrc->connection_release();
-          reset(); 
         }
       } else {
         do_ra = true; 

@@ -118,6 +118,7 @@ class rrc_interface_gw
 {
 public:
   virtual bool rrc_connected() = 0;
+  virtual void rrc_connect() = 0; 
   virtual bool have_drb() = 0;
 };
 

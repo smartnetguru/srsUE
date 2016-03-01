@@ -170,7 +170,7 @@ bool demux::process_pdus()
         have_data = true;
       }
     } while(buff);
-    if (cnt > 4) {
+    if (cnt > 20) {
       log_h->console("Warning dispatched %d packets for PID=%d\n", cnt, i);
     }
   }

@@ -121,6 +121,7 @@ private:
 
   // GW interface
   bool rrc_connected();
+  void rrc_connect(); 
   bool have_drb();
 
   // PDCP interface

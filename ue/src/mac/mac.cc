@@ -169,7 +169,7 @@ void mac::run_thread() {
         sr_procedure.start();
       }
       if (bsr_procedure.need_to_reset_sr()) {
-        Debug("Resetting SR procedure by BSR request\n");
+        Info("Resetting SR procedure by BSR request\n");
         sr_procedure.reset();
       }
       sr_procedure.step(tti);
@@ -262,6 +262,7 @@ void mac::harq_recv(uint32_t tti, bool ack, mac_interface_phy::tb_action_ul_t* a
   ul_harq.harq_recv(tti, ack, action);
   if (!ack) {
     metrics.tx_errors++;
+    metrics.tx_pkts++;
   } else {
     metrics.tx_brate += tbs;
   }
@@ -293,7 +294,6 @@ void mac::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::
       }
     }
     dl_harq.new_grant_dl(grant, action);
-    metrics.rx_pkts++;
   }
 }
 
@@ -327,6 +327,7 @@ void mac::new_grant_ul_ack(mac_interface_phy::mac_grant_t grant, bool ack, mac_i
   } else {
     metrics.tx_brate += tbs;
   }
+  metrics.tx_pkts++;
 }
 
 void mac::tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t harq_pid)
@@ -343,6 +344,7 @@ void mac::tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t harq_pid)
     } else {
       metrics.rx_errors++;
     }
+    metrics.rx_pkts++;
   }
 }
 

@@ -499,6 +499,12 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
     }
   }
   
+  /* Make sure the grant is valid */
+  if (!srslte_dft_precoding_valid_prb(grant->phy_grant.ul.L_prb) && grant->phy_grant.ul.L_prb <= cell.nof_prb) {
+    Warning("Received invalid UL grant. L=%d\n", grant->phy_grant.ul.L_prb);
+    ret = false; 
+  }
+  
   if (ret) {    
     grant->ndi = dci_unpacked.ndi;
     grant->pid = 0; // This is computed by MAC from TTI 
