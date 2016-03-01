@@ -43,7 +43,9 @@ rlc_um::rlc_um()
   vr_ur    = 0;
   vr_ux    = 0;
   vr_uh    = 0;
-
+  
+  vr_ur_in_rx_sdu = 0; 
+  
   pdu_lost = false;
 }
 
@@ -209,9 +211,9 @@ void rlc_um::timer_expired(uint32_t timeout_id)
     while(RX_MOD_BASE(vr_ur) < RX_MOD_BASE(vr_ux))
     {
       vr_ur = (vr_ur + 1)%rx_mod;
-      log->info("Entering Reassemble from timeout id=%d\n", timeout_id);
+      log->debug("Entering Reassemble from timeout id=%d\n", timeout_id);
       reassemble_rx_sdus();
-      log->info("Finished reassemble from timeout id=%d\n", timeout_id);
+      log->debug("Finished reassemble from timeout id=%d\n", timeout_id);
     }
     mac_timers->get(reordering_timeout_id)->stop();
     if(RX_MOD_BASE(vr_uh) > RX_MOD_BASE(vr_ur))
@@ -373,9 +375,9 @@ void rlc_um::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     vr_uh  = (header.sn + 1)%rx_mod;
 
   // Reassemble and deliver SDUs, while updating vr_ur
-  log->info("Entering Reassemble from received PDU\n");
+  log->debug("Entering Reassemble from received PDU\n");
   reassemble_rx_sdus();
-  log->info("Finished reassemble from received PDU\n");
+  log->debug("Finished reassemble from received PDU\n");
   
   // Update reordering variables and timers
   if(mac_timers->get(reordering_timeout_id)->is_running())
@@ -418,8 +420,8 @@ void rlc_um::reassemble_rx_sdus()
         rx_sdu->N_bytes += len;
         rx_window[vr_ur].buf->msg += len;
         rx_window[vr_ur].buf->N_bytes -= len;
-        if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi)) {
-          log->warning("Dropping remainder of lost PDU (lower edge middle segments)\n");
+        if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi) || vr_ur != ((vr_ur_in_rx_sdu+1)%rx_mod)) {
+          log->warning("Dropping remainder of lost PDU (lower edge middle segments, vr_ur=%d, vr_ur_in_rx_sdu=%d)\n", vr_ur, vr_ur_in_rx_sdu);
           rx_sdu->reset();
         } else {
           log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d, i=%d (lower edge middle segments)", rb_id_text[lcid], vr_ur, i);
@@ -432,11 +434,14 @@ void rlc_um::reassemble_rx_sdus()
       // Handle last segment
       memcpy(&rx_sdu->msg[rx_sdu->N_bytes], rx_window[vr_ur].buf->msg, rx_window[vr_ur].buf->N_bytes);
       rx_sdu->N_bytes += rx_window[vr_ur].buf->N_bytes;
+      log->debug("Writting last segment in SDU buffer. Lower edge vr_ur=%d, Buffer size=%d, segment size=%d\n", 
+               vr_ur, rx_sdu->N_bytes, rx_window[vr_ur].buf->N_bytes);
+      vr_ur_in_rx_sdu = vr_ur; 
       if(rlc_um_end_aligned(rx_window[vr_ur].header.fi))
       {
         if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi)) {
           log->warning("Dropping remainder of lost PDU (lower edge last segments)\n");
-          rx_sdu->reset();
+          rx_sdu->reset();          
         } else {
           log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d (lower edge last segments)", rb_id_text[lcid], vr_ur);
           pdcp->write_pdu(lcid, rx_sdu);
@@ -462,11 +467,13 @@ void rlc_um::reassemble_rx_sdus()
     {
       int len = rx_window[vr_ur].header.li[i];
       memcpy(&rx_sdu->msg[rx_sdu->N_bytes], rx_window[vr_ur].buf->msg, len);
+      log->debug("Concatenating %d bytes in to current length %d. rx_window remaining bytes=%d, vr_ur_in_rx_sdu=%d, vr_ur=%d, rx_mod=%d, last_mod=%d\n",
+        len, rx_sdu->N_bytes, rx_window[vr_ur].buf->N_bytes, vr_ur_in_rx_sdu, vr_ur, rx_mod, (vr_ur_in_rx_sdu+1)%rx_mod);
       rx_sdu->N_bytes += len;      
       rx_window[vr_ur].buf->msg += len;
       rx_window[vr_ur].buf->N_bytes -= len;
-      if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi)) {
-        log->warning("Dropping remainder of lost PDU (update vr_ur middle segments)\n");
+      if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi) || vr_ur != ((vr_ur_in_rx_sdu+1)%rx_mod)) {
+        log->warning("Dropping remainder of lost PDU (update vr_ur middle segments, vr_ur=%d, vr_ur_in_rx_sdu=%d)\n", vr_ur, vr_ur_in_rx_sdu);
         rx_sdu->reset();
       } else {
         log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d, i=%d, (update vr_ur middle segments)", rb_id_text[lcid], vr_ur, i);
@@ -475,10 +482,13 @@ void rlc_um::reassemble_rx_sdus()
       }
       pdu_lost = false;
     }
-
+    
     // Handle last segment
     memcpy(&rx_sdu->msg[rx_sdu->N_bytes], rx_window[vr_ur].buf->msg, rx_window[vr_ur].buf->N_bytes);
     rx_sdu->N_bytes += rx_window[vr_ur].buf->N_bytes;
+    log->debug("Writting last segment in SDU buffer. Updating vr_ur=%d, Buffer size=%d, segment size=%d\n", 
+               vr_ur, rx_sdu->N_bytes, rx_window[vr_ur].buf->N_bytes);
+    vr_ur_in_rx_sdu = vr_ur; 
     if(rlc_um_end_aligned(rx_window[vr_ur].header.fi))
     {
       if(pdu_lost && !rlc_um_start_aligned(rx_window[vr_ur].header.fi)) {

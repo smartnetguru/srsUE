@@ -97,6 +97,7 @@ private:
 
   // RX SDU buffers
   byte_buffer_t      *rx_sdu;
+  uint32_t            vr_ur_in_rx_sdu;
 
   // Mutexes
   boost::mutex        mutex;
