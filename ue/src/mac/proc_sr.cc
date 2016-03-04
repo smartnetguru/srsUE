@@ -71,6 +71,8 @@ void sr_proc::step(uint32_t tti)
           Info("Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", sr_counter, dsr_transmax);
           log_h->console("Scheduling request failed: releasing RRC connection...\n");
           rrc->connection_release();
+          params_db->set_param(mac_interface_params::SR_PUCCH_CONFIGURED, 0);
+          do_ra = true; 
         }
       } else {
         do_ra = true; 

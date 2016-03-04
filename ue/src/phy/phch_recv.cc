@@ -239,6 +239,7 @@ int phch_recv::sync_sfn(void) {
   int ret = SRSLTE_ERROR; 
   uint8_t bch_payload[SRSLTE_BCH_PAYLOAD_LEN];
 
+  Info("SYNC_SFM: Finding PSS/SSS...\n");
   srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
   ret = srslte_ue_sync_get_buffer(&ue_sync, &sf_buffer);
   if (ret < 0) {
@@ -250,6 +251,7 @@ int phch_recv::sync_sfn(void) {
     if (srslte_ue_sync_get_sfidx(&ue_sync) == 0) {
       uint32_t sfn_offset=0;
       srslte_pbch_decode_reset(&ue_mib.pbch);
+      Info("SYNC_SFM: Decoding MIB...\n");
       int n = srslte_ue_mib_decode(&ue_mib, sf_buffer, bch_payload, NULL, &sfn_offset);
       if (n < 0) {
         Error("Error decoding MIB while synchronising SFN");      
@@ -261,10 +263,13 @@ int phch_recv::sync_sfn(void) {
         sfn = (sfn + sfn_offset)%1024;         
         tti = sfn*10 + srslte_ue_sync_get_sfidx(&ue_sync);
         
-        srslte_ue_sync_decode_sss_on_track(&ue_sync, false);
+        srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
+        Info("SYNC_SFM: DONE, TTI=%d\n", tti);
         return 1;
       }
     }    
+  } else {
+    Info("SYNC_SFM: PSS/SSS not found...\n");
   }
   return 0;
 }
@@ -325,7 +330,7 @@ void phch_recv::run_thread()
         worker = (phch_worker*) workers_pool->wait_worker(tti);
         if (worker) {          
           buffer = worker->get_buffer();
-          if (srslte_ue_sync_zerocopy(&ue_sync, buffer) == 1) {
+          if (srslte_ue_sync_zerocopy(&ue_sync, buffer) == 1 && (tti%10) == srslte_ue_sync_get_sfidx(&ue_sync)) {
             log_h->step(tti);
 
             Debug("Worker %d synchronized\n", worker->get_id());
@@ -364,6 +369,7 @@ void phch_recv::run_thread()
             mac->tti_clock(tti);
           } else {
             log_h->console("Sync error.\n");
+            log_h->error("Synchronization Error: TTI=%d, sf_idx=%d.\n", tti, srslte_ue_sync_get_sfidx(&ue_sync));
             worker->release();
             phy_state = SYNCING;
             worker_com->reset_ul();

@@ -125,7 +125,6 @@ void metrics_stdout::print_metrics()
   if (metrics.mac.tx_pkts > 0) {
     cout << float_to_string((float) 100*metrics.mac.tx_errors/metrics.mac.tx_pkts, 1) << "%";
   } else {
-    cout << "mtx_pkts=" << metrics.mac.tx_pkts << endl; 
     cout << float_to_string(0, 2) << "%";
   }
   cout << endl;
