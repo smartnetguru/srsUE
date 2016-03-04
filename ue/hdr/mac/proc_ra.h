@@ -117,6 +117,7 @@ private:
     
     srslte_softbuffer_rx_t softbuffer_rar; 
     
+    
     enum {
       IDLE = 0,
       INITIALIZATION,           // Section 5.1.1

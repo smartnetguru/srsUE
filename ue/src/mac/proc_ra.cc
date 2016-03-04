@@ -107,6 +107,7 @@ void ra_proc::read_params() {
   
   if (contentionResolutionTimer > 0) {
     timers_db->get(mac::CONTENTION_TIMER)->set(this, contentionResolutionTimer);
+    timers_db->get(mac::CONTENTION_TIMER)->stop();
   }
 
 }
@@ -137,12 +138,13 @@ const char* state_str[11] = {"Idle",
                             "RA ResSelection: ",
                             "RA PreambleTx  : ",
                             "RA PDCCH setup : ",
-                            "RA PreambleRx  : ",
+                            "RA ResponseRcv : ",
                             "RA ResponseErr : ",
                             "RA BackoffWait : ",
                             "RA ContentResol: ",
                             "RA Completed   : ",
                             "RA Problem     : "};
+
                            
 #define rError(fmt, ...) Error("%s" fmt, state_str[state], ##__VA_ARGS__)                         
 #define rInfo(fmt, ...)  Info("%s" fmt, state_str[state], ##__VA_ARGS__)                         
