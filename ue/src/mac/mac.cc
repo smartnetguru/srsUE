@@ -153,7 +153,8 @@ void mac::run_thread() {
   while(started) {
 
     /* Warning: Here order of invocation of procedures is important!! */
-    tti = ttisync.wait();
+    ttisync.wait();
+    tti = phy_h->get_current_tti();
     
     if (started) {
       log_h->step(tti);

@@ -59,7 +59,8 @@ bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc
   phy_state    = IDLE; 
   time_adv_sec = 0; 
   cell_is_set  = false; 
-
+  sync_sfn_cnt = 0; 
+  
   nof_tx_mutex = MUTEX_X_WORKER*workers_pool->get_nof_workers();
   worker_com->set_nof_mutex(nof_tx_mutex);
     
@@ -239,7 +240,6 @@ int phch_recv::sync_sfn(void) {
   int ret = SRSLTE_ERROR; 
   uint8_t bch_payload[SRSLTE_BCH_PAYLOAD_LEN];
 
-  Info("SYNC_SFM: Finding PSS/SSS...\n");
   srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
   ret = srslte_ue_sync_get_buffer(&ue_sync, &sf_buffer);
   if (ret < 0) {
@@ -250,8 +250,7 @@ int phch_recv::sync_sfn(void) {
   if (ret == 1) {
     if (srslte_ue_sync_get_sfidx(&ue_sync) == 0) {
       uint32_t sfn_offset=0;
-      srslte_pbch_decode_reset(&ue_mib.pbch);
-      Info("SYNC_SFM: Decoding MIB...\n");
+      Info("SYNC_SFN: Decoding MIB...\n");
       int n = srslte_ue_mib_decode(&ue_mib, sf_buffer, bch_payload, NULL, &sfn_offset);
       if (n < 0) {
         Error("Error decoding MIB while synchronising SFN");      
@@ -264,18 +263,20 @@ int phch_recv::sync_sfn(void) {
         tti = sfn*10 + srslte_ue_sync_get_sfidx(&ue_sync);
         
         srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
-        Info("SYNC_SFM: DONE, TTI=%d\n", tti);
+        Info("SYNC_SFN: DONE, TTI=%d\n", tti);
+        srslte_ue_mib_reset(&ue_mib);
         return 1;
       }
     }    
   } else {
-    Info("SYNC_SFM: PSS/SSS not found...\n");
+    Info("SYNC_SFN: PSS/SSS not found...\n");
   }
   return 0;
 }
 
 void phch_recv::run_thread()
 {
+  int sync_res; 
   phch_worker *worker = NULL;
   cf_t *buffer = NULL;
   while(running) {
@@ -295,6 +296,7 @@ void phch_recv::run_thread()
           radio_h->set_tx_srate(srate);
           Info("Cell found. Synchronizing...\n");
           phy_state = SYNCING;
+          sync_sfn_cnt = 0; 
         }
         break;
       case SYNCING:
@@ -312,10 +314,20 @@ void phch_recv::run_thread()
           case 1:
             srslte_ue_sync_set_agc_period(&ue_sync, 20);
             phy_state = SYNC_DONE;  
+            tti_error = 0; 
             break;        
           case 0:
             break;        
         } 
+        sync_sfn_cnt++;
+        if (sync_sfn_cnt >= SYNC_SFN_TIMEOUT) {
+          radio_h->stop_rx();
+          radio_is_streaming = false; 
+          usleep(10000);
+          sync_sfn_cnt = 0; 
+          log_h->console("Timeout while synchronizing SFN\n");
+          log_h->warning("Timeout while synchronizing SFN\n");
+        }
        break;
       case SYNC_DONE:
         /* Set synchronization track phase threshold and averaging factor */
@@ -328,9 +340,19 @@ void phch_recv::run_thread()
         
         tti = (tti+1)%10240;        
         worker = (phch_worker*) workers_pool->wait_worker(tti);
+        sync_res = 0; 
         if (worker) {          
           buffer = worker->get_buffer();
-          if (srslte_ue_sync_zerocopy(&ue_sync, buffer) == 1 && (tti%10) == srslte_ue_sync_get_sfidx(&ue_sync)) {
+          sync_res = srslte_ue_sync_zerocopy(&ue_sync, buffer); 
+          if (sync_res == 1) {
+            if ((tti%10) != srslte_ue_sync_get_sfidx(&ue_sync)) {
+              tti_error++;
+            } else {
+              tti_error = 0;
+            }
+          }
+          if (sync_res == 1 && tti_error == 0) {
+            
             log_h->step(tti);
 
             Debug("Worker %d synchronized\n", worker->get_id());
@@ -369,11 +391,11 @@ void phch_recv::run_thread()
             mac->tti_clock(tti);
           } else {
             log_h->console("Sync error.\n");
-            log_h->error("Synchronization Error: TTI=%d, sf_idx=%d.\n", tti, srslte_ue_sync_get_sfidx(&ue_sync));
+            log_h->error("Synchronization Error: number of tti errors=%d.\n", tti_error);
             worker->release();
             phy_state = SYNCING;
             worker_com->reset_ul();
-            //rrc->connection_release();
+            sync_sfn_cnt = 0; 
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here

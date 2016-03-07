@@ -100,7 +100,13 @@ private:
   float         cellsearch_cfo;
   uint32_t      nof_tx_mutex;
   uint32_t      tx_mutex_cnt;
-    
+
+  uint32_t      sync_sfn_cnt;
+  const static uint32_t SYNC_SFN_TIMEOUT = 5000;
+  
+  uint32_t      tti_error;
+  const static uint32_t TTI_ERROR_LIMIT = 5; 
+
   bool          cell_search(int force_N_id_2 = -1);
   bool          init_cell();
   void          free_cell();

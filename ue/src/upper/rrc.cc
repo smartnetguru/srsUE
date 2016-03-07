@@ -230,8 +230,6 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 {
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
   
-  srslte_vec_fprint_byte(stdout, pdu->msg, pdu->N_bytes);
-  
   LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;
