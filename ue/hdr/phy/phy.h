@@ -52,7 +52,7 @@ class phy
 {
 public:
   phy();
-  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phymac *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
+  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phy *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
   void stop();
 
   void set_agc_enable(bool enabled);
@@ -73,7 +73,7 @@ public:
   /********** RRC INTERFACE ********************/
   void    reset();
   bool    status_is_sync();
-  void    configure_ul_params();
+  void    configure_ul_params(bool pregen_disabled = false);
   void    resync_sfn(); 
   
   /********** MAC INTERFACE ********************/

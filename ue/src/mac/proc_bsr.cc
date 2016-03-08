@@ -218,6 +218,7 @@ void bsr_proc::step(uint32_t tti)
     if (params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC)) {
       timer_periodic = true; 
       timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));
+      timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
     }
   }
 
@@ -225,6 +226,7 @@ void bsr_proc::step(uint32_t tti)
     if (params_db->get_param(mac_interface_params::BSR_TIMER_RETX)) {
       timer_retx = true; 
       timers_db->get(mac::BSR_TIMER_RETX)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
+      timers_db->get(mac::BSR_TIMER_RETX)->run();
     }
   }
 

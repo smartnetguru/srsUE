@@ -58,7 +58,6 @@ public:
       callback = callback_; 
       timeout = timeout_; 
       reset();
-      run();
     }
     bool is_running() {
       return (counter < timeout) && running; 

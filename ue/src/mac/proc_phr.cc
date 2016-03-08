@@ -92,8 +92,9 @@ void phr_proc::step(uint32_t tti)
   {
     timer_periodic = params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC); 
     timers_db->get(mac::PHR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC));
+    timers_db->get(mac::PHR_TIMER_PERIODIC)->run();
     phr_is_triggered = true; 
-    log_h->info("PHR triggered by timer periodic\n");
+    log_h->info("PHR triggered by timer periodic setup\n");
   }
 
   if (timer_prohibit != params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT) &&
@@ -102,7 +103,8 @@ void phr_proc::step(uint32_t tti)
   {
     timer_prohibit = params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT); 
     timers_db->get(mac::PHR_TIMER_PROHIBIT)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT));
-    log_h->info("PHR triggered by timer prohibit\n");
+    timers_db->get(mac::PHR_TIMER_PROHIBIT)->run();
+    log_h->info("PHR triggered by timer prohibit setup\n");
     phr_is_triggered = true; 
   }  
   if (abs(params_db->get_param(mac_interface_params::PHR_PATHLOSS_DB) - cur_pathloss_db) > 

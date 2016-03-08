@@ -42,7 +42,7 @@ class sr_proc : public proc
 {
 public:
   sr_proc();
-  void init(phy_interface *phy_h, rrc_interface_phymac *rrc, srslte::log *log_h, mac_params *params_db);
+  void init(phy_interface *phy_h, rrc_interface_mac *rrc, srslte::log *log_h, mac_params *params_db);
   void step(uint32_t tti);  
   void reset();
   void start();
@@ -54,7 +54,7 @@ private:
   bool          is_pending_sr;
   mac_params    *params_db; 
   
-  rrc_interface_phymac *rrc;
+  rrc_interface_mac *rrc;
   phy_interface *phy_h; 
   srslte::log   *log_h;
   bool          initiated;

@@ -43,7 +43,7 @@ phch_recv::phch_recv() {
   running = false; 
 }
 
-bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc_interface_phymac *_rrc, 
+bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc_interface_phy *_rrc, 
                      prach* _prach_buffer, srslte::thread_pool* _workers_pool,
                      phch_common* _worker_com, srslte::log* _log_h, uint32_t prio)
 {
@@ -106,7 +106,7 @@ bool phch_recv::init_cell() {
   {
     if (!srslte_ue_sync_init(&ue_sync, cell, radio_recv_wrapper_cs, radio_h)) 
     {
-      
+      worker_com->params_db->set_param(phy_interface_params::PHY_CELL_ID, cell.id);
       for (int i=0;i<workers_pool->get_nof_workers();i++) {
         if (!((phch_worker*) workers_pool->get_worker(i))->init_cell(cell)) {
           Error("Error setting cell: initiating PHCH worker\n");
@@ -276,6 +276,7 @@ int phch_recv::sync_sfn(void) {
 }
 
 void phch_recv::resync_sfn() {
+  sync_sfn_cnt = 0; 
   phy_state = SYNCING;
 }
 
@@ -320,7 +321,6 @@ void phch_recv::run_thread()
           case 1:
             srslte_ue_sync_set_agc_period(&ue_sync, 20);
             phy_state = SYNC_DONE;  
-            tti_error = 0; 
             break;        
           case 0:
             break;        
@@ -351,13 +351,6 @@ void phch_recv::run_thread()
           buffer = worker->get_buffer();
           sync_res = srslte_ue_sync_zerocopy(&ue_sync, buffer); 
           if (sync_res == 1) {
-            if ((tti%10) != srslte_ue_sync_get_sfidx(&ue_sync)) {
-              tti_error++;
-            } else {
-              tti_error = 0;
-            }
-          }
-          if (sync_res == 1 && tti_error == 0) {
             
             log_h->step(tti);
 
@@ -395,13 +388,18 @@ void phch_recv::run_thread()
             }            
             workers_pool->start_worker(worker);             
             mac->tti_clock(tti);
+            // Notify RRC in-sync every 1 frame
+            if ((tti%10) == 0) {
+              rrc->in_sync();
+              log_h->debug("Sending in-sync to RRC\n");
+            }
           } else {
             log_h->console("Sync error.\n");
-            log_h->error("Synchronization Error: number of tti errors=%d.\n", tti_error);
+            log_h->error("Sync error. Sending out-of-sync to RRC\n");
+            // Notify RRC of out-of-sync frame
+            rrc->out_of_sync();
             worker->release();
-            phy_state = SYNCING;
-            worker_com->reset_ul();
-            sync_sfn_cnt = 0; 
+            worker_com->reset_ul();            
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here

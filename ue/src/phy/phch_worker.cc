@@ -720,7 +720,7 @@ void phch_worker::enable_pregen_signals(bool enabled)
   pregen_enabled = enabled; 
 }
 
-void phch_worker::set_ul_params()
+void phch_worker::set_ul_params(bool pregen_disabled)
 {
 
   /* PUSCH DMRS signal configuration */
@@ -804,8 +804,7 @@ void phch_worker::set_ul_params()
   /* SR configuration */
   I_sr                         = (uint32_t) phy->params_db->get_param(phy_interface_params::SR_CONFIG_INDEX);
   
-
-  if (pregen_enabled) { 
+  if (pregen_enabled && !pregen_disabled) { 
     Info("Pre-generating UL signals\n");
     srslte_ue_ul_pregen_signals(&ue_ul);
   }  

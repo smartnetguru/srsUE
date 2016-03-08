@@ -219,6 +219,7 @@ void rlc_um::timer_expired(uint32_t timeout_id)
     if(RX_MOD_BASE(vr_uh) > RX_MOD_BASE(vr_ur))
     {
       mac_timers->get(reordering_timeout_id)->set(this, t_reordering);
+      mac_timers->get(reordering_timeout_id)->run();
       vr_ux = vr_uh;
     }
 
@@ -393,6 +394,7 @@ void rlc_um::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     if(RX_MOD_BASE(vr_uh) > RX_MOD_BASE(vr_ur))
     {
       mac_timers->get(reordering_timeout_id)->set(this, t_reordering);
+      mac_timers->get(reordering_timeout_id)->run();
       vr_ux = vr_uh;
     }
   }

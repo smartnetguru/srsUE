@@ -54,7 +54,7 @@ public:
   void  set_tx_time(srslte_timestamp_t tx_time);
   void  set_cfo(float cfo);
   
-  void  set_ul_params();
+  void  set_ul_params(bool pregen_disabled = false);
   void  set_crnti(uint16_t rnti);
   void  enable_pregen_signals(bool enabled);
   

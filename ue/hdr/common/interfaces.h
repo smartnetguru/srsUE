@@ -94,13 +94,23 @@ public:
   virtual void      write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual uint32_t  get_ul_count() = 0;
   virtual bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi) = 0;
+  virtual uint16_t  get_short_mac() = 0; 
 };
 
-// RRC interface for PHY/MAC
-class rrc_interface_phymac
+// RRC interface for MAC
+class rrc_interface_mac
 {
 public:
-  virtual void connection_release() = 0;
+  virtual void release_pucch_srs() = 0;
+  virtual void ra_problem() = 0; 
+};
+
+// RRC interface for PHY
+class rrc_interface_phy
+{
+public:
+  virtual void in_sync() = 0;
+  virtual void out_of_sync() = 0;
 };
 
 // RRC interface for NAS

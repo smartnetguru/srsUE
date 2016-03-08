@@ -48,7 +48,7 @@ uint32_t backoff_table[16] = {0, 10, 20, 30, 40, 60, 80, 120, 160, 240, 320, 480
 // Table 7.6-1: DELTA_PREAMBLE values.
 int delta_preamble_db_table[5] = {0, 0, -3, -3, 8};
 
-bool ra_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* params_db_, srslte::timers* timers_db_,
+bool ra_proc::init(phy_interface* phy_h_, rrc_interface_mac *rrc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers* timers_db_,
                    mux* mux_unit_, demux* demux_unit_)
 {
   phy_h     = phy_h_; 
@@ -57,8 +57,12 @@ bool ra_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* param
   timers_db = timers_db_;
   mux_unit  = mux_unit_; 
   demux_unit= demux_unit_; 
+  rrc       = rrc_; 
   srslte_softbuffer_rx_init(&softbuffer_rar, 10);
   
+  // Tell demux to call us when a UE CRID is received
+  demux_unit->set_uecrid_callback(uecrid_callback, this);
+
   reset();
 }
 
@@ -107,7 +111,6 @@ void ra_proc::read_params() {
   
   if (contentionResolutionTimer > 0) {
     timers_db->get(mac::CONTENTION_TIMER)->set(this, contentionResolutionTimer);
-    timers_db->get(mac::CONTENTION_TIMER)->stop();
   }
 
 }
@@ -118,7 +121,7 @@ bool ra_proc::in_progress()
 }
 
 bool ra_proc::is_successful() {
-  return state == COMPLETION;
+  return state == COMPLETION_DONE;
 }
 
 bool ra_proc::is_response_error() {
@@ -133,7 +136,7 @@ bool ra_proc::is_error() {
   return state == RA_PROBLEM;
 }
 
-const char* state_str[11] = {"Idle",
+const char* state_str[12] = {"Idle",
                             "RA Initializat.: ",
                             "RA ResSelection: ",
                             "RA PreambleTx  : ",
@@ -142,6 +145,7 @@ const char* state_str[11] = {"Idle",
                             "RA ResponseErr : ",
                             "RA BackoffWait : ",
                             "RA ContentResol: ",
+                            "RA Completed   : ",
                             "RA Completed   : ",
                             "RA Problem     : "};
 
@@ -312,11 +316,9 @@ void ra_proc::tb_decoded_ok() {
           
           // If we have a C-RNTI, tell Mux unit to append C-RNTI CE if no CCCH SDU transmission
           if (transmitted_crnti) {
+            Info("Appending C-RNTI MAC CE in next transmission\n");
             mux_unit->append_crnti_ce_next_tx(transmitted_crnti);
-          }           
-          
-          // Tell demux to call us when a UE CRID is received
-          demux_unit->set_uecrid_callback(uecrid_callback, this);
+          }          
         }                  
         rDebug("Going to Contention Resolution state\n");
         state = CONTENTION_RESOLUTION;
@@ -348,6 +350,7 @@ void ra_proc::step_response_error() {
   preambleTransmissionCounter++;
   if (preambleTransmissionCounter >= preambleTransMax + 1) {
     rError("Maximum number of transmissions reached (%d)\n", preambleTransMax);
+    rrc->ra_problem();
     state = RA_PROBLEM;
   } else {
     backoff_interval_start = phy_h->get_current_tti(); 
@@ -386,11 +389,7 @@ bool ra_proc::contention_resolution_id_received(uint64_t rx_contention_id) {
   timers_db->get(mac::CONTENTION_TIMER)->stop();
   
   if (transmitted_contention_id == rx_contention_id) 
-  {
-    log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", 
-                   params_db->get_param(mac_interface_params::RNTI_TEMP), 
-                   rar_pdu_msg.get()->get_ta_cmd());
-    
+  {    
     // UE Contention Resolution ID included in MAC CE matches the CCCH SDU transmitted in Msg3
     params_db->set_param(mac_interface_params::RNTI_C, params_db->get_param(mac_interface_params::RNTI_TEMP));
     // finish the disassembly and demultiplexing of the MAC PDU
@@ -414,27 +413,27 @@ bool ra_proc::contention_resolution_id_received(uint64_t rx_contention_id) {
 void ra_proc::step_contention_resolution() {
   // If Msg3 has been sent
   if (mux_unit->msg3_is_transmitted()) 
-  {
-    // Save transmitted UE contention id, as defined by higher layers 
-    if (!transmitted_contention_id) {
-      transmitted_contention_id = params_db->get_param(mac_interface_params::CONTENTION_ID);
-      params_db->set_param(mac_interface_params::CONTENTION_ID, 0);                        
-    }
-    
+  {    
     msg3_transmitted = true; 
-    if (pdcch_to_crnti_received != PDCCH_CRNTI_NOT_RECEIVED) 
+    if (transmitted_crnti) 
     {
-      rInfo("PDCCH for C-RNTI received\n");
-      // Random Access initiated by MAC itself or PDCCH order (transmission of MAC C-RNTI CE)
+      // Random Access with transmission of MAC C-RNTI CE
       if ((!started_by_pdcch && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT) || started_by_pdcch) 
       {
+        rInfo("PDCCH for C-RNTI received\n");
         timers_db->get(mac::CONTENTION_TIMER)->stop();
         params_db->set_param(mac_interface_params::RNTI_TEMP, 0);
         state = COMPLETION;           
       }            
       pdcch_to_crnti_received = PDCCH_CRNTI_NOT_RECEIVED;      
+    } else {
+      // RA with transmission of CCCH SDU is resolved in contention_resolution_id_received() callback function
+      if (!transmitted_contention_id) {
+        // Save transmitted UE contention id, as defined by higher layers 
+        transmitted_contention_id = params_db->get_param(mac_interface_params::CONTENTION_ID);
+        params_db->set_param(mac_interface_params::CONTENTION_ID, 0);                        
+      }
     }
-    // RA initiated by RLC order is resolved in contention_resolution_id_received() callback function
   } else {
     rDebug("Msg3 not yet transmitted\n");
   }
@@ -442,6 +441,9 @@ void ra_proc::step_contention_resolution() {
 }
 
 void ra_proc::step_completition() {
+  log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", 
+                   params_db->get_param(mac_interface_params::RNTI_C), 
+                   rar_pdu_msg.get()->get_ta_cmd());
   params_db->set_param(mac_interface_params::RA_PREAMBLEINDEX, 0);
   params_db->set_param(mac_interface_params::RA_MASKINDEX, 0);
   if (!msg3_flushed) {
@@ -449,6 +451,7 @@ void ra_proc::step_completition() {
     msg3_flushed = true; 
   }
   msg3_transmitted = false;  
+  state = COMPLETION_DONE;
 }
 
 void ra_proc::step(uint32_t tti_)
@@ -483,6 +486,7 @@ void ra_proc::step(uint32_t tti_)
       break;
       case COMPLETION:
         step_completition();
+      case COMPLETION_DONE:
       break;
     }
   }  
@@ -511,17 +515,24 @@ void ra_proc::start_pdcch_order()
 // Contention Resolution Timer is expired (Section 5.1.5)
 void ra_proc::timer_expired(uint32_t timer_id)
 {
-  rInfo("Contention Resolution Timer expired. Going to Response Error\n");
+  rInfo("Contention Resolution Timer expired. Stopping PDCCH Search and going to Response Error\n");
   params_db->set_param(mac_interface_params::RNTI_TEMP, 0);
   state = RESPONSE_ERROR; 
+  phy_h->pdcch_dl_search_reset();
 }
 
-void ra_proc::pdcch_to_crnti(bool is_uplink_grant) {
-  if (is_uplink_grant) {
+void ra_proc::pdcch_to_crnti(bool contains_uplink_grant) {
+  rInfo("PDCCH to C-RNTI received %s UL grant\n", contains_uplink_grant?"with":"without");
+  if (contains_uplink_grant) {
     pdcch_to_crnti_received = PDCCH_CRNTI_UL_GRANT;     
   } else {
     pdcch_to_crnti_received = PDCCH_CRNTI_DL_GRANT;         
   }
+}
+
+void ra_proc::harq_retx()
+{
+  timers_db->get(mac::CONTENTION_TIMER)->reset();
 }
 
 }

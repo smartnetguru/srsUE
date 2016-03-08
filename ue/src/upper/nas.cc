@@ -493,6 +493,12 @@ void nas::gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT *msg)
 
 void nas::send_identity_response(){}
 
+
+uint16_t nas::get_short_mac()
+{
+  return shortMAC;
+}
+
 void nas::send_service_request()
 {
   byte_buffer_t *msg = pool->allocate();
@@ -518,7 +524,8 @@ void nas::send_service_request()
   msg->N_bytes++;
   msg->msg[3] = mac[3];
   msg->N_bytes++;
-
+  shortMAC = mac[2]<<8 | mac[3];
+  
   nas_log->info("Sending service request\n");
   rrc->write_sdu(RB_ID_SRB1, msg);
 }

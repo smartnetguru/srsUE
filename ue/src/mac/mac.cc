@@ -50,7 +50,7 @@ mac::mac() : ttisync(10240),
   signals_pregenerated = false; 
 }
   
-bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_phymac *rrc, srslte::log *log_h_)
+bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_mac *rrc, srslte::log *log_h_)
 {
   started = false; 
   phy_h = phy;
@@ -67,7 +67,7 @@ bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_phymac 
   phr_procedure.init(phy_h,        log_h, &params_db, &timers_db);
   mux_unit.init     (       rlc_h, log_h,                         &bsr_procedure, &phr_procedure);
   demux_unit.init   (phy_h, rlc_h, log_h,             &timers_db);
-  ra_procedure.init (phy_h,        log_h, &params_db, &timers_db, &mux_unit, &demux_unit);
+  ra_procedure.init (phy_h, rrc,   log_h, &params_db, &timers_db, &mux_unit, &demux_unit);
   sr_procedure.init (phy_h, rrc,   log_h, &params_db);
   ul_harq.init      (              log_h, &params_db, &timers_db, &mux_unit);
   dl_harq.init      (              log_h, &params_db, &timers_db, &demux_unit);
@@ -134,9 +134,7 @@ void mac::reset()
   phy_h->pdcch_ul_search_reset();
   
   signals_pregenerated = false; 
-  is_first_ul_grant = true; 
-  
-  params_db.set_param(mac_interface_params::SR_PUCCH_CONFIGURED, 0);
+  is_first_ul_grant = true;   
 }
 
 void mac::run_thread() {
@@ -257,15 +255,21 @@ void mac::pch_decoded_ok(uint32_t len)
   }
 }
 
-void mac::harq_recv(uint32_t tti, bool ack, mac_interface_phy::tb_action_ul_t* action)
+void mac::tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t harq_pid)
 {
-  int tbs = ul_harq.get_current_tbs(tti);
-  ul_harq.harq_recv(tti, ack, action);
-  if (!ack) {
-    metrics.tx_errors++;
-    metrics.tx_pkts++;
+  if (rnti_type == SRSLTE_RNTI_RAR) {
+    if (ack) {
+      ra_procedure.tb_decoded_ok();
+    }
   } else {
-    metrics.tx_brate += tbs;
+    dl_harq.tb_decoded(ack, rnti_type, harq_pid);
+    if (ack) {
+      pdu_process_thread.notify();
+      metrics.rx_brate += dl_harq.get_current_tbs(harq_pid);
+    } else {
+      metrics.rx_errors++;
+    }
+    metrics.rx_pkts++;
   }
 }
 
@@ -289,10 +293,8 @@ void mac::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::
     }
   } else {
     // If PDCCH for C-RNTI and RA procedure in Contention Resolution, notify it
-    if (grant.rnti_type == SRSLTE_RNTI_USER) {
-      if (ra_procedure.is_contention_resolution()) {
-        ra_procedure.pdcch_to_crnti(false);
-      }
+    if (grant.rnti_type == SRSLTE_RNTI_USER && ra_procedure.is_contention_resolution()) {
+      ra_procedure.pdcch_to_crnti(false);      
     }
     dl_harq.new_grant_dl(grant, action);
   }
@@ -310,10 +312,8 @@ void mac::new_grant_ul(mac_interface_phy::mac_grant_t grant, mac_interface_phy::
     is_first_ul_grant = false; 
     timers_db.get(mac::PHR_TIMER_PERIODIC)->run();
   }
-  if (grant.rnti_type == SRSLTE_RNTI_USER) {
-    if (ra_procedure.is_contention_resolution()) {
-      ra_procedure.pdcch_to_crnti(true);
-    }
+  if (grant.rnti_type == SRSLTE_RNTI_USER && ra_procedure.is_contention_resolution()) {
+    ra_procedure.pdcch_to_crnti(true);    
   }
   ul_harq.new_grant_ul(grant, action);
   metrics.tx_pkts++;
@@ -329,26 +329,28 @@ void mac::new_grant_ul_ack(mac_interface_phy::mac_grant_t grant, bool ack, mac_i
     metrics.tx_brate += tbs;
   }
   metrics.tx_pkts++;
-}
-
-void mac::tb_decoded(bool ack, srslte_rnti_type_t rnti_type, uint32_t harq_pid)
-{
-  if (rnti_type == SRSLTE_RNTI_RAR) {
-    if (ack) {
-      ra_procedure.tb_decoded_ok();
-    }
-  } else {
-    dl_harq.tb_decoded(ack, rnti_type, harq_pid);
-    if (ack) {
-      pdu_process_thread.notify();
-      metrics.rx_brate += dl_harq.get_current_tbs(harq_pid);
-    } else {
-      metrics.rx_errors++;
-    }
-    metrics.rx_pkts++;
+  if (!ack && ra_procedure.is_contention_resolution()) {
+    ra_procedure.harq_retx();
+  }
+  if (grant.rnti_type == SRSLTE_RNTI_USER && ra_procedure.is_contention_resolution()) {
+    ra_procedure.pdcch_to_crnti(true);
   }
 }
 
+void mac::harq_recv(uint32_t tti, bool ack, mac_interface_phy::tb_action_ul_t* action)
+{
+  int tbs = ul_harq.get_current_tbs(tti);
+  ul_harq.harq_recv(tti, ack, action);
+  if (!ack) {
+    metrics.tx_errors++;
+    metrics.tx_pkts++;
+  } else {
+    metrics.tx_brate += tbs;
+  }
+  if (!ack && ra_procedure.is_contention_resolution()) {
+    ra_procedure.harq_retx();
+  }
+}
 
 void mac::setup_timers()
 {

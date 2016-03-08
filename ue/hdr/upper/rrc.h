@@ -58,10 +58,12 @@ static const char rrc_state_text[RRC_STATE_N_ITEMS][100] = {"IDLE",
 
 class rrc
     :public rrc_interface_nas
-    ,public rrc_interface_phymac
+    ,public rrc_interface_phy
+    ,public rrc_interface_mac
     ,public rrc_interface_gw
     ,public rrc_interface_pdcp
     ,public rrc_interface_rlc
+    ,public srslte::timer_callback
 {
 public:
   rrc();
@@ -71,12 +73,16 @@ public:
             pdcp_interface_rrc    *pdcp_,
             nas_interface_rrc     *nas_,
             usim_interface_rrc    *usim_,
+            mac_interface_timers *mac_timers_,
             srslte::log           *rrc_log_);
   void stop();
 
   rrc_state_t get_state();
   
   void enable_capabilities();
+
+  // Timeout callback interface
+  void timer_expired(uint32_t timeout_id);
 
 private:
   buffer_pool          *pool;
@@ -113,13 +119,25 @@ private:
 
   pthread_t             sib_search_thread;
 
+  // RRC constants and timers 
+  mac_interface_timers *mac_timers;
+  uint32_t n310_cnt, N310; 
+  uint32_t n311_cnt, N311; 
+  uint32_t t301, t310, t311;
+    
+  
   // NAS interface
   void write_sdu(uint32_t lcid, byte_buffer_t *sdu);
   uint16_t get_mcc();
   uint16_t get_mnc();
 
-  // PHY and MAC interface
-  void connection_release();
+  // PHY interface
+  void in_sync();
+  void out_of_sync();
+
+  // MAC interface
+  void release_pucch_srs();
+  void ra_problem(); 
 
   // GW interface
   bool rrc_connected();
@@ -137,6 +155,8 @@ private:
 
   // Senders
   void send_con_request();
+  void send_con_restablish_request(); 
+  void send_con_restablish_complete();
   void send_con_setup_complete(byte_buffer_t *nas_msg);
   void send_ul_info_transfer(uint32_t lcid, byte_buffer_t *sdu);
   void send_security_mode_complete(uint32_t lcid, byte_buffer_t *pdu);
@@ -150,15 +170,26 @@ private:
 
   // Helpers
   void          rrc_connection_release();
+  void          radio_link_failure(); 
   static void*  start_sib_thread(void *rrc_);
   void          sib_search();
   uint32_t      sib_start_tti(uint32_t tti, uint32_t period, uint32_t x);
   void          apply_sib2_configs();
   void          handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup);
+  void          handle_con_reest(LIBLTE_RRC_CONNECTION_REESTABLISHMENT_STRUCT *setup);
   void          handle_rrc_con_reconfig(uint32_t lcid, LIBLTE_RRC_CONNECTION_RECONFIGURATION_STRUCT *reconfig, byte_buffer_t *pdu);
   void          add_srb(LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT *srb_cnfg);
   void          add_drb(LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT *drb_cnfg);
   void          release_drb(uint8_t lcid);
+  void          apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg);
+  
+  // Helpers for setting default values 
+  void          set_phy_default_pucch_srs();
+  void          set_phy_default_uci();
+  void          set_phy_default_powerctrl();
+  void          set_mac_default();
+  void          set_rrc_default(); 
+  
 };
 
 } // namespace srsue

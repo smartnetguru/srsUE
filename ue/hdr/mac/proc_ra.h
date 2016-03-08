@@ -49,7 +49,7 @@ class ra_proc : public proc, srslte::timer_callback
 {
   public:
     ra_proc() : rar_pdu_msg(20) {pcap = NULL;};
-    bool init(phy_interface *phy_h, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
+    bool init(phy_interface *phy_h, rrc_interface_mac *rrc_, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
     void reset();
     void start_pdcch_order();
     void start_mac_order();
@@ -57,9 +57,10 @@ class ra_proc : public proc, srslte::timer_callback
     bool is_successful(); 
     bool is_response_error(); 
     bool is_contention_resolution(); 
+    void harq_retx();
     bool is_error(); 
     bool in_progress();
-    void pdcch_to_crnti(bool is_ul_grant);
+    void pdcch_to_crnti(bool contains_uplink_grant);
     void timer_expired(uint32_t timer_id);
     
     void new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t* action);
@@ -129,6 +130,7 @@ private:
       BACKOFF_WAIT,
       CONTENTION_RESOLUTION,    // Section 5.1.5
       COMPLETION,               // Section 5.1.6
+      COMPLETION_DONE,
       RA_PROBLEM                // Section 5.1.5 last part
     } state; 
     
@@ -146,6 +148,8 @@ private:
     mux             *mux_unit;
     demux           *demux_unit;
     mac_pcap        *pcap;
+    rrc_interface_mac *rrc;
+
         
     uint64_t    transmitted_contention_id;
     uint16_t    transmitted_crnti; 

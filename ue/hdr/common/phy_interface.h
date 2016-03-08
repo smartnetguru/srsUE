@@ -48,6 +48,8 @@ public:
     
     DL_FREQ = 0, 
     UL_FREQ, 
+    
+    PHY_CELL_ID,
 
     CELLSEARCH_TIMEOUT_PSS_NFRAMES, 
     CELLSEARCH_TIMEOUT_MIB_NFRAMES, 
@@ -195,8 +197,8 @@ public:
   virtual bool status_is_sync() = 0;
 
   /* Configure UL using parameters written with set_param() */
-  virtual void configure_ul_params() = 0;
-  
+  virtual void configure_ul_params(bool pregen_disabled = false) = 0;
+
   virtual void reset() = 0;
   
   virtual void resync_sfn() = 0; 

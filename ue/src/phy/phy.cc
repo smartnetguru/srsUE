@@ -57,7 +57,7 @@ phy::phy() : workers_pool(MAX_WORKERS),
 {
 }
 
-bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phymac *rrc, 
+bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phy *rrc, 
                srslte::log *log_h_, uint32_t nof_workers_)
 {
 
@@ -158,11 +158,11 @@ void phy::configure_prach_params()
   }
 }
 
-void phy::configure_ul_params()
+void phy::configure_ul_params(bool pregen_disabled)
 {
   Info("Configuring UL parameters\n");
   for (int i=0;i<nof_workers;i++) {
-    workers[i].set_ul_params();
+    workers[i].set_ul_params(pregen_disabled);
   }
 }
 
