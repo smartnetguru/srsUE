@@ -184,9 +184,7 @@ public:
   virtual uint32_t get_current_tti() = 0;
   
   virtual float get_phr() = 0; 
-  
-  virtual void reset() = 0;
-  
+    
 };
 
 class phy_interface_rrc
@@ -198,6 +196,11 @@ public:
 
   /* Configure UL using parameters written with set_param() */
   virtual void configure_ul_params() = 0;
+  
+  virtual void reset() = 0;
+  
+  virtual void resync_sfn() = 0; 
+
 };
   
 }

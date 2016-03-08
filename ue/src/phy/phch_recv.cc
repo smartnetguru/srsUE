@@ -210,7 +210,8 @@ bool phch_recv::cell_search(int force_N_id_2)
   }
 
   /* Find and decode MIB */
-  uint32_t sfn, sfn_offset; 
+  uint32_t sfn; 
+  int sfn_offset; 
   radio_h->start_rx();
   ret = srslte_ue_mib_sync_decode(&ue_mib_sync, 
                                   worker_com->params_db->get_param(phy_interface_params::CELLSEARCH_TIMEOUT_MIB_NFRAMES), 
@@ -249,7 +250,7 @@ int phch_recv::sync_sfn(void) {
     
   if (ret == 1) {
     if (srslte_ue_sync_get_sfidx(&ue_sync) == 0) {
-      uint32_t sfn_offset=0;
+      int sfn_offset=0;
       Info("SYNC_SFN: Decoding MIB...\n");
       int n = srslte_ue_mib_decode(&ue_mib, sf_buffer, bch_payload, NULL, &sfn_offset);
       if (n < 0) {
@@ -260,10 +261,10 @@ int phch_recv::sync_sfn(void) {
         srslte_pbch_mib_unpack(bch_payload, &cell, &sfn);
 
         sfn = (sfn + sfn_offset)%1024;         
-        tti = sfn*10 + srslte_ue_sync_get_sfidx(&ue_sync);
+        tti = sfn*10;
         
         srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
-        Info("SYNC_SFN: DONE, TTI=%d\n", tti);
+        Info("SYNC_SFN: DONE, TTI=%d, sfn_offset=%d\n", tti, sfn_offset);
         srslte_ue_mib_reset(&ue_mib);
         return 1;
       }
@@ -272,6 +273,10 @@ int phch_recv::sync_sfn(void) {
     Info("SYNC_SFN: PSS/SSS not found...\n");
   }
   return 0;
+}
+
+void phch_recv::resync_sfn() {
+  phy_state = SYNCING;
 }
 
 void phch_recv::run_thread()
@@ -297,6 +302,7 @@ void phch_recv::run_thread()
           Info("Cell found. Synchronizing...\n");
           phy_state = SYNCING;
           sync_sfn_cnt = 0; 
+          srslte_ue_mib_reset(&ue_mib);
         }
         break;
       case SYNCING:

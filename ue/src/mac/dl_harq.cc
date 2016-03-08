@@ -198,7 +198,9 @@ bool dl_harq_entity::dl_harq_process::is_new_transmission(mac_interface_phy::mac
   bool is_new_transmission; 
   
   bool is_new_tb = true; 
-  if (srslte_tti_interval(grant.tti, cur_grant.tti) <= 8 && grant.n_bytes == cur_grant.n_bytes) {
+  if (srslte_tti_interval(grant.tti, cur_grant.tti) <= 8 && grant.n_bytes == cur_grant.n_bytes || 
+    pid == HARQ_BCCH_PID) 
+  {
     is_new_tb = false; 
   }
   
@@ -297,10 +299,8 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
       if (harq_entity->pcap) {
         harq_entity->pcap->write_dl_sirnti(payload_buffer_ptr, cur_grant.n_bytes, ack, cur_grant.tti);
       }
-      if (ack) {
-        Debug("Delivering PDU=%d bytes to Dissassemble and Demux unit (BCCH)\n", cur_grant.n_bytes);
-        harq_entity->demux_unit->push_pdu(pid, payload_buffer_ptr, cur_grant.n_bytes);
-      }
+      Debug("Delivering PDU=%d bytes to Dissassemble and Demux unit (BCCH)\n", cur_grant.n_bytes);
+      harq_entity->demux_unit->push_pdu(pid, payload_buffer_ptr, cur_grant.n_bytes);
     } else {
       
       if (harq_entity->pcap) {
@@ -318,6 +318,9 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
     }
   } 
   Info("DL PID %d: TBS=%d, RV=%d, ACK=%s\n", pid, cur_grant.n_bytes, cur_grant.rv, ack?"OK":"KO");
+  if (ack && pid == HARQ_BCCH_PID) {
+    reset();
+  }
 }
 
 

@@ -50,6 +50,8 @@ public:
             phch_common *_worker_com, srslte::log* _log_h, uint32_t prio);
   void stop();
   void set_agc_enable(bool enable);
+
+  void     resync_sfn(); 
   
   uint32_t get_current_tti();
   

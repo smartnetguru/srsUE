@@ -61,8 +61,6 @@ public:
   
   void set_crnti(uint16_t rnti);
   
-  // Get status 
-  bool status_is_sync();
   
   static uint32_t tti_to_SFN(uint32_t tti);
   static uint32_t tti_to_subf(uint32_t tti);
@@ -72,14 +70,19 @@ public:
   void start_trace();
   void write_trace(std::string filename); 
   
-  /********** MAC INTERFACE ********************/
-  /* Instructs the PHY to configure using the parameters written by set_param() */
-  void    configure_prach_params();
+  /********** RRC INTERFACE ********************/
+  void    reset();
+  bool    status_is_sync();
   void    configure_ul_params();
-
+  void    resync_sfn(); 
+  
+  /********** MAC INTERFACE ********************/
   /* Functions to synchronize with a cell */
   void    sync_start(); 
   void    sync_stop();
+
+  /* Instructs the PHY to configure using the parameters written by set_param() */
+  void    configure_prach_params();
   
   /* Transmits PRACH in the next opportunity */
   void    prach_send(uint32_t preamble_idx, int allowed_subframe = -1, float target_power_dbm = 0.0);  
@@ -107,9 +110,7 @@ public:
   int64_t get_param(phy_param_t param);
 
   float   get_phr();
-  
-  void    reset();
-  
+    
   uint32_t get_current_tti();
   void     get_current_cell(srslte_cell_t *cell);
   

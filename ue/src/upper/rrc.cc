@@ -128,10 +128,12 @@ void rrc::connection_release()
 
 bool rrc::rrc_connected()
 {
+  boost::mutex::scoped_lock lock(mutex);
   return (RRC_STATE_RRC_CONNECTED == state);
 }
 
 void rrc::rrc_connect() {
+  boost::mutex::scoped_lock lock(mutex);
   if(RRC_STATE_IDLE == state) {
     rrc_log->info("RRC in IDLE state - sending connection request.\n");
     state = RRC_STATE_WAIT_FOR_CON_SETUP;
@@ -141,6 +143,7 @@ void rrc::rrc_connect() {
 
 bool rrc::have_drb()
 {
+  boost::mutex::scoped_lock lock(mutex);
   return drb_up;
 }
 
@@ -615,9 +618,11 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
 *******************************************************************************/
 
 void rrc::rrc_connection_release() {
+    boost::mutex::scoped_lock lock(mutex);
     drb_up = false;
     state  = RRC_STATE_IDLE;
     mac->reset();
+    phy->reset();
     rlc->reset();
     pdcp->reset();
     rrc_log->console("RRC Connection released.\n");
@@ -636,6 +641,8 @@ void rrc::sib_search()
   uint32_t  tti ;
   uint32_t  si_win_start, si_win_len;
   uint16_t  period;
+  uint32_t  nof_sib1_trials = 0; 
+  const int SIB1_SEARCH_TIMEOUT = 30; 
 
   while(searching)
   {
@@ -652,7 +659,13 @@ void rrc::sib_search()
       mac->bcch_start_rx(si_win_start, 1);
       rrc_log->debug("Instructed MAC to search for SIB1, win_start=%d, win_len=%d\n",
                      si_win_start, 1);
-
+      nof_sib1_trials++;
+      if (nof_sib1_trials >= SIB1_SEARCH_TIMEOUT) {
+        rrc_log->info("Timeout while searching for SIB1. Resynchronizing SFN...\n");
+        rrc_log->console("Timeout while searching for SIB1. Resynchronizing SFN...\n");
+        phy->resync_sfn();
+        nof_sib1_trials = 0; 
+      }
       break;
     case RRC_STATE_SIB2_SEARCH:
       // Instruct MAC to look for SIB2

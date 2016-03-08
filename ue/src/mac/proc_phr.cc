@@ -64,12 +64,14 @@ void phr_proc::reset()
 void phr_proc::timer_expired(uint32_t timer_id) {
   switch(timer_id) {
     case mac::PHR_TIMER_PERIODIC:
+      log_h->info("PHR triggered by timer periodic (timer expired)\n");
       phr_is_triggered = true; 
       break;
     case mac::PHR_TIMER_PROHIBIT:
       if (abs(params_db->get_param(mac_interface_params::PHR_PATHLOSS_DB) - cur_pathloss_db) > 
               params_db->get_param(mac_interface_params::PHR_DL_PATHLOSS_CHANGE)) 
       {
+        log_h->info("PHR triggered by pathloss differnce. cur_pathloss_db=%f (timer expired)\n", cur_pathloss_db);
         phr_is_triggered = true; 
       }
       break;      
@@ -79,6 +81,7 @@ void phr_proc::timer_expired(uint32_t timer_id) {
 void phr_proc::step(uint32_t tti)
 {
   if (!initiated) {
+    log_h->info("PHR not initiated\n");
     return;
   }  
 
@@ -90,6 +93,7 @@ void phr_proc::step(uint32_t tti)
     timer_periodic = params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC); 
     timers_db->get(mac::PHR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC));
     phr_is_triggered = true; 
+    log_h->info("PHR triggered by timer periodic\n");
   }
 
   if (timer_prohibit != params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT) &&
@@ -98,13 +102,15 @@ void phr_proc::step(uint32_t tti)
   {
     timer_prohibit = params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT); 
     timers_db->get(mac::PHR_TIMER_PROHIBIT)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT));
+    log_h->info("PHR triggered by timer prohibit\n");
     phr_is_triggered = true; 
   }  
   if (abs(params_db->get_param(mac_interface_params::PHR_PATHLOSS_DB) - cur_pathloss_db) > 
           params_db->get_param(mac_interface_params::PHR_DL_PATHLOSS_CHANGE) && 
           timers_db->get(mac::PHR_TIMER_PROHIBIT)->is_expired()) 
   {
-   phr_is_triggered = true;        
+    log_h->info("PHR triggered by pathloss differnce. cur_pathloss_db=%f\n", cur_pathloss_db);
+    phr_is_triggered = true;        
   }
 }
 
@@ -115,6 +121,8 @@ bool phr_proc::generate_phr_on_ul_grant(float *phr)
     if (phr) {
       *phr = phy_h->get_phr();
     }
+    
+    log_h->info("Generating PHR=%f\n", phr?*phr:0.0);
     
     timers_db->get(mac::PHR_TIMER_PERIODIC)->reset();
     timers_db->get(mac::PHR_TIMER_PROHIBIT)->reset();

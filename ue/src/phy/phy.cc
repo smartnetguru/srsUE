@@ -213,6 +213,10 @@ int phy::prach_tx_tti()
 void phy::reset()
 {
   // TODO 
+  pdcch_dl_search_reset();
+  for(uint32_t i=0;i<nof_workers;i++) {
+    workers[i].reset();
+  }    
 }
 
 uint32_t phy::get_current_tti()
@@ -234,6 +238,10 @@ int phy::sr_last_tx_tti()
 bool phy::status_is_sync()
 {
   return sf_recv.status_is_sync();
+}
+
+void phy::resync_sfn() {
+  sf_recv.resync_sfn();
 }
 
 void phy::sync_start()

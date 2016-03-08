@@ -43,6 +43,7 @@ class phch_worker : public srslte::thread_pool::worker
 public:
   
   phch_worker();
+  void  reset(); 
   void  set_common(phch_common *phy);
   bool  init_cell(srslte_cell_t cell);
   void  free_cell();
@@ -54,7 +55,6 @@ public:
   void  set_cfo(float cfo);
   
   void  set_ul_params();
-  void  reset_ul_params(); 
   void  set_crnti(uint16_t rnti);
   void  enable_pregen_signals(bool enabled);
   

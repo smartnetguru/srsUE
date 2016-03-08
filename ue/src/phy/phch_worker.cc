@@ -60,15 +60,26 @@ phch_worker::phch_worker() : tr_exec(10240)
   
   cell_initiated  = false; 
   pregen_enabled  = false; 
-  rar_cqi_request = false; 
-  rnti_is_set     = false; 
   trace_enabled   = false; 
-  cfi = 0;
   
+  reset();  
+}
+
+void phch_worker::reset() 
+{
   bzero(&dl_metrics, sizeof(dl_metrics_t));
   bzero(&ul_metrics, sizeof(ul_metrics_t));
-  reset_ul_params();
-  
+  bzero(&dmrs_cfg, sizeof(srslte_refsignal_dmrs_pusch_cfg_t));    
+  bzero(&pusch_hopping, sizeof(srslte_pusch_hopping_cfg_t));
+  bzero(&uci_cfg, sizeof(srslte_uci_cfg_t));
+  bzero(&pucch_cfg, sizeof(srslte_pucch_cfg_t));
+  bzero(&pucch_sched, sizeof(srslte_pucch_sched_t));
+  bzero(&srs_cfg, sizeof(srslte_refsignal_srs_cfg_t));
+  bzero(&period_cqi, sizeof(srslte_cqi_periodic_cfg_t));
+  I_sr = 0; 
+  rnti_is_set     = false; 
+  rar_cqi_request = false; 
+  cfi = 0;
 }
 
 void phch_worker::set_common(phch_common* phy_)
@@ -707,18 +718,6 @@ void phch_worker::encode_srs()
 void phch_worker::enable_pregen_signals(bool enabled)
 {
   pregen_enabled = enabled; 
-}
-
-void phch_worker::reset_ul_params() 
-{
-  bzero(&dmrs_cfg, sizeof(srslte_refsignal_dmrs_pusch_cfg_t));    
-  bzero(&pusch_hopping, sizeof(srslte_pusch_hopping_cfg_t));
-  bzero(&uci_cfg, sizeof(srslte_uci_cfg_t));
-  bzero(&pucch_cfg, sizeof(srslte_pucch_cfg_t));
-  bzero(&pucch_sched, sizeof(srslte_pucch_sched_t));
-  bzero(&srs_cfg, sizeof(srslte_refsignal_srs_cfg_t));
-  bzero(&period_cqi, sizeof(srslte_cqi_periodic_cfg_t));
-  I_sr = 0; 
 }
 
 void phch_worker::set_ul_params()

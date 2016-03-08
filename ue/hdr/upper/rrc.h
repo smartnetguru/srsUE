@@ -90,6 +90,8 @@ private:
 
   bit_buffer_t          bit_buf;
 
+  boost::mutex          mutex;
+  
   rrc_state_t           state;
   uint8_t               transaction_id;
   bool                  drb_up;
