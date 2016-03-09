@@ -49,7 +49,9 @@ public:
   typedef struct {
     uint32_t    pid;    
     uint32_t    tti;
+    uint32_t    last_tti;
     bool        ndi; 
+    bool        last_ndi; 
     uint32_t    n_bytes;
     uint32_t    rv; 
     uint16_t    rnti; 

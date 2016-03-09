@@ -71,16 +71,18 @@ private:
     bool init(uint32_t pid, dl_harq_entity *parent);
     void reset();
     bool is_sps(); 
-    bool is_new_transmission(mac_interface_phy::mac_grant_t grant); 
     void new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t *action);
     void tb_decoded(bool ack);   
     int get_current_tbs();
     
   private: 
+    bool calc_is_new_transmission(mac_interface_phy::mac_grant_t grant); 
     
     bool            is_initiated; 
     dl_harq_entity *harq_entity; 
     srslte::log    *log_h;
+    
+    bool	    is_new_transmission; 
     
     uint32_t        pid;    
     uint8_t        *payload_buffer_ptr; 

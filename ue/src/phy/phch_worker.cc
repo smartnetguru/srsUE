@@ -403,6 +403,21 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
       snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
 #endif
             
+      /*
+      if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
+	srslte_vec_save_file("sf_symbols", ue_dl.sf_symbols, SRSLTE_SF_LEN_RE(cell.nof_prb, cell.cp)*sizeof(cf_t));
+	srslte_vec_save_file("pdsch_symbols", ue_dl.pdsch.d, ue_dl.pdsch_cfg.nbits.nof_re*sizeof(cf_t));
+	srslte_vec_save_file("llr", ue_dl.pdsch.e, ue_dl.pdsch_cfg.nbits.nof_bits*sizeof(cf_t));
+	int cb_len = ue_dl.pdsch_cfg.cb_segm.K1; 
+	for (int i=0;i<ue_dl.pdsch_cfg.cb_segm.C;i++) {
+	  char tmpstr[64]; 
+	  snprintf(tmpstr,64,"rmout_%d.dat",i);
+	  srslte_vec_save_file(tmpstr, softbuffer->buffer_f[i], (3*cb_len+12)*sizeof(int16_t));  
+	}
+	printf("Saved files for sf=%d, cfi=%d, mcs=%d, rv=%d, rnti=%d, noise=%f\n", tti%10, cfi, grant->mcs.idx, rv, rnti, noise_estimate);
+	exit(-1);
+      }*/
+      
       Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
              grant->nof_prb, harq_pid, 
              grant->mcs.tbs/8, grant->mcs.idx, rv, 
@@ -576,7 +591,7 @@ void phch_worker::set_uci_periodic_cqi()
         if (cqi_report.wideband.wideband_cqi > 15) {
           cqi_report.wideband.wideband_cqi = 15;
         }
-        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.wideband.wideband_cqi);
+        //printf("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db-5, cqi_report.wideband.wideband_cqi);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       

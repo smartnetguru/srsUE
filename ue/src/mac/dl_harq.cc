@@ -177,7 +177,7 @@ void dl_harq_entity::dl_harq_process::reset() {
 }
 
 bool dl_harq_entity::dl_harq_process::init(uint32_t pid_, dl_harq_entity *parent) {
-  if (srslte_softbuffer_rx_init(&softbuffer, 100)) {
+  if (srslte_softbuffer_rx_init(&softbuffer, 110)) {
     Error("Error initiating soft buffer\n");
     return false; 
   } else {
@@ -194,8 +194,7 @@ bool dl_harq_entity::dl_harq_process::is_sps()
   return false; 
 }                                                            
 
-bool dl_harq_entity::dl_harq_process::is_new_transmission(mac_interface_phy::mac_grant_t grant) {
-  bool is_new_transmission; 
+bool dl_harq_entity::dl_harq_process::calc_is_new_transmission(mac_interface_phy::mac_grant_t grant) {
   
   bool is_new_tb = true; 
   if (srslte_tti_interval(grant.tti, cur_grant.tti) <= 8 && grant.n_bytes == cur_grant.n_bytes || 
@@ -215,9 +214,6 @@ bool dl_harq_entity::dl_harq_process::is_new_transmission(mac_interface_phy::mac
     Debug("Set HARQ for retransmission\n");
   }
 
-  Info("DL PID %d: %s RV=%d, NDI=%d, LastNDI=%d\n", pid, is_new_transmission?"new TX":"reTX", grant.rv, 
-         grant.ndi, cur_grant.ndi);   
-  
   return is_new_transmission;
 }
 
@@ -234,13 +230,15 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
     }
     grant.rv = ((uint32_t) ceilf((float)1.5*k))%4;
   }
-  
-  if (is_new_transmission(grant)) {
+  calc_is_new_transmission(grant);
+  if (is_new_transmission) {
     ack = false; 
     srslte_softbuffer_rx_reset_tbs(&softbuffer, cur_grant.n_bytes*8);
   }
   
   // Save grant 
+  grant.last_ndi = cur_grant.ndi; 
+  grant.last_tti = cur_grant.tti; 
   memcpy(&cur_grant, &grant, sizeof(mac_interface_phy::mac_grant_t)); 
   
   // Fill action structure 
@@ -317,7 +315,12 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
       }
     }
   } 
-  Info("DL PID %d: TBS=%d, RV=%d, ACK=%s\n", pid, cur_grant.n_bytes, cur_grant.rv, ack?"OK":"KO");
+  
+  Info("DL PID %d: %s tbs=%d, rv=%d, ack=%s, ndi=%d (%d), tti=%d (%d)\n", 
+       pid, is_new_transmission?"newTX":"reTX ", 
+       cur_grant.n_bytes, cur_grant.rv, ack?"OK":"KO", 
+       cur_grant.ndi, cur_grant.last_ndi, cur_grant.tti, cur_grant.last_tti);
+  
   if (ack && pid == HARQ_BCCH_PID) {
     reset();
   }

@@ -458,32 +458,38 @@ void ra_proc::step_completition() {
 
 void ra_proc::step(uint32_t tti_)
 {
-  switch(state) {
+    switch(state) {
     case IDLE: 
       break;
     case INITIALIZATION:
       step_initialization();
       break;
-      case PDCCH_SETUP:      
-        step_pdcch_setup();
-      break;
-      case RESPONSE_RECEPTION:      
-        step_response_reception();
-      break;
-      case RESPONSE_ERROR:
-        step_response_error();
-      break;
-      case BACKOFF_WAIT:
-        step_backoff_wait();
-      break;
-      case CONTENTION_RESOLUTION:
-        step_contention_resolution();
-      break;
-      case COMPLETION:
-        step_completition();
-      case COMPLETION_DONE:
-      break;
-  } 
+    case RESOURCE_SELECTION:
+      step_resource_selection();
+    break;
+    case PREAMBLE_TRANSMISSION:
+      step_preamble_transmission();
+    break;
+    case PDCCH_SETUP:      
+      step_pdcch_setup();
+    break;
+    case RESPONSE_RECEPTION:      
+      step_response_reception();
+    break;
+    case RESPONSE_ERROR:
+      step_response_error();
+    break;
+    case BACKOFF_WAIT:
+      step_backoff_wait();
+    break;
+    case CONTENTION_RESOLUTION:
+      step_contention_resolution();
+    break;
+    case COMPLETION:
+      step_completition();
+    case COMPLETION_DONE:
+    break;
+  }
 }
 
 void ra_proc::start_mac_order()
