@@ -104,7 +104,7 @@ private:
   uint32_t      tx_mutex_cnt;
 
   uint32_t      sync_sfn_cnt;
-  const static uint32_t SYNC_SFN_TIMEOUT = 5000;
+  const static uint32_t SYNC_SFN_TIMEOUT = 500;
   
   bool          cell_search(int force_N_id_2 = -1);
   bool          init_cell();

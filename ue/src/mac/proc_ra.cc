@@ -162,13 +162,13 @@ void ra_proc::process_timeadv_cmd(uint32_t ta) {
     phy_h->set_timeadv_rar(ta);
     timers_db->get(mac::TIME_ALIGNMENT)->reset();
     timers_db->get(mac::TIME_ALIGNMENT)->run();
-    Info("Applying RAR TA CMD %d\n", ta);
+    Debug("Applying RAR TA CMD %d\n", ta);
   } else {
     // Preamble selected by UE MAC 
     if (!timers_db->get(mac::TIME_ALIGNMENT)->is_running()) {
       phy_h->set_timeadv_rar(ta);
       timers_db->get(mac::TIME_ALIGNMENT)->run();
-      Info("Applying RAR TA CMD %d\n", ta);
+      Debug("Applying RAR TA CMD %d\n", ta);
     } else {
       // Ignore TA CMD
       Warning("Ignoring RAR TA CMD because timeAlignmentTimer still running\n");
@@ -316,9 +316,11 @@ void ra_proc::tb_decoded_ok() {
           
           // If we have a C-RNTI, tell Mux unit to append C-RNTI CE if no CCCH SDU transmission
           if (transmitted_crnti) {
-            Info("Appending C-RNTI MAC CE in next transmission\n");
+            rInfo("Msg3 with C-RNTI MAC CE\n");
             mux_unit->append_crnti_ce_next_tx(transmitted_crnti);
-          }          
+          } else {
+	    rInfo("Msg3 with Contention Resolution\n");
+	  }
         }                  
         rDebug("Going to Contention Resolution state\n");
         state = CONTENTION_RESOLUTION;

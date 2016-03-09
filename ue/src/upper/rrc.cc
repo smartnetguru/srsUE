@@ -323,7 +323,7 @@ void rrc::max_retx_attempted()
 
 void rrc::send_con_request()
 {
-  rrc_log->debug("Preparing RRC Connection Request");
+  rrc_log->debug("Preparing RRC Connection Request\n");
   LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
   LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
 
@@ -765,6 +765,10 @@ void rrc::rrc_connection_release() {
     boost::mutex::scoped_lock lock(mutex);
     drb_up = false;
     state  = RRC_STATE_IDLE;
+    set_phy_default_pucch_srs();
+    phy->configure_ul_params(true);
+    // Not sure if C-RNTI should be released here
+    mac->set_param(mac_interface_params::RNTI_C, 0);
     mac->reset();
     phy->reset();
     rlc->reset();
