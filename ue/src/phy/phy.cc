@@ -120,7 +120,7 @@ void phy::get_metrics(phy_metrics_t &m) {
   int ul_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.ul.mcs), workers_common.get_nof_prb());
   m.dl.mabr_mbps = dl_tbs/1000.0; // TBS is bits/ms - convert to mbps
   m.ul.mabr_mbps = ul_tbs/1000.0; // TBS is bits/ms - convert to mbps
-  Info("IP MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
+  Info("PHY MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
 }
 
 void phy::set_timeadv_rar(uint32_t ta_cmd) {
