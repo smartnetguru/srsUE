@@ -52,6 +52,8 @@ void gw::init(pdcp_interface_gw *pdcp_, rrc_interface_gw *rrc_, ue_interface *ue
   ue      = ue_;
   gw_log  = gw_log_;
   running = true;
+
+  metrics_timestamp = bpt::microsec_clock::local_time();
 }
 
 void gw::stop()
@@ -69,6 +71,20 @@ void gw::stop()
   }
 }
 
+void gw::get_metrics(gw_metrics_t &m)
+{
+  bpt::ptime now = bpt::microsec_clock::local_time();
+  bpt::time_duration td = now - metrics_timestamp;
+  double secs = td.total_microseconds()/(double)1e6;
+  m.dl_tput_mbps = (dl_throughput_bytecount*8/(double)1e6)/secs;
+  m.ul_tput_mbps = (ul_throughput_bytecount*8/(double)1e6)/secs;
+  gw_log->info("DL throughput: %4.6f Mbps. UL throughput: %4.6f Mbps.\n",
+               m.dl_tput_mbps, m.ul_tput_mbps);
+  metrics_timestamp = now;
+  dl_throughput_bytecount = 0;
+  ul_throughput_bytecount = 0;
+}
+
 /*******************************************************************************
   PDCP interface
 *******************************************************************************/
@@ -76,6 +92,7 @@ void gw::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 {
   gw_log->info_hex(pdu->msg, pdu->N_bytes, "DL PDU");
   gw_log->info("DL PDU. Stack latency: %ld us\n", pdu->get_latency_us());
+  dl_throughput_bytecount += pdu->N_bytes;
   if(!if_up)
   {
     gw_log->warning("TUN/TAP not up - dropping gw DL message\n");
@@ -216,6 +233,7 @@ void gw::run_thread()
               
               // Send PDU directly to PDCP
               pdu->timestamp = bpt::microsec_clock::local_time();
+              ul_throughput_bytecount += pdu->N_bytes;
               pdcp->write_sdu(RB_ID_DRB1, pdu);
               
               pdu = pool->allocate();

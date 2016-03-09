@@ -33,16 +33,11 @@
 #include "common/msg_queue.h"
 #include "common/interfaces.h"
 #include "common/threads.h"
+#include "upper/gw_metrics.h"
 
 #include <linux/if.h>
 
 namespace srsue {
-
-struct gw_metrics_t
-{
-  float dl_tput;
-  float ul_tput;
-};
 
 class gw
     :public gw_interface_pdcp
@@ -54,7 +49,7 @@ public:
   void init(pdcp_interface_gw *pdcp_, rrc_interface_gw *rrc_, ue_interface *ue_, srslte::log *gw_log_);
   void stop();
 
-  void get_metrics(gw_metrics_t *m){}
+  void get_metrics(gw_metrics_t &m);
 
   // PDCP interface
   void write_pdu(uint32_t lcid, byte_buffer_t *pdu);
@@ -76,6 +71,10 @@ private:
   struct ifreq        ifr;
   int32               sock;
   bool                if_up;
+
+  long                ul_throughput_bytecount;
+  long                dl_throughput_bytecount;
+  bpt::ptime          metrics_timestamp;
 
   void                run_thread();
   error_t             init_if(char *err_str);

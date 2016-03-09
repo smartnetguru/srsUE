@@ -287,6 +287,7 @@ bool ue::get_metrics(ue_metrics_t &m)
     if(RRC_STATE_RRC_CONNECTED == rrc.get_state()) {
       phy.get_metrics(m.phy);
       mac.get_metrics(m.mac);
+      gw.get_metrics(m.gw);
       return true;
     }
   }

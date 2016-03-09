@@ -130,8 +130,9 @@ public:
     }
     void reset()
     {
-      msg     = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
-      N_bytes = 0;
+      msg       = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
+      N_bytes   = 0;
+      timestamp = bpt::not_a_date_time;
     }
     uint32_t get_headroom()
     {
@@ -172,8 +173,9 @@ struct bit_buffer_t{
     }
     void reset()
     {
-      msg     = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
-      N_bits  = 0;
+      msg       = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
+      N_bits    = 0;
+      timestamp = bpt::not_a_date_time;
     }
     uint32_t get_headroom()
     {

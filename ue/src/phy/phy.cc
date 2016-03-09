@@ -116,10 +116,11 @@ void phy::get_metrics(phy_metrics_t &m) {
   workers_common.get_dl_metrics(m.dl);
   workers_common.get_ul_metrics(m.ul);
   workers_common.get_sync_metrics(m.sync);
-  m.mabr = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.dl.mcs), workers_common.get_nof_prb());
-
-  // Estimate IP-layer MABR as 75% of MAC-layer MABR
-  m.mabr = m.mabr*4/5;
+  int dl_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.dl.mcs), workers_common.get_nof_prb());
+  int ul_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.ul.mcs), workers_common.get_nof_prb());
+  m.dl.mabr_mbps = dl_tbs/1000.0; // TBS is bits/ms - convert to mbps
+  m.ul.mabr_mbps = ul_tbs/1000.0; // TBS is bits/ms - convert to mbps
+  Info("IP MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
 }
 
 void phy::set_timeadv_rar(uint32_t ta_cmd) {
