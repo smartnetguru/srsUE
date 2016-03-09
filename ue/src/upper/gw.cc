@@ -75,6 +75,7 @@ void gw::stop()
 void gw::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 {
   gw_log->info_hex(pdu->msg, pdu->N_bytes, "DL PDU");
+  gw_log->info("DL PDU. Stack latency: %ld us\n", pdu->get_latency_us());
   if(!if_up)
   {
     gw_log->warning("TUN/TAP not up - dropping gw DL message\n");
@@ -214,6 +215,7 @@ void gw::run_thread()
               }
               
               // Send PDU directly to PDCP
+              pdu->timestamp = bpt::microsec_clock::local_time();
               pdcp->write_sdu(RB_ID_DRB1, pdu);
               
               pdu = pool->allocate();

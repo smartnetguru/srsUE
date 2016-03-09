@@ -111,6 +111,7 @@ void rlc::write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes)
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
+  buf->timestamp = bpt::microsec_clock::local_time();
   pdcp->write_pdu_bcch_bch(buf);
 }
 
@@ -120,6 +121,7 @@ void rlc::write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes)
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
+  buf->timestamp = bpt::microsec_clock::local_time();
   pdcp->write_pdu_bcch_dlsch(buf);
 }
 
@@ -129,6 +131,7 @@ void rlc::write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes)
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
+  buf->timestamp = bpt::microsec_clock::local_time();
   pdcp->write_pdu_pcch(buf);
 }
 

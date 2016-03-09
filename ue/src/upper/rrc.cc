@@ -154,6 +154,7 @@ bool rrc::have_drb()
 void rrc::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 {
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "DL %s PDU", rb_id_text[lcid]);
+  rrc_log->info("DL PDU Stack latency: %ld us\n", pdu->get_latency_us());
 
   switch(lcid)
   {
@@ -175,6 +176,7 @@ void rrc::write_pdu_bcch_bch(byte_buffer_t *pdu)
 {
   // Unpack the MIB
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "BCCH BCH message received.");
+  rrc_log->info("BCCH BCH message Stack latency: %ld us\n", pdu->get_latency_us());
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;
   pool->deallocate(pdu);
@@ -190,6 +192,7 @@ void rrc::write_pdu_bcch_bch(byte_buffer_t *pdu)
 void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
 {
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "BCCH DLSCH message received.");
+  rrc_log->info("BCCH DLSCH message Stack latency: %ld us\n", pdu->get_latency_us());
   LIBLTE_RRC_BCCH_DLSCH_MSG_STRUCT dlsch_msg;
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;
@@ -232,7 +235,8 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
 void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 {
   rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
-  
+  rrc_log->info("PCCH message Stack latency: %ld us\n", pdu->get_latency_us());
+
   LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
   srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
   bit_buf.N_bits = pdu->N_bytes*8;
@@ -310,6 +314,7 @@ void rrc::send_con_request()
   byte_buffer_t *pdcp_buf = pool->allocate();
   srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
   pdcp_buf->N_bytes = bit_buf.N_bits/8;
+  pdcp_buf->timestamp = bpt::microsec_clock::local_time();
 
   // Set UE contention resolution ID in MAC
   uint64_t uecri=0;
@@ -350,6 +355,7 @@ void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
   byte_buffer_t *pdcp_buf = pool->allocate();
   srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
   pdcp_buf->N_bytes = bit_buf.N_bits/8;
+  pdcp_buf->timestamp = bpt::microsec_clock::local_time();
 
   state = RRC_STATE_RRC_CONNECTED;
   rrc_log->console("RRC Connected\n");
@@ -382,6 +388,7 @@ void rrc::send_ul_info_transfer(uint32_t lcid, byte_buffer_t *sdu)
   }
   srslte_bit_pack_vector(bit_buf.msg, pdu->msg, bit_buf.N_bits);
   pdu->N_bytes = bit_buf.N_bits/8;
+  pdu->timestamp = bpt::microsec_clock::local_time();
 
   rrc_log->info("Sending UL Info Transfer\n");
   pdcp->write_sdu(lcid, pdu);
@@ -404,6 +411,7 @@ void rrc::send_security_mode_complete(uint32_t lcid, byte_buffer_t *pdu)
   }
   srslte_bit_pack_vector(bit_buf.msg, pdu->msg, bit_buf.N_bits);
   pdu->N_bytes = bit_buf.N_bits/8;
+  pdu->timestamp = bpt::microsec_clock::local_time();
 
   rrc_log->info("Sending Security Mode Complete\n");
   pdcp->write_sdu(lcid, pdu);
@@ -427,6 +435,7 @@ void rrc::send_rrc_con_reconfig_complete(uint32_t lcid, byte_buffer_t *pdu)
   }
   srslte_bit_pack_vector(bit_buf.msg, pdu->msg, bit_buf.N_bits);
   pdu->N_bytes = bit_buf.N_bits/8;
+  pdu->timestamp = bpt::microsec_clock::local_time();
 
   rrc_log->info("Sending RRC Connection Reconfig Complete\n");
   pdcp->write_sdu(lcid, pdu);
@@ -512,6 +521,7 @@ void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
   }
   srslte_bit_pack_vector(bit_buf.msg, pdu->msg, bit_buf.N_bits);
   pdu->N_bytes = bit_buf.N_bits/8;
+  pdu->timestamp = bpt::microsec_clock::local_time();
 
   rrc_log->info("Sending UE Capability Info\n");
   pdcp->write_sdu(lcid, pdu);

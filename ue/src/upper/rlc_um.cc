@@ -283,6 +283,8 @@ int  rlc_um::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     tx_sdu->msg     += to_move;
     if(tx_sdu->N_bytes == 0)
     {
+      log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+                rb_id_text[lcid], tx_sdu->get_latency_us());
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
@@ -309,6 +311,8 @@ int  rlc_um::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     tx_sdu->msg     += to_move;
     if(tx_sdu->N_bytes == 0)
     {
+      log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+                rb_id_text[lcid], tx_sdu->get_latency_us());
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
@@ -425,6 +429,7 @@ void rlc_um::reassemble_rx_sdus()
           rx_sdu->reset();
         } else {
           log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d, i=%d (lower edge middle segments)", rb_id_text[lcid], vr_ur, i);
+          rx_sdu->timestamp = bpt::microsec_clock::local_time();
           pdcp->write_pdu(lcid, rx_sdu);
           rx_sdu = pool->allocate();
         }
@@ -444,6 +449,7 @@ void rlc_um::reassemble_rx_sdus()
           rx_sdu->reset();          
         } else {
           log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d (lower edge last segments)", rb_id_text[lcid], vr_ur);
+          rx_sdu->timestamp = bpt::microsec_clock::local_time();
           pdcp->write_pdu(lcid, rx_sdu);
           rx_sdu = pool->allocate();
         }
@@ -477,6 +483,7 @@ void rlc_um::reassemble_rx_sdus()
         rx_sdu->reset();
       } else {
         log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d, i=%d, (update vr_ur middle segments)", rb_id_text[lcid], vr_ur, i);
+        rx_sdu->timestamp = bpt::microsec_clock::local_time();
         pdcp->write_pdu(lcid, rx_sdu);
         rx_sdu = pool->allocate();
       }
@@ -496,6 +503,7 @@ void rlc_um::reassemble_rx_sdus()
         rx_sdu->reset();
       } else {
         log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU vr_ur=%d (update vr_ur last segments)", rb_id_text[lcid], vr_ur);
+        rx_sdu->timestamp = bpt::microsec_clock::local_time();
         pdcp->write_pdu(lcid, rx_sdu);
         rx_sdu = pool->allocate();
       }
