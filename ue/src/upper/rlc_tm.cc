@@ -99,6 +99,8 @@ int rlc_tm::read_pdu(uint8_t *payload, uint32_t nof_bytes)
   ul_queue.read(&buf);
   pdu_size = buf->N_bytes;
   memcpy(payload, buf->msg, buf->N_bytes);
+  log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+            rb_id_text[lcid], buf->get_latency_us());
   pool->deallocate(buf);
   log->info_hex(payload, pdu_size, "UL %s, %s PDU", rb_id_text[lcid], rlc_mode_text[RLC_MODE_TM]);
   return pdu_size;
@@ -109,6 +111,7 @@ void rlc_tm:: write_pdu(uint8_t *payload, uint32_t nof_bytes)
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
+  buf->timestamp = bpt::microsec_clock::local_time();
   pdcp->write_pdu(lcid, buf);  
 }
 

@@ -120,13 +120,9 @@ void mac::reset()
   mux_unit.msg3_flush();
   mux_unit.reset();
   
-  ra_procedure.stop();
   ra_procedure.reset();    
-  sr_procedure.stop();
   sr_procedure.reset();
-  bsr_procedure.stop();
   bsr_procedure.reset();
-  phr_procedure.stop();
   phr_procedure.reset();
   
   dl_harq.reset();
@@ -180,6 +176,7 @@ void mac::run_thread() {
       ra_procedure.step(tti);
 
       if (ra_procedure.is_successful() && !signals_pregenerated) {
+	
         // Configure PHY to look for UL C-RNTI grants
         uint16_t crnti = params_db.get_param(mac_interface_params::RNTI_C);
         phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, crnti);

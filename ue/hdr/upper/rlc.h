@@ -33,13 +33,9 @@
 #include "common/interfaces.h"
 #include "common/msg_queue.h"
 #include "upper/rlc_entity.h"
+#include "upper/rlc_metrics.h"
 
 namespace srsue {
-
-struct rlc_metrics_t
-{
-  float arq_retx;
-};
 
 /****************************************************************************
  * RLC Layer
@@ -61,7 +57,7 @@ public:
             mac_interface_timers *mac_timers_);
   void stop();
 
-  void get_metrics(rlc_metrics_t *m){}
+  void get_metrics(rlc_metrics_t &m);
 
   // PDCP interface
   void write_sdu(uint32_t lcid, byte_buffer_t *sdu);
@@ -87,6 +83,10 @@ private:
   mac_interface_timers *mac_timers; 
   ue_interface       *ue;
   rlc_entity          rlc_array[SRSUE_N_RADIO_BEARERS];
+
+  long                ul_tput_bytes;
+  long                dl_tput_bytes;
+  bpt::ptime          metrics_time;
 
   bool valid_lcid(uint32_t lcid);
 };

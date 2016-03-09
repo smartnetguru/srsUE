@@ -24,40 +24,18 @@
  *
  */
 
-#ifndef UE_METRICS_INTERFACE_H
-#define UE_METRICS_INTERFACE_H
+#ifndef UE_GW_METRICS_H
+#define UE_GW_METRICS_H
 
-#include <stdint.h>
-
-#include "upper/gw_metrics.h"
-#include "upper/rlc_metrics.h"
-#include "mac/mac_metrics.h"
-#include "phy/phy_metrics.h"
 
 namespace srsue {
 
-typedef struct {
-  uint32_t rf_o;
-  uint32_t rf_u;
-  uint32_t rf_l;
-  bool     rf_error;
-}rf_metrics_t;
-
-typedef struct {
-  rf_metrics_t rf;
-  phy_metrics_t phy;
-  mac_metrics_t mac;
-  rlc_metrics_t rlc;
-  gw_metrics_t  gw;
-}ue_metrics_t;
-
-// UE interface
-class ue_metrics_interface
+struct gw_metrics_t
 {
-public:
-  virtual bool get_metrics(ue_metrics_t &m) = 0;
+  double dl_tput_mbps;
+  double ul_tput_mbps;
 };
 
 } // namespace srsue
 
-#endif // UE_METRICS_INTERFACE_H
+#endif // UE_GW_METRICS_H

@@ -384,7 +384,7 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
   if (!srslte_ue_dl_cfg_grant(&ue_dl, grant, cfi, tti%10, rv)) {
     if (ue_dl.pdsch_cfg.grant.mcs.mod > 0 && ue_dl.pdsch_cfg.grant.mcs.tbs >= 0) {
       
-      float noise_estimate = 1./srslte_chest_dl_get_snr(&ue_dl.chest);
+      float noise_estimate = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
       
       if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
         noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);

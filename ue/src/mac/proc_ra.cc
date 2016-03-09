@@ -458,18 +458,11 @@ void ra_proc::step_completition() {
 
 void ra_proc::step(uint32_t tti_)
 {
-  if (is_running()) {
-    switch(state) {
-      case IDLE: 
-        break;
-      case INITIALIZATION:
-        step_initialization();
-        break;
-      case RESOURCE_SELECTION:
-        step_resource_selection();
+  switch(state) {
+    case IDLE: 
       break;
-      case PREAMBLE_TRANSMISSION:
-        step_preamble_transmission();
+    case INITIALIZATION:
+      step_initialization();
       break;
       case PDCCH_SETUP:      
         step_pdcch_setup();
@@ -490,8 +483,7 @@ void ra_proc::step(uint32_t tti_)
         step_completition();
       case COMPLETION_DONE:
       break;
-    }
-  }  
+  } 
 }
 
 void ra_proc::start_mac_order()
@@ -500,7 +492,6 @@ void ra_proc::start_mac_order()
     started_by_pdcch = false;
     state = INITIALIZATION;    
     Info("Starting PRACH by MAC order\n");
-    run();
   }
 }
 
@@ -510,7 +501,6 @@ void ra_proc::start_pdcch_order()
     started_by_pdcch = true;
     state = INITIALIZATION;    
     Info("Starting PRACH by PDCCH order\n");
-    run();
   }
 }
 

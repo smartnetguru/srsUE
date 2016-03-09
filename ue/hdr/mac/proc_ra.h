@@ -33,7 +33,6 @@
 #include "common/log.h"
 #include "mac/mac_params.h"
 #include "common/qbuff.h"
-#include "mac/proc.h"
 #include "common/timers.h"
 #include "mac/mux.h"
 #include "mac/demux.h"
@@ -45,7 +44,7 @@
 
 namespace srsue {
 
-class ra_proc : public proc, srslte::timer_callback
+class ra_proc : public srslte::timer_callback
 {
   public:
     ra_proc() : rar_pdu_msg(20) {pcap = NULL;};
