@@ -51,12 +51,30 @@ void rlc::init(pdcp_interface_rlc *pdcp_,
   rlc_log = rlc_log_;
   mac_timers = mac_timers_;
 
+  metrics_time = bpt::microsec_clock::local_time();
+  dl_tput_bytes = 0;
+  ul_tput_bytes = 0;
+
   rlc_array[0].init(RLC_MODE_TM, rlc_log, RB_ID_SRB0, pdcp, rrc, mac_timers); // SRB0
 }
 
 void rlc::stop()
 {
   reset();
+}
+
+void rlc::get_metrics(rlc_metrics_t &m)
+{
+  bpt::ptime now = bpt::microsec_clock::local_time();
+  bpt::time_duration td = now - metrics_time;
+  double secs = td.total_microseconds()/(double)1e6;
+  m.dl_tput_mbps = (dl_tput_bytes*8/(double)1e6)/secs;
+  m.ul_tput_mbps = (ul_tput_bytes*8/(double)1e6)/secs;
+  rlc_log->info("DL throughput: %4.6f Mbps. UL throughput: %4.6f Mbps.\n",
+               m.dl_tput_mbps, m.ul_tput_mbps);
+  metrics_time = now;
+  dl_tput_bytes = 0;
+  ul_tput_bytes = 0;
 }
 
 void rlc::reset()
@@ -94,6 +112,7 @@ uint32_t rlc::get_buffer_state(uint32_t lcid)
 int rlc::read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 {
   if(valid_lcid(lcid)) {
+    ul_tput_bytes += nof_bytes;
     return rlc_array[lcid].read_pdu(payload, nof_bytes);
   }
 }
@@ -101,6 +120,7 @@ int rlc::read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 void rlc::write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 {
   if(valid_lcid(lcid)) {
+    dl_tput_bytes += nof_bytes;
     rlc_array[lcid].write_pdu(payload, nof_bytes);
   }
 }
@@ -108,6 +128,7 @@ void rlc::write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 void rlc::write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes)
 {
   rlc_log->info_hex(payload, nof_bytes, "BCCH BCH message received.");
+  dl_tput_bytes += nof_bytes;
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
@@ -118,6 +139,7 @@ void rlc::write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes)
 void rlc::write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes)
 {
   rlc_log->info_hex(payload, nof_bytes, "BCCH DLSCH message received.");
+  dl_tput_bytes += nof_bytes;
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;
@@ -128,6 +150,7 @@ void rlc::write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes)
 void rlc::write_pdu_pcch(uint8_t *payload, uint32_t nof_bytes)
 {
   rlc_log->info_hex(payload, nof_bytes, "PCCH message received.");
+  dl_tput_bytes += nof_bytes;
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
   buf->N_bytes = nof_bytes;

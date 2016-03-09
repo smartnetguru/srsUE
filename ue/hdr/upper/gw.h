@@ -72,9 +72,9 @@ private:
   int32               sock;
   bool                if_up;
 
-  long                ul_throughput_bytecount;
-  long                dl_throughput_bytecount;
-  bpt::ptime          metrics_timestamp;
+  long                ul_tput_bytes;
+  long                dl_tput_bytes;
+  bpt::ptime          metrics_time;
 
   void                run_thread();
   error_t             init_if(char *err_str);
