@@ -30,7 +30,6 @@
 #include <stdint.h>
 
 #include "common/log.h"
-#include "mac/proc.h"
 #include "common/mac_interface.h"
 #include "common/interfaces.h"
 #include "mac/mac_params.h"
@@ -41,7 +40,7 @@
 
 namespace srsue {
 
-class bsr_proc : public proc, srslte::timer_callback
+class bsr_proc : public srslte::timer_callback
 {
 public:
   bsr_proc();

@@ -29,7 +29,6 @@
 
 #include <stdint.h>
 
-#include "mac/proc.h"
 #include "phy/phy.h"
 #include "mac/mac_params.h"
 
@@ -38,7 +37,7 @@
 
 namespace srsue {
 
-class sr_proc : public proc
+class sr_proc
 {
 public:
   sr_proc();
