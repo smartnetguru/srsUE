@@ -52,6 +52,7 @@ Download & Install Instructions
 * Mandatory dependencies: 
   * srsLTE:        https://github.com/srslte/srslte
   * UHD:           https://github.com/EttusResearch/uhd
+  * Boost:         ```sudo apt-get install libboost-all-dev```
   * Polarssl.......```sudo apt-get install libpolarssl-dev```
 
 Download and build srsUE: 
