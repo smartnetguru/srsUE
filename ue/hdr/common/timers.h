@@ -65,6 +65,9 @@ public:
     bool is_expired() {
       return counter == timeout || !running; 
     }
+    uint32_t get_timeout() {
+      return timeout; 
+    }
     void reset() {
       counter = 0; 
     }
@@ -72,6 +75,7 @@ public:
       if (running) {
         counter++; 
         if (is_expired()) {
+          running = false; 
           callback->timer_expired(id); 
         }        
       }

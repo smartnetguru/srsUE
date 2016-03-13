@@ -117,7 +117,7 @@ void ra_proc::read_params() {
 
 bool ra_proc::in_progress()
 {
-  return (state > IDLE && state != COMPLETION);
+  return (state > IDLE && state != COMPLETION_DONE);
 }
 
 bool ra_proc::is_successful() {
@@ -318,6 +318,8 @@ void ra_proc::tb_decoded_ok() {
           if (transmitted_crnti) {
             Info("Appending C-RNTI MAC CE in next transmission\n");
             mux_unit->append_crnti_ce_next_tx(transmitted_crnti);
+            phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, transmitted_crnti);
+            phy_h->pdcch_dl_search(SRSLTE_RNTI_USER, transmitted_crnti);
           }          
         }                  
         rDebug("Going to Contention Resolution state\n");
@@ -418,7 +420,8 @@ void ra_proc::step_contention_resolution() {
     if (transmitted_crnti) 
     {
       // Random Access with transmission of MAC C-RNTI CE
-      if ((!started_by_pdcch && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT) || started_by_pdcch) 
+      if ((!started_by_pdcch && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT) || 
+            started_by_pdcch && pdcch_to_crnti_received != PDCCH_CRNTI_NOT_RECEIVED) 
       {
         rInfo("PDCCH for C-RNTI received\n");
         timers_db->get(mac::CONTENTION_TIMER)->stop();
@@ -494,7 +497,7 @@ void ra_proc::step(uint32_t tti_)
 
 void ra_proc::start_mac_order()
 {
-  if (state == IDLE || state == COMPLETION || state == RA_PROBLEM) {
+  if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = false;
     state = INITIALIZATION;    
     Info("Starting PRACH by MAC order\n");
@@ -504,7 +507,7 @@ void ra_proc::start_mac_order()
 
 void ra_proc::start_pdcch_order()
 {
-  if (state == IDLE || state == COMPLETION || state == RA_PROBLEM) {
+  if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = true;
     state = INITIALIZATION;    
     Info("Starting PRACH by PDCCH order\n");
@@ -525,7 +528,7 @@ void ra_proc::pdcch_to_crnti(bool contains_uplink_grant) {
   rInfo("PDCCH to C-RNTI received %s UL grant\n", contains_uplink_grant?"with":"without");
   if (contains_uplink_grant) {
     pdcch_to_crnti_received = PDCCH_CRNTI_UL_GRANT;     
-  } else {
+  } else if (pdcch_to_crnti_received == PDCCH_CRNTI_NOT_RECEIVED) {
     pdcch_to_crnti_received = PDCCH_CRNTI_DL_GRANT;         
   }
 }

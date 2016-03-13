@@ -362,6 +362,10 @@ void rlc_um::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   // Write to rx window
   rlc_umd_pdu_t pdu;
   pdu.buf = pool->allocate();
+  if (!pdu.buf) {
+    log->error("Discarting packet: no space in buffer pool\n");
+    return;
+  }
   memcpy(pdu.buf->msg, payload, nof_bytes);
   pdu.buf->N_bytes = nof_bytes;
   //Strip header from PDU

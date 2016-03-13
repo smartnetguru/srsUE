@@ -135,11 +135,15 @@ void mac::reset()
   
   signals_pregenerated = false; 
   is_first_ul_grant = true;   
+  
+  params_db.set_param(mac_interface_params::RNTI_C, 0);
+  params_db.set_param(mac_interface_params::RNTI_TEMP, 0);  
 }
 
 void mac::run_thread() {
   setup_timers();
-
+  int cnt=0;
+  
   Info("Waiting PHY to synchronize with cell\n");  
   phy_h->sync_start();
   while(!phy_h->get_current_tti() && started) {
@@ -190,7 +194,6 @@ void mac::run_thread() {
         ((phy*) phy_h)->set_crnti(crnti);
         signals_pregenerated = true; 
       }
-      
       timers_db.step_all();          
     }
   }  

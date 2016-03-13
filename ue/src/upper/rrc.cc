@@ -30,6 +30,7 @@
 
 #include "upper/rrc.h"
 #include <srslte/utils/bit.h>
+#include "liblte_security.h"
 
 using namespace srslte;
 
@@ -136,13 +137,13 @@ void rrc::ra_problem() {
 // Detection of physical layer problems (5.3.11.1)
 void rrc::out_of_sync()
 {
-  if (!mac_timers->get(t311)->is_running()) {
+  if (!mac_timers->get(t311)->is_running() && !mac_timers->get(t310)->is_running()) {
     n310_cnt++;
     if (n310_cnt == N310) {
       mac_timers->get(t310)->reset();
       mac_timers->get(t310)->run();
       n310_cnt = 0; 
-      rrc_log->info("Detected %d out-of-sync from PHY. Starting T310 timer\n");
+      rrc_log->info("Detected %d out-of-sync from PHY. Starting T310 timer\n", N310);
     }
   }
 }
@@ -155,7 +156,7 @@ void rrc::in_sync()
     if (n311_cnt == N311) {
       mac_timers->get(t310)->stop();      
       n311_cnt = 0; 
-      rrc_log->info("Detected %d in-sync from PHY. Stopping T310 timer\n");
+      rrc_log->info("Detected %d in-sync from PHY. Stopping T310 timer\n", N311);
     }
   }
 }
@@ -269,39 +270,42 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
 
 void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 {
-  rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
-  
-  LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
-  srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
-  bit_buf.N_bits = pdu->N_bytes*8;
-  pool->deallocate(pdu);
-  liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
-  
-  if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
-    pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
-  }
+  if (pdu->N_bytes > 0 && pdu->N_bytes < SRSUE_MAX_BUFFER_SIZE_BITS) {
+    rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
+    rrc_log->console("PCCH message received %d bytes\n", pdu->N_bytes);
+    
+    LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
+    srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
+    bit_buf.N_bits = pdu->N_bytes*8;
+    pool->deallocate(pdu);
+    liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
+    
+    if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
+      pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
+    }
 
-  LIBLTE_RRC_S_TMSI_STRUCT s_tmsi;
-  if(!nas->get_s_tmsi(&s_tmsi)) {
-    rrc_log->info("No S-TMSI present in NAS\n");
-    return;
-  }
-  
-  LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi_paged;
-  for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
-    s_tmsi_paged = &pcch_msg.paging_record_list[i].ue_identity.s_tmsi;
-    rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
-                  pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
-    rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
-                     pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
-    if(s_tmsi.mmec == s_tmsi_paged->mmec && s_tmsi.m_tmsi == s_tmsi_paged->m_tmsi) {
-      rrc_log->info("S-TMSI match in paging message\n");
-      rrc_log->console("S-TMSI match in paging message\n");
-      mac->pcch_stop_rx();
-      if(RRC_STATE_IDLE == state) {
-        rrc_log->info("RRC in IDLE state - sending connection request.\n");
-        state = RRC_STATE_WAIT_FOR_CON_SETUP;
-        send_con_request();
+    LIBLTE_RRC_S_TMSI_STRUCT s_tmsi;
+    if(!nas->get_s_tmsi(&s_tmsi)) {
+      rrc_log->info("No S-TMSI present in NAS\n");
+      return;
+    }
+    
+    LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi_paged;
+    for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
+      s_tmsi_paged = &pcch_msg.paging_record_list[i].ue_identity.s_tmsi;
+      rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
+                    pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+      rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
+                      pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+      if(s_tmsi.mmec == s_tmsi_paged->mmec && s_tmsi.m_tmsi == s_tmsi_paged->m_tmsi) {
+        rrc_log->info("S-TMSI match in paging message\n");
+        rrc_log->console("S-TMSI match in paging message\n");
+        mac->pcch_stop_rx();
+        if(RRC_STATE_IDLE == state) {
+          rrc_log->info("RRC in IDLE state - sending connection request.\n");
+          state = RRC_STATE_WAIT_FOR_CON_SETUP;
+          send_con_request();
+        }
       }
     }
   }
@@ -372,7 +376,35 @@ void rrc::send_con_restablish_request()
   LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
   LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
 
-  rrc_log->info("Initiating RRC Connection Restablishment Procedure");
+  // Compute shortMAC-I
+  uint8_t varShortMAC[128], varShortMAC_packed[16];
+  bzero(varShortMAC, 128);
+  bzero(varShortMAC_packed, 16);
+  uint8_t *msg_ptr = varShortMAC; 
+  liblte_rrc_pack_cell_identity_ie(sib1.cell_id, &msg_ptr);
+  liblte_rrc_pack_phys_cell_id_ie(phy->get_param(srsue::phy_interface_params::PHY_CELL_ID), &msg_ptr);
+  liblte_rrc_pack_c_rnti_ie(mac->get_param(srsue::mac_interface_params::RNTI_C), &msg_ptr);
+  srslte_bit_pack_vector(varShortMAC, varShortMAC_packed, msg_ptr - varShortMAC);
+  rrc_log->console("Packed varShortMAC nbits=%d\n", msg_ptr - varShortMAC);
+  uint8_t mac_key[4];
+  liblte_security_128_eia2(&k_rrc_int[16],
+                           0xFFFFFFFF,
+                           0xFF,
+                           0xFF,
+                           varShortMAC,
+                           2,
+                           &mac_key[0]);
+  
+  // Prepare ConnectionRestalishmentRequest packet
+  ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REEST_REQ;
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.c_rnti = mac->get_param(srsue::mac_interface_params::RNTI_C);
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.phys_cell_id = phy->get_param(srsue::phy_interface_params::PHY_CELL_ID);
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.short_mac_i = mac_key[2]<<8 | mac_key[3];
+  ul_ccch_msg.msg.rrc_con_reest_req.cause = LIBLTE_RRC_CON_REEST_REQ_CAUSE_OTHER_FAILURE;
+  liblte_rrc_pack_ul_ccch_msg(&ul_ccch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
+
+  rrc_log->info("Initiating RRC Connection Restablishment Procedure\n");
+  rrc_log->console("RRC Connection Restablishment\n");
   mac_timers->get(t310)->stop();
   mac_timers->get(t311)->reset();
   mac_timers->get(t311)->run();
@@ -395,14 +427,6 @@ void rrc::send_con_restablish_request()
   mac_timers->get(t311)->stop();
   rrc_log->info("Cell Selection finished. Initiating transmission of RRC Connection Restablishment Request\n");
   
-  // Prepare ConnectionRestalishmentRequest packet
-  ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REEST_REQ;
-  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.c_rnti = mac->get_param(srsue::mac_interface_params::RNTI_C);
-  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.phys_cell_id = phy->get_param(srsue::phy_interface_params::PHY_CELL_ID);
-  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.short_mac_i = nas->get_short_mac();
-  ul_ccch_msg.msg.rrc_con_reest_req.cause = LIBLTE_RRC_CON_REEST_REQ_CAUSE_OTHER_FAILURE;
-  liblte_rrc_pack_ul_ccch_msg(&ul_ccch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
-
   // Byte align and pack the message bits for PDCP
   if((bit_buf.N_bits % 8) != 0)
   {
@@ -413,6 +437,16 @@ void rrc::send_con_restablish_request()
   byte_buffer_t *pdcp_buf = pool->allocate();
   srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
   pdcp_buf->N_bytes = bit_buf.N_bits/8;
+
+  // Set UE contention resolution ID in MAC
+  uint64_t uecri=0;
+  uint8_t *ue_cri_ptr = (uint8_t*) &uecri;
+  uint32_t nbytes = 6;
+  for (int i=0;i<nbytes;i++) {
+    ue_cri_ptr[nbytes-i-1] = pdcp_buf->msg[i];
+  }
+  rrc_log->debug("Setting UE contention resolution ID: %d\n", uecri);
+  mac->set_param(srsue::mac_interface_params::CONTENTION_ID, uecri);
 
   rrc_log->info("Sending RRC Connection Resetablishment Request on SRB0\n");
   state = RRC_STATE_WAIT_FOR_CON_SETUP;
@@ -669,11 +703,14 @@ void rrc::parse_dl_ccch(byte_buffer_t *pdu)
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST:
     transaction_id = dl_ccch_msg.msg.rrc_con_reest.rrc_transaction_id;
-    rrc_log->info("Connection Reestablishment received");
+    rrc_log->info("Connection Reestablishment received\n");
+    rrc_log->console("Reestablishment OK\n");
     handle_con_reest(&dl_ccch_msg.msg.rrc_con_reest);
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST_REJ:
-    rrc_log->info("Connection Reestablishment Reject received");
+    rrc_log->info("Connection Reestablishment Reject received\n");
+    rrc_log->console("Reestablishment Reject\n");
+    usleep(50000);
     rrc_connection_release();
     break;
   default:
@@ -765,8 +802,9 @@ void rrc::rrc_connection_release() {
     boost::mutex::scoped_lock lock(mutex);
     drb_up = false;
     state  = RRC_STATE_IDLE;
-    mac->reset();
+    set_phy_default_pucch_srs();
     phy->reset();
+    mac->reset();
     rlc->reset();
     pdcp->reset();
     mac_timers->get(t310)->stop();
@@ -975,18 +1013,22 @@ void rrc::apply_sib2_configs()
     phy->set_param(srsue::phy_interface_params::SRS_CS_SFCFG, sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg);
     phy->set_param(srsue::phy_interface_params::SRS_CS_ACKNACKSIMUL, sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
   }
-  
-  mac_timers->get(t301)->set(this, sib2.ue_timers_and_constants.t301);
-  mac_timers->get(t310)->set(this, sib2.ue_timers_and_constants.t310);
-  mac_timers->get(t311)->set(this, sib2.ue_timers_and_constants.t311);
-  N310 = sib2.ue_timers_and_constants.n310;
-  N311 = sib2.ue_timers_and_constants.n311;
-  
+
   rrc_log->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%d\n",
                 sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg,
                 sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg,
                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
 
+  mac_timers->get(t301)->set(this, liblte_rrc_t301_num[sib2.ue_timers_and_constants.t301]);
+  mac_timers->get(t310)->set(this, liblte_rrc_t310_num[sib2.ue_timers_and_constants.t310]);
+  mac_timers->get(t311)->set(this, liblte_rrc_t311_num[sib2.ue_timers_and_constants.t311]);
+  N310 = liblte_rrc_n310_num[sib2.ue_timers_and_constants.n310];
+  N311 = liblte_rrc_n311_num[sib2.ue_timers_and_constants.n311];
+  
+  rrc_log->info("Set Constants and Timers: N310=%d, N311=%d, t301=%d, t310=%d, t311=%d\n", 
+    N310, N311, mac_timers->get(t301)->get_timeout(), 
+    mac_timers->get(t310)->get_timeout(), mac_timers->get(t311)->get_timeout());
+  
   phy->configure_ul_params();
 }
 

@@ -327,12 +327,12 @@ void phch_recv::run_thread()
         } 
         sync_sfn_cnt++;
         if (sync_sfn_cnt >= SYNC_SFN_TIMEOUT) {
-          radio_h->stop_rx();
-          radio_is_streaming = false; 
-          usleep(10000);
           sync_sfn_cnt = 0; 
           log_h->console("Timeout while synchronizing SFN\n");
           log_h->warning("Timeout while synchronizing SFN\n");
+        }
+        if (cell_is_set && !(sync_sfn_cnt%10)) {
+          rrc->out_of_sync();
         }
        break;
       case SYNC_DONE:
@@ -400,6 +400,7 @@ void phch_recv::run_thread()
             rrc->out_of_sync();
             worker->release();
             worker_com->reset_ul();            
+            phy_state = SYNCING;
           }
         } else {
           // wait_worker() only returns NULL if it's being closed. Quit now to avoid unnecessary loops here

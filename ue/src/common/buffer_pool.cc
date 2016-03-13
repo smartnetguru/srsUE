@@ -69,7 +69,7 @@ byte_buffer_t* buffer_pool::allocate()
 
   if(first_available == NULL)
   {
-    printf("Error - buffer pool is empty");
+    printf("Error - buffer pool is empty\n");
     return NULL;
   }
 

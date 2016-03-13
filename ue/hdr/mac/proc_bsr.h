@@ -86,8 +86,6 @@ private:
   uint32_t   find_max_priority_lcid(); 
   typedef enum {NONE, REGULAR, PADDING, PERIODIC} triggered_bsr_type_t;
   triggered_bsr_type_t triggered_bsr_type; 
-  bool timer_periodic;
-  bool timer_retx;
   
   bool sr_is_sent;
   uint32_t last_print;

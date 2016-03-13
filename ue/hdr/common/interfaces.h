@@ -94,7 +94,6 @@ public:
   virtual void      write_pdu(uint32_t lcid, byte_buffer_t *pdu) = 0;
   virtual uint32_t  get_ul_count() = 0;
   virtual bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi) = 0;
-  virtual uint16_t  get_short_mac() = 0; 
 };
 
 // RRC interface for MAC

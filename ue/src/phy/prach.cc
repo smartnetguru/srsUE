@@ -66,40 +66,46 @@ void prach::init(phy_params* params_db_, srslte::log* log_h_)
 
 bool prach::init_cell(srslte_cell_t cell_)
 {
-  cell = cell_; 
-  preamble_idx = -1; 
-
-  Info("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
-       params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
-       params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
-       params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
-  
-  if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
-                        srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
-                        params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
-                        params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
-                        params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
-  {
-    Error("Initiating PRACH library\n");
-    return false; 
-  }
-  
-  len = prach_obj.N_seq + prach_obj.N_cp;
-  for (int i=0;i<64;i++) {
-    buffer[i] = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t));
-    if(!buffer[i]) {
-      return false; 
-    }    
-    if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
-      Error("Generating PRACH preamble %d\n", i);
-      return false;
+  // TODO: Check if other PRACH parameters changed
+  if (cell_.id != cell.id || !initiated) {
+    if (initiated) {
+      free_cell();
     }
+    cell = cell_; 
+    preamble_idx = -1; 
+
+    Info("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
+        params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
+        params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
+        params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
+    
+    if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
+                          srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
+                          params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
+                          params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
+                          params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
+    {
+      Error("Initiating PRACH library\n");
+      return false; 
+    }
+    
+    len = prach_obj.N_seq + prach_obj.N_cp;
+    for (int i=0;i<64;i++) {
+      buffer[i] = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t));
+      if(!buffer[i]) {
+        return false; 
+      }    
+      if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
+        Error("Generating PRACH preamble %d\n", i);
+        return false;
+      }
+    }
+    srslte_cfo_init(&cfo_h, len);
+    signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
+    initiated = signal_buffer?true:false; 
+    transmitted_tti = -1; 
+    Info("PRACH Initiated %s\n", initiated?"OK":"KO");
   }
-  srslte_cfo_init(&cfo_h, len);
-  signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
-  initiated = signal_buffer?true:false; 
-  transmitted_tti = -1; 
-  Info("PRACH Initiated %s\n", initiated?"OK":"KO");
   return initiated;  
 }
 
