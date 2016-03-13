@@ -399,6 +399,8 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     tx_sdu->msg     += to_move;
     if(tx_sdu->N_bytes == 0)
     {
+      log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+                rb_id_text[lcid], tx_sdu->get_latency_us());
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
@@ -422,6 +424,8 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     tx_sdu->msg     += to_move;
     if(tx_sdu->N_bytes == 0)
     {
+      log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+                rb_id_text[lcid], tx_sdu->get_latency_us());
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
@@ -624,6 +628,7 @@ void rlc_am::reassemble_rx_sdus()
       rx_window[vr_r].buf->msg += len;
       rx_window[vr_r].buf->N_bytes -= len;
       log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU", rb_id_text[lcid]);
+      rx_sdu->timestamp = bpt::microsec_clock::local_time();
       pdcp->write_pdu(lcid, rx_sdu);
       rx_sdu = pool->allocate();
     }
@@ -634,6 +639,7 @@ void rlc_am::reassemble_rx_sdus()
     if(rlc_am_end_aligned(rx_window[vr_r].header.fi))
     {
       log->info_hex(rx_sdu->msg, rx_sdu->N_bytes, "%s Rx SDU", rb_id_text[lcid]);
+      rx_sdu->timestamp = bpt::microsec_clock::local_time();
       pdcp->write_pdu(lcid, rx_sdu);
       rx_sdu = pool->allocate();
     }

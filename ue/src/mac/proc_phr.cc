@@ -40,10 +40,6 @@
 phr_proc::phr_proc()
 {
   initiated = false; 
-  timer_periodic = -2; 
-  timer_prohibit = -2;
-  dl_pathloss_change = -2; 
-  phr_is_triggered = false; 
 }
 
 void phr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_)
@@ -53,11 +49,15 @@ void phr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* para
   params_db = params_db_;
   timers_db = timers_db_; 
   initiated = true;
+  reset();
 }
 
 void phr_proc::reset()
 {
   phr_is_triggered = false; 
+  timer_periodic = -2; 
+  timer_prohibit = -2;
+  dl_pathloss_change = -2; 
 }
 
 /* Trigger PHR when timers exire */
