@@ -53,7 +53,7 @@ void rlc_tm::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
   log->error("Attempted to configure TM RLC entity");
 }
 
-void rlc_tm::reset()
+void rlc_tm::empty_queue()
 {
   // Drop all messages in UL queue
   byte_buffer_t *buf;
@@ -61,6 +61,11 @@ void rlc_tm::reset()
     ul_queue.read(&buf);
     pool->deallocate(buf);
   }
+}
+
+void rlc_tm::reset()
+{
+  empty_queue(); 
 }
 
 rlc_mode_t rlc_tm::get_mode()

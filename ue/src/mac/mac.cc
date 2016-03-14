@@ -191,6 +191,7 @@ void mac::run_thread() {
         ((phy*) phy_h)->set_crnti(crnti);
         signals_pregenerated = true; 
       }
+      
       /*
       cnt++; 
       if (cnt==8000) {
@@ -198,6 +199,7 @@ void mac::run_thread() {
         ra_procedure.start_mac_order();
       }
       */
+      
       timers_db.step_all();          
     }
   }  

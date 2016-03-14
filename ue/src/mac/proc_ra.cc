@@ -185,6 +185,12 @@ void ra_proc::step_initialization() {
   mux_unit->msg3_flush();
   msg3_flushed = false; 
   backoff_param_ms = 0; 
+
+  // FIXME: This is because RA in Connected state not working in amarisoft
+  transmitted_crnti = params_db->get_param(mac_interface_params::RNTI_C);
+  if(transmitted_crnti) {
+    state = RESPONSE_ERROR;
+  }
   
   // Instruct phy to configure PRACH
   phy_h->configure_prach_params();
@@ -352,6 +358,10 @@ void ra_proc::step_response_error() {
   preambleTransmissionCounter++;
   if (preambleTransmissionCounter >= preambleTransMax + 1) {
     rError("Maximum number of transmissions reached (%d)\n", preambleTransMax);
+    rrc->ra_problem();
+    state = RA_PROBLEM;
+  } else if (transmitted_crnti) {
+    log_h->console("FIXME: RA in connected state not working\n");
     rrc->ra_problem();
     state = RA_PROBLEM;
   } else {

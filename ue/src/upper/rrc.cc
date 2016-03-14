@@ -381,19 +381,19 @@ void rrc::send_con_restablish_request()
   bzero(varShortMAC, 128);
   bzero(varShortMAC_packed, 16);
   uint8_t *msg_ptr = varShortMAC; 
-  liblte_rrc_pack_cell_identity_ie(sib1.cell_id, &msg_ptr);
+  liblte_rrc_pack_cell_identity_ie(0x1a2d0, &msg_ptr);
   liblte_rrc_pack_phys_cell_id_ie(phy->get_param(srsue::phy_interface_params::PHY_CELL_ID), &msg_ptr);
   liblte_rrc_pack_c_rnti_ie(mac->get_param(srsue::mac_interface_params::RNTI_C), &msg_ptr);
   srslte_bit_pack_vector(varShortMAC, varShortMAC_packed, msg_ptr - varShortMAC);
-  rrc_log->console("Packed varShortMAC nbits=%d\n", msg_ptr - varShortMAC);
+  
   uint8_t mac_key[4];
   liblte_security_128_eia2(&k_rrc_int[16],
-                           0xFFFFFFFF,
-                           0xFF,
-                           0xFF,
-                           varShortMAC,
-                           2,
-                           &mac_key[0]);
+                           1,
+                           1,
+                           1,
+                           varShortMAC_packed,
+                           7,
+                           mac_key);
   
   // Prepare ConnectionRestalishmentRequest packet
   ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REEST_REQ;

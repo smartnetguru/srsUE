@@ -87,6 +87,17 @@ void rlc_am::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
             t_reordering, t_status_prohibit);
 }
 
+
+void rlc_am::empty_queue() {
+  // Drop all messages in TX SDU queue
+  byte_buffer_t *buf;
+  while(tx_sdu_queue.size() > 0) {
+    tx_sdu_queue.read(&buf);
+    pool->deallocate(buf);
+  }
+
+}
+
 void rlc_am::reset()
 {
   reordering_timeout.reset();
@@ -112,13 +123,8 @@ void rlc_am::reset()
   poll_received = false;
   do_status     = false;
 
-  // Drop all messages in TX SDU queue
-  byte_buffer_t *buf;
-  while(tx_sdu_queue.size() > 0) {
-    tx_sdu_queue.read(&buf);
-    pool->deallocate(buf);
-  }
-
+  empty_queue();
+  
   // Drop all messages in RX window
   std::map<uint32_t, rlc_amd_rx_pdu_t>::iterator rxit;
   for(rxit = rx_window.begin(); rxit != rx_window.end(); rxit++) {

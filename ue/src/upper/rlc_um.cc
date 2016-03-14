@@ -104,6 +104,15 @@ void rlc_um::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
   }
 }
 
+void rlc_um::empty_queue() {
+  // Drop all messages in TX SDU queue
+  byte_buffer_t *buf;
+  while(tx_sdu_queue.size() > 0) {
+    tx_sdu_queue.read(&buf);
+    pool->deallocate(buf);
+  }
+}
+
 void rlc_um::reset()
 {
   vt_us    = 0;
@@ -118,13 +127,8 @@ void rlc_um::reset()
   if(mac_timers)
     mac_timers->get(reordering_timeout_id)->stop();
 
-  // Drop all messages in TX SDU queue
-  byte_buffer_t *buf;
-  while(tx_sdu_queue.size() > 0) {
-    tx_sdu_queue.read(&buf);
-    pool->deallocate(buf);
-  }
-
+  empty_queue();
+  
   // Drop all messages in RX window
   std::map<uint32_t, rlc_umd_pdu_t>::iterator it;
   for(it = rx_window.begin(); it != rx_window.end(); it++) {
