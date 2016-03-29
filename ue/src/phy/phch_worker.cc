@@ -91,8 +91,8 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
 {
   memcpy(&cell, &cell_, sizeof(srslte_cell_t));
   
-  // ue_sync in phy.cc requires a buffer for 2 subframes 
-  signal_buffer = (cf_t*) srslte_vec_malloc(2 * sizeof(cf_t) * SRSLTE_SF_LEN_PRB(cell.nof_prb));
+  // ue_sync in phy.cc requires a buffer for 3 subframes 
+  signal_buffer = (cf_t*) srslte_vec_malloc(3 * sizeof(cf_t) * SRSLTE_SF_LEN_PRB(cell.nof_prb));
   if (!signal_buffer) {
     Error("Allocating memory\n");
     return false; 
@@ -591,7 +591,7 @@ void phch_worker::set_uci_periodic_cqi()
         if (cqi_report.wideband.wideband_cqi > 15) {
           cqi_report.wideband.wideband_cqi = 15;
         }
-        //printf("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db-5, cqi_report.wideband.wideband_cqi);
+        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db-5, cqi_report.wideband.wideband_cqi);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       

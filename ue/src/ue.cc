@@ -209,7 +209,7 @@ void ue::set_expert_parameters() {
     phy.set_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD, 160);
   }
   
-  phy.set_param(phy_interface_params::SYNC_TRACK_THRESHOLD, 10*args->expert.sync_track_th);
+  phy.set_param(phy_interface_params::SYNC_TRACK_THRESHOLD, 100*args->expert.sync_track_th);
   phy.set_param(phy_interface_params::SYNC_TRACK_AVG_COEFF, 100*args->expert.sync_track_avg_coef);
 
   if (args->rf.tx_gain > 0) {

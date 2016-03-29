@@ -307,6 +307,9 @@ void phch_recv::run_thread()
         }
         break;
       case SYNCING:
+        
+        srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
+        
         if (!radio_is_streaming) {
           // Start streaming
           radio_h->start_rx();
@@ -328,6 +331,8 @@ void phch_recv::run_thread()
         sync_sfn_cnt++;
         if (sync_sfn_cnt >= SYNC_SFN_TIMEOUT) {
           sync_sfn_cnt = 0; 
+          radio_h->stop_rx();
+          radio_is_streaming = false; 
           log_h->console("Timeout while synchronizing SFN\n");
           log_h->warning("Timeout while synchronizing SFN\n");
         }
@@ -338,10 +343,10 @@ void phch_recv::run_thread()
       case SYNC_DONE:
         /* Set synchronization track phase threshold and averaging factor */
         if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD) > 0) {
-          srslte_sync_set_threshold(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/10);          
+          srslte_sync_set_threshold(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/100);          
         }
         if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_AVG_COEFF) > 0) {
-          srslte_sync_set_em_alpha(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/10);
+          srslte_sync_set_em_alpha(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_AVG_COEFF)/100);
         }
         
         tti = (tti+1)%10240;        
