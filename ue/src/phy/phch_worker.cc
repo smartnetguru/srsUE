@@ -148,7 +148,7 @@ void phch_worker::set_cfo(float cfo_)
 
 void phch_worker::set_sample_offset(float sample_offset)
 {
-  srslte_ue_dl_set_sample_offset(&ue_dl, sample_offset);
+  //srslte_ue_dl_set_sample_offset(&ue_dl, sample_offset);
 }
 
 void phch_worker::set_crnti(uint16_t rnti)
