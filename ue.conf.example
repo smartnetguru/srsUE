@@ -92,48 +92,43 @@ enable = true
 #####################################################################
 # Expert configuration options
 #
-# prach_gain:           PRACH gain (dB). If positive, disables power control 
-#                       and fixes PRACH tx gain.
-# ul_gain:              Uplink gain (dB). If positive, disables power control
-#                       and fixes PUSCH/PUCCH/SRS tx gain.
-# ul_pwr_ctrl_offset:   Uplink power control offset (dB). Adds an offset
-#                       to all UL gains calculated by power control.
-# rx_gain_offset:       Receive gain offset (dB). Defines the default receiver
-#                       chain gain used to compute UL power control values if
-#                       RSSI sensor not found. Uses rx gain by default.
+# prach_gain:           PRACH gain (dB). If defined, forces a gain for the tranmsission of PRACH only., 
+#                       Default is to use tx_gain in [rf] section. 
+# cqi_max:              Upper bound on the maximum CQI to be reported. Default 15. 
 # pdsch_max_its:        Maximum number of turbo decoder iterations (default 4)
-# sync_track_th:        Peak-to-sidelobe ratio (PSR) threshold for PSS correlation 
-#                       in track phase
-# sync_track_avg_coef:  Exponential averaging coefficient for PSS correlation in track phase
-# sync_find_th:         PSR threshold for PSS correlation in find phase
-# sync_find_max_frames: Maximum number of frames scanned during cell find phase
-# enable_64qam_attach:  Enables PUSCH 64QAM modulation before attachment (Necessary for old 
+# attach_enable_64qam:  Enables PUSCH 64QAM modulation before attachment (Necessary for old 
 #                        Amarisoft LTE 100 eNodeB, disabled by default)
-# continuous_tx:        Enable/disable continuous transmission mode (true/false)
-#                        Default disabled.
 # nof_phy_threads:      Selects the number of PHY threads (maximum 4, minimum 1, default 2)
-#
 # equalizer_mode:       Selects equalizer mode. Valid modes are: "mmse", "zf" or any 
 #                       non-negative real number to indicate a regularized zf coefficient.
 #                       Default is MMSE. 
+# cfo_integer_enabled:  Enables integer CFO estimation and correction. This needs improvement
+#                       and may lead to incorrect synchronization. Use with caution. 
+# cfo_correct_tol_hz:   Tolerance (in Hz) for digial CFO compensation. Lower tolerance means that 
+#                       a new table will be generated more often. 
+# time_correct_period:  Period for sampling time offset correction. Default is 10 (ue_sync.c), 
+#                       good for long channels. For best performance at highest SNR reduce it to 1.  
+# sfo_correct_disable:  Disables phase correction before channel estimation to compensate for 
+#                       sampling frequency offset. Default is enabled. 
+# sss_algorithm:        Selects the SSS estimation algorithm. Can choose between 
+#                       {full, partial, diff}. 
+# estimator_fil_w:      Chooses the coefficients for the 3-tap channel estimator centered filter. 
+#                       The taps are [w, 1-2w, w]
 #
 #####################################################################
 [expert]
-#prach_gain = 60
-#ul_gain = 70
-#ul_pwr_ctrl_offset = 0
-#rx_gain_offset = 50
+#prach_gain          = 30
+#cqi_max             = 15
 #pdsch_max_its       = 4
-#sync_track_th       = 1.3 # must be > 1
-#sync_track_avg_coef = 0.1 # must be 0..1
-#sync_find_th         = 1.6
-#sync_find_max_frames = 100
-#enable_64qam_attach = false
-#continuous_tx = false
-#nof_phy_threads = 2
-#equalizer_mode = mmse
-
-
+#attach_enable_64qam = false
+#nof_phy_threads     = 2
+#equalizer_mode      = mmse
+#cfo_integer_enabled = false
+#cfo_correct_tol_hz  = 50
+#time_correct_period = 10
+#sfo_correct_disable = false
+#sss_algorithm       = full
+#estimator_fil_w     = 0.1
 
 #####################################################################
 # Manual RF calibration

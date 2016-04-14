@@ -110,18 +110,17 @@ typedef struct {
 
 typedef struct {
   float prach_gain;
-  float ul_gain;
-  float ul_pwr_ctrl_offset;
-  float rx_gain_offset;
   int pdsch_max_its;
-  float sync_track_th;
-  float sync_track_avg_coef;
-  float sync_find_th;
-  float sync_find_max_frames;
-  bool enable_64qam_attach; 
-  bool continuous_tx;
+  bool attach_enable_64qam; 
   int nof_phy_threads;  
   std::string equalizer_mode; 
+  int cqi_max; 
+  bool cfo_integer_enabled; 
+  float cfo_correct_tol_hz; 
+  int time_correct_period; 
+  bool sfo_correct_disable; 
+  std::string sss_algorithm; 
+  float estimator_fil_w; 
 }expert_args_t;
 
 typedef struct {

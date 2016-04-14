@@ -108,12 +108,7 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   }
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
-  
-  /* Set decoder iterations */
-  if (phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS) > 0) {
-    srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS));
-  }
-  
+    
   cell_initiated = true; 
   
   return true; 
@@ -148,6 +143,9 @@ void phch_worker::set_cfo(float cfo_)
 
 void phch_worker::set_sample_offset(float sample_offset)
 {
+  if (phy->params_db->get_param(phy_interface_params::SFO_CORRECT_DISABLE)) {
+    sample_offset = 0; 
+  }
   srslte_ue_dl_set_sample_offset(&ue_dl, sample_offset);
 }
 
@@ -293,6 +291,13 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   
   /* Without a grant, we might need to do fft processing if need to decode PHICH */
   if (phy->get_pending_ack(tti) || decode_pdcch) {
+    
+    // Setup estimator filter 
+    float w_coeff = (float) phy->params_db->get_param(phy_interface_params::ESTIMATOR_FIL_W_1000)/1000; 
+    if (w_coeff >= 0.0) {
+      srslte_chest_dl_set_smooth_filter3_coeff(&ue_dl.chest, w_coeff); 
+    }
+  
     if (srslte_ue_dl_decode_fft_estimate(&ue_dl, signal_buffer, tti%10, &cfi) < 0) {
       Error("Getting PDCCH FFT estimate\n");
       return false; 
@@ -394,6 +399,12 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
       if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
         noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
       }
+      
+      /* Set decoder iterations */
+      if (phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS) > 0) {
+        srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS));
+      }
+
       
 #ifdef LOG_EXECTIME
       struct timeval t[3];
@@ -583,10 +594,11 @@ void phch_worker::set_uci_periodic_cqi()
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
         cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);        
-        if (cqi_report.wideband.wideband_cqi > 15) {
-          cqi_report.wideband.wideband_cqi = 15;
+        int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
+        if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
+          cqi_report.wideband.wideband_cqi = cqi_max;
         }
-        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db-5, cqi_report.wideband.wideband_cqi);
+        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.wideband.wideband_cqi);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       
@@ -823,16 +835,13 @@ void phch_worker::set_ul_params(bool pregen_disabled)
 float phch_worker::set_power(float tx_power) {
   float gain = 0; 
   /* Check if UL power control is enabled */
-  if(phy->params_db->get_param(phy_interface_params::UL_GAIN) < 0) {
-    
+  if(phy->params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {    
     /* Adjust maximum power if it changes significantly */
-    //if (tx_power < phy->cur_radio_power - 5 || tx_power > phy->cur_radio_power + 5) {
+    if (tx_power < phy->cur_radio_power - 5 || tx_power > phy->cur_radio_power + 5) {
       phy->cur_radio_power = tx_power; 
-      /* Add an optional offset to the power set to the RF frontend */
       float radio_tx_power = phy->cur_radio_power;
-      radio_tx_power += (float) phy->params_db->get_param(phy_interface_params::UL_PWR_CTRL_OFFSET);
       gain = phy->get_radio()->set_tx_power(radio_tx_power);  
-    //}    
+   }    
   }
   return gain;
 }
@@ -886,11 +895,7 @@ void phch_worker::update_measurements()
           rx_gain_offset = 0; 
         }
       } else {
-        if (phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET) > 0) {
-          rx_gain_offset = (float) phy->params_db->get_param(phy_interface_params::RX_GAIN_OFFSET);
-        } else {
-          rx_gain_offset = phy->get_radio()->get_rx_gain();
-        }
+        rx_gain_offset = phy->get_radio()->get_rx_gain();
       }
       if (phy->rx_gain_offset) {
         phy->rx_gain_offset = SRSLTE_VEC_EMA(phy->rx_gain_offset, rx_gain_offset, 0.1);

@@ -100,12 +100,36 @@ void phch_recv::set_time_adv_sec(float _time_adv_sec) {
  time_adv_sec = _time_adv_sec;
 }
 
+void phch_recv::set_ue_sync_opts(srslte_ue_sync_t *q) {
+  if (worker_com->params_db->get_param(phy_interface_params::CFO_INTEGER_ENABLED)) {
+    srslte_ue_sync_cfo_i_detec_en(q, true); 
+  }
+  
+  float cfo_tol = (float) worker_com->params_db->get_param(phy_interface_params::CFO_CORRECT_TOL_HZ_100)/100; 
+  srslte_cfo_set_tol(&q->strack.cfocorr, cfo_tol/(15000*q->fft_size));
+  srslte_cfo_set_tol(&q->sfind.cfocorr, cfo_tol/(15000*q->fft_size));
+
+  int time_correct_period = worker_com->params_db->get_param(phy_interface_params::TIME_CORRECT_PERIOD); 
+  if (time_correct_period > 0) {
+    srslte_ue_sync_set_sample_offset_correct_period(q, time_correct_period);     
+  }
+  int sss_alg = worker_com->params_db->get_param(phy_interface_params::SSS_ALGORITHM); 
+  if (sss_alg >= 0 && sss_alg < 3) {
+    srslte_sync_set_sss_algorithm(&q->strack, (sss_alg_t) sss_alg); 
+    srslte_sync_set_sss_algorithm(&q->sfind, (sss_alg_t) sss_alg); 
+  }  
+}
+
 bool phch_recv::init_cell() {
   cell_is_set = false;
   if (!srslte_ue_mib_init(&ue_mib, cell)) 
   {
     if (!srslte_ue_sync_init(&ue_sync, cell, radio_recv_wrapper_cs, radio_h)) 
     {
+
+      // Set options defined in expert section 
+      set_ue_sync_opts(&ue_sync); 
+      
       worker_com->params_db->set_param(phy_interface_params::PHY_CELL_ID, cell.id);
       for (int i=0;i<workers_pool->get_nof_workers();i++) {
         if (!((phch_worker*) workers_pool->get_worker(i))->init_cell(cell)) {
@@ -150,20 +174,20 @@ bool phch_recv::cell_search(int force_N_id_2)
   bzero(found_cells, 3*sizeof(srslte_ue_cellsearch_result_t));
 
   log_h->console("Searching for cell...\n");
-  if (srslte_ue_cellsearch_init(&cs, radio_recv_wrapper_cs, radio_h)) {
+  if (srslte_ue_cellsearch_init(&cs, SRSLTE_DEFAULT_MAX_FRAMES_PSS, radio_recv_wrapper_cs, radio_h)) {
     Error("Initiating UE cell search\n");
     return false; 
   }
+  
+  srslte_ue_cellsearch_set_nof_valid_frames(&cs, SRSLTE_DEFAULT_NOF_VALID_PSS_FRAMES);
+  
+  // Set options defined in expert section 
+  set_ue_sync_opts(&cs.ue_sync); 
   
   if (do_agc) {
     srslte_ue_sync_start_agc(&cs.ue_sync, callback_set_rx_gain, last_gain);
   }
   
-  srslte_ue_cellsearch_set_nof_frames_to_scan(&cs, 
-    worker_com->params_db->get_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_NFRAMES));
-  srslte_ue_cellsearch_set_threshold(&cs, (float) 
-    worker_com->params_db->get_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD)/10);
-
   radio_h->set_rx_srate(1.92e6);
   radio_h->start_rx();
   
@@ -205,6 +229,9 @@ bool phch_recv::cell_search(int force_N_id_2)
     return false; 
   }
   
+  // Set options defined in expert section 
+  set_ue_sync_opts(&ue_mib_sync.ue_sync); 
+
   if (do_agc) {
     srslte_ue_sync_start_agc(&ue_mib_sync.ue_sync, callback_set_rx_gain, last_gain);    
   }
@@ -214,7 +241,7 @@ bool phch_recv::cell_search(int force_N_id_2)
   int sfn_offset; 
   radio_h->start_rx();
   ret = srslte_ue_mib_sync_decode(&ue_mib_sync, 
-                                  worker_com->params_db->get_param(phy_interface_params::CELLSEARCH_TIMEOUT_MIB_NFRAMES), 
+                                  SRSLTE_DEFAULT_MAX_FRAMES_PBCH, 
                                   bch_payload, &cell.nof_ports, &sfn_offset); 
   radio_h->stop_rx();
   last_gain = srslte_agc_get_gain(&ue_mib_sync.ue_sync.agc);
@@ -340,15 +367,7 @@ void phch_recv::run_thread()
           rrc->out_of_sync();
         }
        break;
-      case SYNC_DONE:
-        /* Set synchronization track phase threshold and averaging factor */
-        if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD) > 0) {
-          srslte_sync_set_threshold(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_THRESHOLD)/100);          
-        }
-        if (worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_AVG_COEFF) > 0) {
-          srslte_sync_set_em_alpha(&ue_sync.strack, (float) worker_com->params_db->get_param(phy_interface_params::SYNC_TRACK_AVG_COEFF)/100);
-        }
-        
+      case SYNC_DONE:        
         tti = (tti+1)%10240;        
         worker = (phch_worker*) workers_pool->wait_worker(tti);
         sync_res = 0; 

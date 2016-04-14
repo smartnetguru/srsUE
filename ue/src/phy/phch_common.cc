@@ -34,6 +34,8 @@
 #define Info(fmt, ...)    if (SRSLTE_DEBUG_ENABLED) log_h->info_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
 #define Debug(fmt, ...)   if (SRSLTE_DEBUG_ENABLED) log_h->debug_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
+#define TX_MODE_CONTINUOUS 0 
+
 namespace srsue {
 
 cf_t zeros[50000];
@@ -231,7 +233,7 @@ void phch_common::worker_end(uint32_t tti, bool tx_enable,
     radio_h->tx(buffer, nof_samples, tx_time);
     is_first_of_burst = false; 
   } else {
-    if (params_db->get_param(phy_interface_params::CONTINUOUS_TX)>0) {
+    if (TX_MODE_CONTINUOUS) {
       if (!is_first_of_burst) {
         radio_h->tx(zeros, nof_samples, tx_time);
       }

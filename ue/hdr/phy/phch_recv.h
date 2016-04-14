@@ -66,6 +66,7 @@ public:
 
 private:
   
+  void   set_ue_sync_opts(srslte_ue_sync_t *q); 
   void   run_thread();
   int    sync_sfn();
   

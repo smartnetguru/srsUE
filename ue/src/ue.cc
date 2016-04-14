@@ -169,13 +169,13 @@ bool ue::init(all_args_t *args_)
     phy.set_agc_enable(true);
   } else {
     radio.set_rx_gain(args->rf.rx_gain);
-    if (args->rf.tx_gain < 0) {
-      radio.set_tx_gain(args->rf.rx_gain);
-    }
   }
   if (args->rf.tx_gain > 0) {
     radio.set_tx_gain(args->rf.tx_gain);
+    phy.set_param(phy_interface_params::PWRCTRL_ENABLED, 0);
   } else {
+    radio.set_tx_gain(args->rf.rx_gain);
+    phy.set_param(phy_interface_params::PWRCTRL_ENABLED, 1);
     std::cout << std::endl << 
                 "Warning: TX gain was not set. " << 
                 "Using open-loop power control (not working properly)" << std::endl << std::endl; 
@@ -201,36 +201,11 @@ bool ue::init(all_args_t *args_)
 }
 
 void ue::set_expert_parameters() {
-  phy.set_param(phy_interface_params::CELLSEARCH_TIMEOUT_MIB_NFRAMES, args->expert.sync_find_max_frames);
-  phy.set_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_NFRAMES, args->expert.sync_find_max_frames);
-  if (args->expert.sync_find_th > 1.0) {
-    phy.set_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD, args->expert.sync_find_th*10);
-  } else {
-    phy.set_param(phy_interface_params::CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD, 160);
-  }
   
-  phy.set_param(phy_interface_params::SYNC_TRACK_THRESHOLD, 100*args->expert.sync_track_th);
-  phy.set_param(phy_interface_params::SYNC_TRACK_AVG_COEFF, 100*args->expert.sync_track_avg_coef);
-
-  if (args->rf.tx_gain > 0) {
-    phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
-    phy.set_param(phy_interface_params::UL_GAIN,    args->rf.tx_gain);
-  } else {
-    phy.set_param(phy_interface_params::PRACH_GAIN, args->expert.prach_gain);
-    phy.set_param(phy_interface_params::UL_GAIN,    args->expert.ul_gain);
-    std::cout << std::endl << 
-                "Warning: TX gain was not set. " << 
-                "Using open-loop power control (not working properly)" << std::endl << std::endl; 
-  }
-  
-  phy.set_param(phy_interface_params::UL_PWR_CTRL_OFFSET, args->expert.ul_pwr_ctrl_offset);
-  
-  phy.set_param(phy_interface_params::RX_GAIN_OFFSET, args->expert.rx_gain_offset);
-  
-  phy.set_param(phy_interface_params::FORCE_ENABLE_64QAM, args->expert.enable_64qam_attach?1:0);
-
-  phy.set_param(phy_interface_params::CONTINUOUS_TX, args->expert.continuous_tx?1:0);
+  phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
+  phy.set_param(phy_interface_params::CQI_MAX, args->expert.cqi_max);      
   phy.set_param(phy_interface_params::PDSCH_MAX_ITS, args->expert.pdsch_max_its);
+  phy.set_param(phy_interface_params::FORCE_ENABLE_64QAM, args->expert.attach_enable_64qam?1:0);
     
   if (!args->expert.equalizer_mode.compare("zf")) {
     phy.set_param(phy_interface_params::EQUALIZER_COEFF, 0);
@@ -239,6 +214,25 @@ void ue::set_expert_parameters() {
   } else {
     phy.set_param(phy_interface_params::EQUALIZER_COEFF, atof(args->expert.equalizer_mode.c_str()));
   }
+  
+  phy.set_param(phy_interface_params::CFO_INTEGER_ENABLED, args->expert.cfo_integer_enabled?1:0);
+  phy.set_param(phy_interface_params::CFO_CORRECT_TOL_HZ_100, args->expert.cfo_correct_tol_hz*100);
+  phy.set_param(phy_interface_params::TIME_CORRECT_PERIOD, args->expert.time_correct_period);
+  phy.set_param(phy_interface_params::SFO_CORRECT_DISABLE, args->expert.sfo_correct_disable?1:0);
+
+  if (!args->expert.sss_algorithm.compare("diff")) {
+    phy.set_param(phy_interface_params::SSS_ALGORITHM, 0);
+  } else if (!args->expert.sss_algorithm.compare("partial")) {
+    phy.set_param(phy_interface_params::SSS_ALGORITHM, 2);    
+  } else if (!args->expert.sss_algorithm.compare("full")){
+    phy.set_param(phy_interface_params::SSS_ALGORITHM, 1);    
+  } else {
+    std::cout << "Invalid SSS algorithm " << args->expert.sss_algorithm << ". Using 'full'" << std::endl; 
+    phy.set_param(phy_interface_params::SSS_ALGORITHM, 1);    
+  }
+  
+  phy.set_param(phy_interface_params::ESTIMATOR_FIL_W_1000, args->expert.estimator_fil_w*1000);
+
 }
 
 void ue::stop()

@@ -154,16 +154,18 @@ float prach::get_p0_preamble()
 
 bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte_timestamp_t tx_time)
 {
+  
+  // Get current TX gain 
+  float old_gain = radio_handler->get_tx_gain(); 
+  
   // Correct CFO before transmission
   srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo /srslte_symbol_sz(cell.nof_prb));            
 
-  // If power control is not disabled, choose amplitude and power 
-  if (params_db->get_param(phy_interface_params::PRACH_GAIN) < 0) {
+  // If power control is enabled, choose amplitude and power 
+  if (params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {
     // Get PRACH transmission power 
     float tx_power = SRSLTE_MIN(SRSLTE_PC_MAX, pathloss + target_power_dbm);
     
-    tx_power += (float) params_db->get_param(phy_interface_params::UL_PWR_CTRL_OFFSET);
-
     // Get output power for amplitude 1
     radio_handler->set_tx_power(tx_power);
         
@@ -176,8 +178,10 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
           pathloss, target_power_dbm, tx_power, radio_handler->get_tx_gain(), scale);
     
   } else {
-    radio_handler->set_tx_gain((float) params_db->get_param(phy_interface_params::PRACH_GAIN));
-    
+    float prach_gain = (float) params_db->get_param(phy_interface_params::PRACH_GAIN); 
+    if (prach_gain > 0) {
+      radio_handler->set_tx_gain(prach_gain);
+    }
     Info("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", 
       (float) params_db->get_param(phy_interface_params::PRACH_GAIN));
   }
@@ -189,12 +193,8 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
        cfo*15000, preamble_idx, len, tx_time.frac_secs);
   preamble_idx = -1; 
 
-  // Set UL gain if power control for the rest of the channels is disabled
-  if (params_db->get_param(phy_interface_params::UL_GAIN) > 0) {
-    radio_handler->set_tx_gain((float) params_db->get_param(phy_interface_params::UL_GAIN));    
-    Info("UL power control is disabled. Fixing TX gain to %.0f dB\n", (float) params_db->get_param(phy_interface_params::UL_GAIN));
-  } 
-  
+  radio_handler->set_tx_gain(old_gain);    
+  Info("Restoring TX gain to %.0f dB\n", old_gain);  
 }
   
 } // namespace srsue
