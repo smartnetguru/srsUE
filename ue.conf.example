@@ -117,6 +117,8 @@ enable = true
 #                       non-negative real number to indicate a regularized zf coefficient.
 #                       Default is MMSE. 
 #
+# metrics_period_secs:  Sets the period at which metrics are requested from the UE. 
+#
 #####################################################################
 [expert]
 #prach_gain = 60
