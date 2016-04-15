@@ -131,6 +131,10 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), 
             "Number of PHY threads")
         
+        ("expert.metrics_period_secs",
+            bpo::value<float>(&args->expert.metrics_period_secs)->default_value(1.0), 
+            "Periodicity for metrics in seconds")
+
         ("expert.equalizer_mode",    
             bpo::value<string>(&args->expert.equalizer_mode)->default_value("mmse"), 
             "Equalizer mode")
@@ -313,7 +317,7 @@ int main(int argc, char *argv[])
   if(!ue->init(&args)) {
     exit(1);
   }
-  metrics.init(ue);
+  metrics.init(ue, args.expert.metrics_period_secs);
 
   pthread_t input;
   pthread_create(&input, NULL, &input_loop, &metrics);

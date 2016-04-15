@@ -43,9 +43,9 @@ namespace srsue {
 class metrics_stdout
 {
 public:
-  metrics_stdout(int report_period_secs=1);
+  metrics_stdout();
 
-  bool init(ue_metrics_interface *u);
+  bool init(ue_metrics_interface *u, float report_period_secs=1.0);
   void stop();
   void toggle_print(bool b);
   static void* metrics_thread_start(void *m);
@@ -64,7 +64,7 @@ private:
   bool          do_print;
   pthread_t     metrics_thread;
   ue_metrics_t  metrics;
-  uint32_t      metrics_report_period; // seconds
+  float         metrics_report_period; // seconds
   uint8_t       n_reports;
 };
 

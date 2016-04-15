@@ -121,6 +121,7 @@ typedef struct {
   bool sfo_correct_disable; 
   std::string sss_algorithm; 
   float estimator_fil_w; 
+  float metrics_period_secs;
 }expert_args_t;
 
 typedef struct {

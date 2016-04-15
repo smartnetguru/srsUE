@@ -385,8 +385,8 @@ void phch_recv::run_thread()
             worker->set_cfo(metrics.cfo/15000);
             worker_com->set_sync_metrics(metrics);
     
-            float sample_offset = (float) srslte_ue_sync_get_last_sample_offset(&ue_sync)+srslte_ue_sync_get_sfo(&ue_sync)/1000; 
-            worker->set_sample_offset(sample_offset);
+            //float sample_offset = (float) srslte_ue_sync_get_last_sample_offset(&ue_sync)+srslte_ue_sync_get_sfo(&ue_sync)/1000; 
+            //worker->set_sample_offset(sample_offset);
             
             /* Compute TX time: Any transmission happens in TTI+4 thus advance 4 ms the reception time */
             srslte_timestamp_t rx_time, tx_time, tx_time_prach; 

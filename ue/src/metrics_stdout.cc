@@ -45,17 +45,17 @@ char const * const prefixes[2][9] =
   {   "",   "k",   "M",   "G",    "T",    "P",    "E",    "Z",    "Y", },
 };
 
-metrics_stdout::metrics_stdout(int report_period_secs)
+metrics_stdout::metrics_stdout()
     :started(false)
     ,do_print(false)
-    ,metrics_report_period(report_period_secs)
     ,n_reports(10)
 {
 }
 
-bool metrics_stdout::init(ue_metrics_interface *u)
+bool metrics_stdout::init(ue_metrics_interface *u, float report_period_secs)
 {
   ue_ = u;
+  metrics_report_period = report_period_secs;
 
   started = true;
   pthread_create(&metrics_thread, NULL, &metrics_thread_start, this);
@@ -86,7 +86,7 @@ void metrics_stdout::metrics_thread_run()
 {
   while(started)
   {
-    sleep(metrics_report_period);
+    usleep(metrics_report_period*1000);
     if(ue_->get_metrics(metrics)) {
       print_metrics();
     } else {
