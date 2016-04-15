@@ -146,6 +146,11 @@ void phch_worker::set_cfo(float cfo_)
   cfo = cfo_;
 }
 
+void phch_worker::set_sample_offset(float sample_offset)
+{
+  //srslte_ue_dl_set_sample_offset(&ue_dl, sample_offset);
+}
+
 void phch_worker::set_crnti(uint16_t rnti)
 {
   srslte_ue_dl_set_rnti(&ue_dl, rnti);
@@ -405,17 +410,7 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
             
       /*
       if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
-	srslte_vec_save_file("sf_symbols", ue_dl.sf_symbols, SRSLTE_SF_LEN_RE(cell.nof_prb, cell.cp)*sizeof(cf_t));
-	srslte_vec_save_file("pdsch_symbols", ue_dl.pdsch.d, ue_dl.pdsch_cfg.nbits.nof_re*sizeof(cf_t));
-	srslte_vec_save_file("llr", ue_dl.pdsch.e, ue_dl.pdsch_cfg.nbits.nof_bits*sizeof(cf_t));
-	int cb_len = ue_dl.pdsch_cfg.cb_segm.K1; 
-	for (int i=0;i<ue_dl.pdsch_cfg.cb_segm.C;i++) {
-	  char tmpstr[64]; 
-	  snprintf(tmpstr,64,"rmout_%d.dat",i);
-	  srslte_vec_save_file(tmpstr, softbuffer->buffer_f[i], (3*cb_len+12)*sizeof(int16_t));  
-	}
-	printf("Saved files for sf=%d, cfi=%d, mcs=%d, rv=%d, rnti=%d, noise=%f\n", tti%10, cfi, grant->mcs.idx, rv, rnti, noise_estimate);
-	exit(-1);
+	srslte_ue_dl_save_signal(&ue_dl, softbuffer, tti, rv);
       }*/
       
       Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
