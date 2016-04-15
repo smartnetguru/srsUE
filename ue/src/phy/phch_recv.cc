@@ -220,7 +220,8 @@ bool phch_recv::cell_search(int force_N_id_2)
   cell.cp   = found_cells[max_peak_cell].cp; 
   cellsearch_cfo = found_cells[max_peak_cell].cfo;
   
-  log_h->console("Found CELL ID: %d CP: %s, CFO: %.1f KHz.\nTrying to decode MIB...\n", cell.id, srslte_cp_string(cell.cp), cellsearch_cfo/1000);
+  log_h->console("Found CELL ID: %d CP: %s, CFO: %.1f KHz.\nTrying to decode MIB...\n", 
+                 cell.id, srslte_cp_string(cell.cp), cellsearch_cfo/1000);
   
   srslte_ue_mib_sync_t ue_mib_sync; 
 
@@ -235,6 +236,8 @@ bool phch_recv::cell_search(int force_N_id_2)
   if (do_agc) {
     srslte_ue_sync_start_agc(&ue_mib_sync.ue_sync, callback_set_rx_gain, last_gain);    
   }
+
+  srslte_ue_sync_set_cfo(&ue_mib_sync.ue_sync, cellsearch_cfo);
 
   /* Find and decode MIB */
   uint32_t sfn; 
@@ -251,7 +254,10 @@ bool phch_recv::cell_search(int force_N_id_2)
     srslte_pbch_mib_unpack(bch_payload, &cell, NULL);
     worker_com->set_cell(cell);
     srslte_cell_fprint(stdout, &cell, 0);
-    //FIXME: this is temporal
+    
+    // Update CFO estimate
+    cellsearch_cfo = srslte_ue_sync_get_cfo(&ue_mib_sync.ue_sync);
+    
     srslte_bit_pack_vector(bch_payload, bch_payload_bits, SRSLTE_BCH_PAYLOAD_LEN);
     mac->bch_decoded_ok(bch_payload_bits, SRSLTE_BCH_PAYLOAD_LEN/8);
     return true;     
