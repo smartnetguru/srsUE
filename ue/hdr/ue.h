@@ -121,7 +121,8 @@ typedef struct {
   bool enable_64qam_attach; 
   bool continuous_tx;
   int nof_phy_threads;  
-  std::string equalizer_mode; 
+  std::string equalizer_mode;
+  float metrics_period_secs;
 }expert_args_t;
 
 typedef struct {

@@ -132,6 +132,7 @@ enable = true
 #continuous_tx = false
 #nof_phy_threads = 2
 #equalizer_mode = mmse
+#metrics_period_secs = 1.0
 
 
 
