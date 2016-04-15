@@ -121,7 +121,6 @@ enable = true
 #prach_gain          = 30
 #cqi_max             = 15
 #pdsch_max_its       = 4
-<<<<<<< HEAD
 #attach_enable_64qam = false
 #nof_phy_threads     = 2
 #equalizer_mode      = mmse
