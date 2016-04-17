@@ -148,7 +148,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             "Tolerance (in Hz) for digial CFO compensation.")
         
         ("expert.time_correct_period",    
-            bpo::value<int>(&args->expert.time_correct_period)->default_value(10), 
+            bpo::value<int>(&args->expert.time_correct_period)->default_value(5), 
             "Period for sampling time offset correction.")
         
         ("expert.sfo_correct_disable",    
