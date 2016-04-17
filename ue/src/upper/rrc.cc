@@ -32,6 +32,8 @@
 #include <srslte/utils/bit.h>
 #include "liblte_security.h"
 
+#define TIMEOUT_RESYNC_REESTABLISH 100
+
 using namespace srslte;
 
 namespace srsue{
@@ -419,8 +421,10 @@ void rrc::send_con_restablish_request()
   phy->resync_sfn();
   
   // Wait for cell re-synchronization  
-  while(!phy->status_is_sync()){
+  uint32_t timeout_cnt = 0; 
+  while(!phy->status_is_sync() && timeout_cnt < TIMEOUT_RESYNC_REESTABLISH){
     usleep(10000);
+    timeout_cnt++; 
   }
   mac_timers->get(t301)->reset();
   mac_timers->get(t301)->run();

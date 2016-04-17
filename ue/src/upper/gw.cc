@@ -228,9 +228,13 @@ void gw::run_thread()
             {
               gw_log->info_hex(pdu->msg, pdu->N_bytes, "UL PDU");
 
-              while(!rrc->rrc_connected() || !rrc->have_drb()) {
+              while(running && (!rrc->rrc_connected() || !rrc->have_drb())) {
                 rrc->rrc_connect();
                 usleep(1000);
+              }
+              
+              if (!running) {
+                break;
               }
               
               // Send PDU directly to PDCP

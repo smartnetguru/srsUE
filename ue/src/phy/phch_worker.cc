@@ -939,11 +939,11 @@ void phch_worker::update_measurements()
       // Average noise 
       float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
       if (isnormal(cur_noise)) {
-	if (!phy->avg_noise) {
-	  phy->avg_noise = cur_noise;
-	} else {
-	  phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);            
-	}
+        if (!phy->avg_noise) {  
+          phy->avg_noise = cur_noise;          
+        } else {
+          phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);                      
+        }
       }
       
       // Compute SNR

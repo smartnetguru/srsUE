@@ -322,6 +322,7 @@ void phch_recv::run_thread()
     switch(phy_state) {
       case CELL_SEARCH:
         if (cell_search()) {
+          log_h->console("Initializating cell configuration...\n");
           init_cell();
           float srate = (float) srslte_sampling_freq_hz(cell.nof_prb); 
           if (srate < 10e6) {
@@ -329,7 +330,7 @@ void phch_recv::run_thread()
           } else {
             radio_h->set_master_clock_rate(srate);        
           }
-          printf("Setting Sampling frequency %.2f MHz\n", (float) srate/1000000);
+          log_h->console("Setting Sampling frequency %.2f MHz\n", (float) srate/1000000);
 
           radio_h->set_rx_srate(srate);
           radio_h->set_tx_srate(srate);

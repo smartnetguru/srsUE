@@ -248,7 +248,7 @@ void ue::stop()
     gw.stop();
     usim.stop();
 
-    sleep(1);
+    usleep(1e5);
     if(args->pcap.enable)
     {
        mac_pcap.close();
