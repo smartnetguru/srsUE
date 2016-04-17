@@ -86,7 +86,7 @@ void metrics_stdout::metrics_thread_run()
 {
   while(started)
   {
-    usleep(metrics_report_period*1000);
+    usleep(metrics_report_period*1e6);
     if(ue_->get_metrics(metrics)) {
       print_metrics();
     } else {
