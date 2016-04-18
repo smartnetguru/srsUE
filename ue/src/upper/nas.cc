@@ -307,7 +307,7 @@ void nas::parse_authentication_request(uint32_t lcid, byte_buffer_t *pdu)
   nas_log->info("MCC=%d, MNC=%d\n", mcc, mnc);
 
   bool    net_valid;
-  uint8_t res[8];
+  uint8_t res[16];
   usim->generate_authentication_response(auth_req.rand, auth_req.autn, mcc, mnc, &net_valid, res);
 
   if(net_valid)
@@ -325,6 +325,7 @@ void nas::parse_authentication_request(uint32_t lcid, byte_buffer_t *pdu)
   else
   {
     nas_log->warning("Network authentication failure\n");
+    nas_log->console("Warning: Network authentication failure\n");
     pool->deallocate(pdu);
   }
 }
