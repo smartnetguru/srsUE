@@ -1132,8 +1132,6 @@ void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg)
           //TODO
       }
 
-      phy->configure_ul_params();
-
       rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d, SRS-ConfigIndex=%d, SRS-bw=%d, SRS-Nrcc=%d, SRS-hop=%d, SRS-Ncs=%d\n",
                    phy_cnfg->sched_request_cnfg.sr_pucch_resource_idx,
                    phy_cnfg->sched_request_cnfg.sr_cnfg_idx,
@@ -1196,6 +1194,10 @@ void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg)
     // TODO: handle SRB modification
     add_srb(&cnfg->srb_to_add_mod_list[i]);
   }
+  for(int i=0; i<cnfg->drb_to_release_list_size; i++)
+  {
+    release_drb(cnfg->drb_to_release_list[i]);
+  }
   for(int i=0; i<cnfg->drb_to_add_mod_list_size; i++)
   {
     // TODO: handle DRB modification
@@ -1215,6 +1217,9 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
   
   // Apply the Radio Resource configuration
   apply_rr_config_dedicated(&setup->rr_cnfg);
+  
+  // Apply changes to PHY
+  phy->configure_ul_params();
 }
 
 /* Reception of RRCConnectionRestablishment by the UE 5.3.7.5 */
@@ -1227,6 +1232,9 @@ void rrc::handle_con_reest(LIBLTE_RRC_CONNECTION_REESTABLISHMENT_STRUCT *setup)
   // Apply the Radio Resource configuration
   apply_rr_config_dedicated(&setup->rr_cnfg);
 
+  // Apply changes to phy
+  phy->configure_ul_params();
+
   // TODO: Some security stuff here... is it necessary?
   
   send_con_restablish_complete();
@@ -1236,7 +1244,11 @@ void rrc::handle_con_reest(LIBLTE_RRC_CONNECTION_REESTABLISHMENT_STRUCT *setup)
 void rrc::handle_rrc_con_reconfig(uint32_t lcid, LIBLTE_RRC_CONNECTION_RECONFIGURATION_STRUCT *reconfig, byte_buffer_t *pdu)
 {
   uint32_t i;
-
+  
+  if (reconfig->rr_cnfg_ded_present) {
+    apply_rr_config_dedicated(&reconfig->rr_cnfg_ded);
+    phy->configure_ul_params(true);
+  }
   if(reconfig->meas_cnfg_present)
   {
     //TODO: handle meas_cnfg
@@ -1244,27 +1256,6 @@ void rrc::handle_rrc_con_reconfig(uint32_t lcid, LIBLTE_RRC_CONNECTION_RECONFIGU
   if(reconfig->mob_ctrl_info_present)
   {
     //TODO: handle mob_ctrl_info
-  }
-
-  if(reconfig->rr_cnfg_ded_present)
-  {
-    uint32_t n_srb = reconfig->rr_cnfg_ded.srb_to_add_mod_list_size;
-    for(i=0; i<n_srb; i++)
-    {
-      add_srb(&reconfig->rr_cnfg_ded.srb_to_add_mod_list[i]);
-    }
-
-    uint32_t n_drb_rel = reconfig->rr_cnfg_ded.drb_to_release_list_size;
-    for(i=0; i<n_drb_rel; i++)
-    {
-      release_drb(reconfig->rr_cnfg_ded.drb_to_release_list[i]);
-    }
-
-    uint32_t n_drb = reconfig->rr_cnfg_ded.drb_to_add_mod_list_size;
-    for(i=0; i<n_drb; i++)
-    {
-      add_drb(&reconfig->rr_cnfg_ded.drb_to_add_mod_list[i]);
-    }
   }
 
   send_rrc_con_reconfig_complete(lcid, pdu);

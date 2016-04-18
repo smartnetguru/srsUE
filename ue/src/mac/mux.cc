@@ -84,7 +84,6 @@ bool mux::is_pending_sdu(uint32_t lch_id) {
 
 void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint32_t set_BSD)
 {
-  pthread_mutex_lock(&mutex);
   if (lch_id < NOF_UL_LCH) {
     priority[lch_id] = set_priority;
     PBR[lch_id]      = set_PBR;
@@ -96,7 +95,7 @@ void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint
       new_index++; 
     }
     int old_index = 0; 
-    while(lch_id != lchid_sorted[old_index] && new_index < NOF_UL_LCH) {
+    while(lch_id != lchid_sorted[old_index] && old_index < NOF_UL_LCH) {
       old_index++;
     }
     if (new_index ==  NOF_UL_LCH) {
@@ -111,9 +110,7 @@ void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint
     }
     priority_sorted[new_index] = set_priority;
     lchid_sorted[new_index]    = lch_id; 
-  }
-  pthread_mutex_unlock(&mutex);
-  
+  }  
 }
 
 sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
