@@ -178,9 +178,9 @@ void mac::run_thread() {
         ra_procedure.start_mac_order();
       }
       ra_procedure.step(tti);
-
+      
       if (ra_procedure.is_successful() && !signals_pregenerated) {
-	
+
         // Configure PHY to look for UL C-RNTI grants
         uint16_t crnti = params_db.get_param(mac_interface_params::RNTI_C);
         phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, crnti);
@@ -191,14 +191,6 @@ void mac::run_thread() {
         ((phy*) phy_h)->set_crnti(crnti);
         signals_pregenerated = true; 
       }
-      
-      /*
-      cnt++; 
-      if (cnt==8000) {
-        printf("Starting RA again\n");
-        ra_procedure.start_mac_order();
-      }
-      */
       
       timers_db.step_all();          
     }

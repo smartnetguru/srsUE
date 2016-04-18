@@ -167,14 +167,18 @@ void rlc::add_bearer(uint32_t lcid)
   LIBLTE_RRC_RLC_CONFIG_STRUCT cnfg;
   if(RB_ID_SRB1 == lcid || RB_ID_SRB2 == lcid)
   {
-    cnfg.rlc_mode                     = LIBLTE_RRC_RLC_MODE_AM;
-    cnfg.ul_am_rlc.t_poll_retx        = LIBLTE_RRC_T_POLL_RETRANSMIT_MS45;
-    cnfg.ul_am_rlc.poll_pdu           = LIBLTE_RRC_POLL_PDU_INFINITY;
-    cnfg.ul_am_rlc.poll_byte          = LIBLTE_RRC_POLL_BYTE_INFINITY;
-    cnfg.ul_am_rlc.max_retx_thresh    = LIBLTE_RRC_MAX_RETX_THRESHOLD_T4;
-    cnfg.dl_am_rlc.t_reordering       = LIBLTE_RRC_T_REORDERING_MS35;
-    cnfg.dl_am_rlc.t_status_prohibit  = LIBLTE_RRC_T_STATUS_PROHIBIT_MS0;
-    add_bearer(lcid, &cnfg);
+    if (!rlc_array[lcid].active()) {
+      cnfg.rlc_mode                     = LIBLTE_RRC_RLC_MODE_AM;
+      cnfg.ul_am_rlc.t_poll_retx        = LIBLTE_RRC_T_POLL_RETRANSMIT_MS45;
+      cnfg.ul_am_rlc.poll_pdu           = LIBLTE_RRC_POLL_PDU_INFINITY;
+      cnfg.ul_am_rlc.poll_byte          = LIBLTE_RRC_POLL_BYTE_INFINITY;
+      cnfg.ul_am_rlc.max_retx_thresh    = LIBLTE_RRC_MAX_RETX_THRESHOLD_T4;
+      cnfg.dl_am_rlc.t_reordering       = LIBLTE_RRC_T_REORDERING_MS35;
+      cnfg.dl_am_rlc.t_status_prohibit  = LIBLTE_RRC_T_STATUS_PROHIBIT_MS0;
+      add_bearer(lcid, &cnfg);
+    } else {
+      rlc_log->warning("Bearer %s already configured. Reconfiguration not supported\n", rb_id_text[lcid]);
+    }
   }else{
     rlc_log->error("Radio bearer %s does not support default RLC configuration.",
                    rb_id_text[lcid]);
@@ -186,31 +190,34 @@ void rlc::add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
   if(lcid < 0 || lcid >= SRSUE_N_RADIO_BEARERS) {
     rlc_log->error("Radio bearer id must be in [0:%d] - %d\n", SRSUE_N_RADIO_BEARERS, lcid);
     return;
-  }else{
+  }
+  
+  
+  if (!rlc_array[lcid].active()) {
     rlc_log->info("Adding radio bearer %s with mode %s\n",
-                  rb_id_text[lcid], liblte_rrc_rlc_mode_text[cnfg->rlc_mode]);
+                    rb_id_text[lcid], liblte_rrc_rlc_mode_text[cnfg->rlc_mode]);  
+    switch(cnfg->rlc_mode)
+    {
+    case LIBLTE_RRC_RLC_MODE_AM:
+      rlc_array[lcid].init(RLC_MODE_AM, rlc_log, lcid, pdcp, rrc, mac_timers);
+      break;
+    case LIBLTE_RRC_RLC_MODE_UM_BI:
+      rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
+      break;
+    case LIBLTE_RRC_RLC_MODE_UM_UNI_UL:
+      rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
+      break;
+    case LIBLTE_RRC_RLC_MODE_UM_UNI_DL:
+      rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
+      break;
+    default:
+      rlc_log->error("Cannot add RLC entity - invalid mode\n");
+      return;
+    }
+  } else {
+    rlc_log->warning("Bearer %s already created.\n", rb_id_text[lcid]);
   }
-
-  switch(cnfg->rlc_mode)
-  {
-  case LIBLTE_RRC_RLC_MODE_AM:
-    rlc_array[lcid].init(RLC_MODE_AM, rlc_log, lcid, pdcp, rrc, mac_timers);
-    break;
-  case LIBLTE_RRC_RLC_MODE_UM_BI:
-    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
-    break;
-  case LIBLTE_RRC_RLC_MODE_UM_UNI_UL:
-    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
-    break;
-  case LIBLTE_RRC_RLC_MODE_UM_UNI_DL:
-    rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
-    break;
-  default:
-    rlc_log->error("Cannot add RLC entity - invalid mode\n");
-    return;
-  }
-
-  rlc_array[lcid].configure(cnfg);
+  rlc_array[lcid].configure(cnfg);    
 
 }
 
