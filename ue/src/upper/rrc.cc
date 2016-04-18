@@ -817,6 +817,12 @@ void rrc::rrc_connection_release() {
     mac->pcch_start_rx();
 }
 
+void rrc::test_con_restablishment()
+{
+  printf("Testing connection Restablishment\n"); 
+  send_con_restablish_request();
+}
+
 /* Detection of radio link failure (5.3.11.3) */
 void rrc::radio_link_failure() {
   // TODO: Generate and store failure report 

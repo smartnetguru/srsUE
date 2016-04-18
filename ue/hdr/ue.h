@@ -158,6 +158,8 @@ public:
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
 
+  // Testing
+  void test_con_restablishment(); 
 
 private:
   static ue *instance;

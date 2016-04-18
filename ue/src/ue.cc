@@ -200,6 +200,10 @@ bool ue::init(all_args_t *args_)
   return true;
 }
 
+void ue::test_con_restablishment() {
+  rrc.test_con_restablishment();
+}
+
 void ue::set_expert_parameters() {
   
   phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);

@@ -84,6 +84,8 @@ public:
   // Timeout callback interface
   void timer_expired(uint32_t timeout_id);
 
+  void test_con_restablishment(); 
+  
 private:
   buffer_pool          *pool;
   srslte::log          *rrc_log;

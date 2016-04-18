@@ -323,12 +323,19 @@ int main(int argc, char *argv[])
   pthread_create(&input, NULL, &input_loop, &metrics);
 
   bool plot_started   = false; 
+  //int cnt=0; 
   while(running) {
     if (ue->is_attached()) {
       if (!plot_started && args.gui.enable) {
         ue->start_plot();
         plot_started = true; 
       }
+      /*
+      cnt++;
+      if (cnt==5) {
+        ue->test_con_restablishment();
+      }
+      */
     }
     sleep(1);
   }
