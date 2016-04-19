@@ -5,19 +5,11 @@ Change Log for Releases
 
 * Bugfixes: 
   * UL BLER stdout metric bad formatting
-  * Estimation of extrapolated of out-of-band carriers 
   * GW blocking when RLC queue was full
-  * PDCCH REG interleaving for certain cell IDs
-  * MIB decoding 
-  * Overflow in viterbi in PBCH
   * Memory bug in RLC AM uplink
   
 * Improvements: 
-  * Synchronization in long multipath channels
-  * Better calibration of synchronization and estimation
-  * Averaging in channel estimation
   * Management of radio link failure according to the specifications
-  * Improved 2-port diversity decoding
   
 * Known bugs: 
   * Tun/tap write failure, seen at high rates with many retx (>70% retx)
