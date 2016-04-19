@@ -43,6 +43,7 @@ class phch_worker : public srslte::thread_pool::worker
 public:
   
   phch_worker();
+  void  reset(); 
   void  set_common(phch_common *phy);
   bool  init_cell(srslte_cell_t cell);
   void  free_cell();
@@ -52,14 +53,18 @@ public:
   void  set_tti(uint32_t tti, uint32_t tx_tti); 
   void  set_tx_time(srslte_timestamp_t tx_time);
   void  set_cfo(float cfo);
+  void  set_sample_offset(float sample_offset); 
   
-  void  set_ul_params();
-  void  reset_ul_params(); 
+  void  set_ul_params(bool pregen_disabled = false);
   void  set_crnti(uint16_t rnti);
   void  enable_pregen_signals(bool enabled);
   
   void start_trace();
   void write_trace(std::string filename);
+  
+  int read_ce_abs(float *ce_abs);
+  int read_pdsch_d(cf_t *pdsch_d);
+  void start_plot();
   
 private: 
   /* Inherited from thread_pool::worker. Function called every subframe to run the DL/UL processing */
@@ -96,7 +101,7 @@ private:
   srslte::trace<uint32_t> tr_exec;
   bool trace_enabled; 
   
-  const static float SNR_FILTER_COEFF = 0.1; 
+  const static float SNR_FILTER_COEFF = 0.5; 
 
   /* Common objects */  
   phch_common    *phy;

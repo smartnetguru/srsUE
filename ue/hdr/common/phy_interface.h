@@ -48,10 +48,8 @@ public:
     
     DL_FREQ = 0, 
     UL_FREQ, 
-
-    CELLSEARCH_TIMEOUT_PSS_NFRAMES, 
-    CELLSEARCH_TIMEOUT_MIB_NFRAMES, 
-    CELLSEARCH_TIMEOUT_PSS_CORRELATION_THRESHOLD, // integer that will be divided by 10 
+    
+    PHY_CELL_ID,
 
     P_MAX,
     PDSCH_RSPOWER,
@@ -99,6 +97,7 @@ public:
     CQI_PERIODIC_FORMAT_SUBBAND_K,
     CQI_PERIODIC_CONFIGURED,
           
+    PWRCTRL_ENABLED, 
     PWRCTRL_P0_NOMINAL_PUSCH,
     PWRCTRL_ALPHA,
     PWRCTRL_P0_NOMINAL_PUCCH,
@@ -124,22 +123,19 @@ public:
     PRACH_ZC_CONFIG,
     PRACH_FREQ_OFFSET,
     
-    SYNC_TRACK_THRESHOLD,
-    SYNC_TRACK_AVG_COEFF,
-    
     PRACH_GAIN,    
-    UL_GAIN,
-    
-    UL_PWR_CTRL_OFFSET,
-    
-    RX_GAIN_OFFSET,
-    
     FORCE_ENABLE_64QAM,
     
-    CONTINUOUS_TX,
     PDSCH_MAX_ITS,
     
     EQUALIZER_COEFF,
+    CQI_MAX,
+    CFO_INTEGER_ENABLED,
+    CFO_CORRECT_TOL_HZ_100,
+    TIME_CORRECT_PERIOD,
+    SFO_CORRECT_DISABLE,
+    SSS_ALGORITHM, 
+    ESTIMATOR_FIL_W_1000,
     
     NOF_PARAMS,    
   } phy_param_t;
@@ -184,9 +180,7 @@ public:
   virtual uint32_t get_current_tti() = 0;
   
   virtual float get_phr() = 0; 
-  
-  virtual void reset() = 0;
-  
+    
 };
 
 class phy_interface_rrc
@@ -197,7 +191,12 @@ public:
   virtual bool status_is_sync() = 0;
 
   /* Configure UL using parameters written with set_param() */
-  virtual void configure_ul_params() = 0;
+  virtual void configure_ul_params(bool pregen_disabled = false) = 0;
+
+  virtual void reset() = 0;
+  
+  virtual void resync_sfn() = 0; 
+
 };
   
 }

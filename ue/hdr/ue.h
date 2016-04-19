@@ -105,19 +105,23 @@ typedef struct {
 }log_args_t;
 
 typedef struct {
+  bool          enable;
+}gui_args_t;
+
+typedef struct {
   float prach_gain;
-  float ul_gain;
-  float ul_pwr_ctrl_offset;
-  float rx_gain_offset;
   int pdsch_max_its;
-  float sync_track_th;
-  float sync_track_avg_coef;
-  float sync_find_th;
-  float sync_find_max_frames;
-  bool enable_64qam_attach; 
-  bool continuous_tx;
+  bool attach_enable_64qam; 
   int nof_phy_threads;  
   std::string equalizer_mode; 
+  int cqi_max; 
+  bool cfo_integer_enabled; 
+  float cfo_correct_tol_hz; 
+  int time_correct_period; 
+  bool sfo_correct_disable; 
+  std::string sss_algorithm; 
+  float estimator_fil_w; 
+  float metrics_period_secs;
 }expert_args_t;
 
 typedef struct {
@@ -126,6 +130,7 @@ typedef struct {
   pcap_args_t   pcap;
   trace_args_t  trace;
   log_args_t    log;
+  gui_args_t    gui;
   usim_args_t   usim;
   expert_args_t expert;
 }all_args_t;
@@ -144,11 +149,17 @@ public:
 
   bool init(all_args_t *args_);
   void stop();
+  bool is_attached();
+  void start_plot();
+  
   static void rf_msg(srslte_rf_error_t error);
   void handle_rf_msg(srslte_rf_error_t error);
 
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
+
+  // Testing
+  void test_con_restablishment(); 
 
 private:
   static ue *instance;
@@ -192,3 +203,4 @@ private:
 } // namespace srsue
 
 #endif // UE_H
+  

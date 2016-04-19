@@ -66,13 +66,14 @@ uint8_t* demux::request_buffer(uint32_t pid, uint32_t len)
   if (pid < NOF_HARQ_PID) {
     if (len < MAX_PDU_LEN) {
       if (pdu_q[pid].pending_msgs() > 0.75*pdu_q[pid].max_msgs()) {
-        log_h->console("Warning buffer PID=%d: Occupation is %.1f%% \n", 
+        log_h->console("Warning UL buffer HARQ PID=%d: Occupation is %.1f%% \n", 
                       pid, (float) 100*pdu_q[pid].pending_msgs()/pdu_q[pid].max_msgs());
       }
       buff = (uint8_t*) pdu_q[pid].request();
       if (!buff) {
-        fprintf(stderr, "Buffer full for PID=%d\n", pid);
-        exit(0); 
+        Error("Error Buffer full for HARQ PID=%d\n", pid);
+        log_h->error("Error Buffer full for HARQ PID=%d\n", pid);
+        return NULL;
       }      
     } else {
       Error("Requested too large buffer for PID=%d. Requested %d bytes, max length %d bytes\n", 
@@ -170,7 +171,7 @@ bool demux::process_pdus()
         have_data = true;
       }
     } while(buff);
-    if (cnt > 4) {
+    if (cnt > 20) {
       log_h->console("Warning dispatched %d packets for PID=%d\n", cnt, i);
     }
   }

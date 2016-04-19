@@ -48,6 +48,7 @@ public:
             mac_interface_timers *mac_timers);
   void configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg);
   void reset();
+  void empty_queue(); 
 
   rlc_mode_t    get_mode();
   uint32_t      get_bearer();

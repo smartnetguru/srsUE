@@ -66,6 +66,11 @@ emm_state_t nas::get_state()
   RRC interface
 *******************************************************************************/
 
+bool nas::is_attached()
+{
+  return state == EMM_STATE_REGISTERED;
+}
+
 void nas::notify_connection_setup()
 {
   nas_log->debug("State = %s\n", emm_state_text[state]);
@@ -206,7 +211,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
                     act_def_eps_bearer_context_req.pdn_addr.addr[1],
                     act_def_eps_bearer_context_req.pdn_addr.addr[2],
                     act_def_eps_bearer_context_req.pdn_addr.addr[3]);
-
+      
       // Setup GW
       char *err_str;
       if(gw->setup_if_addr(ip_addr, err_str))
@@ -302,7 +307,7 @@ void nas::parse_authentication_request(uint32_t lcid, byte_buffer_t *pdu)
   nas_log->info("MCC=%d, MNC=%d\n", mcc, mnc);
 
   bool    net_valid;
-  uint8_t res[8];
+  uint8_t res[16];
   usim->generate_authentication_response(auth_req.rand, auth_req.autn, mcc, mnc, &net_valid, res);
 
   if(net_valid)
@@ -320,6 +325,7 @@ void nas::parse_authentication_request(uint32_t lcid, byte_buffer_t *pdu)
   else
   {
     nas_log->warning("Network authentication failure\n");
+    nas_log->console("Warning: Network authentication failure\n");
     pool->deallocate(pdu);
   }
 }
@@ -513,7 +519,6 @@ void nas::send_service_request()
   msg->N_bytes++;
   msg->msg[3] = mac[3];
   msg->N_bytes++;
-
   nas_log->info("Sending service request\n");
   rrc->write_sdu(RB_ID_SRB1, msg);
 }

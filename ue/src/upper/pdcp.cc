@@ -71,8 +71,12 @@ void pdcp::add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg)
     pdcp_log->error("Radio bearer id must be in [0:%d] - %d\n", SRSUE_N_RADIO_BEARERS, lcid);
     return;
   }
-  pdcp_array[lcid].init(rlc, rrc, gw, pdcp_log, lcid, cnfg);
-  pdcp_log->info("Added bearer %s\n", rb_id_text[lcid]);
+  if (!pdcp_array[lcid].is_active()) {
+    pdcp_array[lcid].init(rlc, rrc, gw, pdcp_log, lcid, cnfg);
+    pdcp_log->info("Added bearer %s\n", rb_id_text[lcid]);
+  } else {
+    pdcp_log->warning("Bearer %s already configured. Reconfiguration not supported\n", rb_id_text[lcid]);
+  }
 }
 
 void pdcp::config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int)

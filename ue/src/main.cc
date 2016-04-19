@@ -78,6 +78,8 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("trace.phy_filename",bpo::value<string>(&args->trace.phy_filename)->default_value("ue.phy_trace"), "PHY timing traces filename")
         ("trace.radio_filename",bpo::value<string>(&args->trace.radio_filename)->default_value("ue.radio_trace"), "Radio timing traces filename")
 
+        ("gui.enable",        bpo::value<bool>(&args->gui.enable)->default_value(false),                  "Enable GUI plots")
+        
         ("log.phy_level",     bpo::value<string>(&args->log.phy_level),   "PHY log level")
         ("log.phy_hex_limit", bpo::value<int>(&args->log.phy_hex_limit),  "PHY log hex dump limit")
         ("log.mac_level",     bpo::value<string>(&args->log.mac_level),   "MAC log level")
@@ -109,26 +111,57 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         
         
         /* Expert section */
-        ("expert.prach_gain", bpo::value<float>(&args->expert.prach_gain)->default_value(-1.0),  "Disable PRACH power control")
-        ("expert.ul_gain", bpo::value<float>(&args->expert.ul_gain)->default_value(-1.0),  "Disable UL power control")
+        ("expert.prach_gain", 
+            bpo::value<float>(&args->expert.prach_gain)->default_value(-1.0),  
+            "Disable PRACH power control")
         
-        ("expert.ul_pwr_ctrl_offset",     bpo::value<float>(&args->expert.ul_pwr_ctrl_offset)->default_value(0),     "UL power control offset")
-        ("expert.rx_gain_offset",         bpo::value<float>(&args->expert.rx_gain_offset)->default_value(-1),     "RX gain offset")
+        ("expert.cqi_max",         
+            bpo::value<int>(&args->expert.cqi_max)->default_value(15), 
+            "Upper bound on the maximum CQI to be reported. Default 15.")
         
-        ("expert.pdsch_max_its",         bpo::value<int>(&args->expert.pdsch_max_its)->default_value(-1), "Maximum number of turbo decoder iterations")
+        ("expert.pdsch_max_its",         
+            bpo::value<int>(&args->expert.pdsch_max_its)->default_value(4), 
+            "Maximum number of turbo decoder iterations")
 
-        ("expert.sync_track_th",         bpo::value<float>(&args->expert.sync_track_th)->default_value(-1), "Synchronization track phase threshold")
-        ("expert.sync_track_avg_coef",   bpo::value<float>(&args->expert.sync_track_avg_coef)->default_value(-1), "Synchronization track phase averaging factor")
-        ("expert.sync_find_th",         bpo::value<float>(&args->expert.sync_find_th)->default_value(1.6), "Synchronization find phase threshold")
-        ("expert.sync_find_max_frames",   bpo::value<float>(&args->expert.sync_find_max_frames)->default_value(100), "Synchronization find phase timeout")
-                
-        ("expert.enable_64qam_attach",      bpo::value<bool>(&args->expert.enable_64qam_attach)->default_value(false), "PUSCH 64QAM modulation before attachment")
+        ("expert.attach_enable_64qam",      
+            bpo::value<bool>(&args->expert.attach_enable_64qam)->default_value(false), 
+            "PUSCH 64QAM modulation before attachment")
         
-        ("expert.continuous_tx",      bpo::value<bool>(&args->expert.continuous_tx)->default_value(false), "Enables continues transmission (default off)")
-        ("expert.nof_phy_threads",    bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), "Number of PHY threads")
+        ("expert.nof_phy_threads",    
+            bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), 
+            "Number of PHY threads")
         
-        ("expert.equalizer_mode",    bpo::value<string>(&args->expert.equalizer_mode)->default_value("zf"), "Equalizer mode")
+        ("expert.metrics_period_secs",
+            bpo::value<float>(&args->expert.metrics_period_secs)->default_value(1.0), 
+            "Periodicity for metrics in seconds")
+
+        ("expert.equalizer_mode",    
+            bpo::value<string>(&args->expert.equalizer_mode)->default_value("mmse"), 
+            "Equalizer mode")
      
+        ("expert.cfo_integer_enabled",    
+            bpo::value<bool>(&args->expert.cfo_integer_enabled)->default_value(false), 
+            "Enables integer CFO estimation and correction.")
+        
+        ("expert.cfo_correct_tol_hz",    
+            bpo::value<float>(&args->expert.cfo_correct_tol_hz)->default_value(50.0), 
+            "Tolerance (in Hz) for digial CFO compensation.")
+        
+        ("expert.time_correct_period",    
+            bpo::value<int>(&args->expert.time_correct_period)->default_value(5), 
+            "Period for sampling time offset correction.")
+        
+        ("expert.sfo_correct_disable",    
+            bpo::value<bool>(&args->expert.sfo_correct_disable)->default_value(false), 
+            "Disables phase correction before channel estimation.")
+        
+        ("expert.sss_algorithm",    
+            bpo::value<string>(&args->expert.sss_algorithm)->default_value("full"), 
+            "Selects the SSS estimation algorithm.")
+
+        ("expert.estimator_fil_w",    
+            bpo::value<float>(&args->expert.estimator_fil_w)->default_value(0.1), 
+            "Chooses the coefficients for the 3-tap channel estimator centered filter.")
         
         
         ("rf_calibration.tx_corr_dc_gain",  bpo::value<float>(&args->rf_cal.tx_corr_dc_gain)->default_value(0.0),  "TX DC offset gain correction")
@@ -137,7 +170,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         ("rf_calibration.tx_corr_iq_q",     bpo::value<float>(&args->rf_cal.tx_corr_iq_q)->default_value(0.0),     "TX IQ imbalance quadrature correction")
         
     ;
-
+    
     // Positional options - config file location
     bpo::options_description position("Positional options");
     position.add_options()
@@ -284,12 +317,26 @@ int main(int argc, char *argv[])
   if(!ue->init(&args)) {
     exit(1);
   }
-  metrics.init(ue);
+  metrics.init(ue, args.expert.metrics_period_secs);
 
   pthread_t input;
   pthread_create(&input, NULL, &input_loop, &metrics);
 
+  bool plot_started   = false; 
+  //int cnt=0; 
   while(running) {
+    if (ue->is_attached()) {
+      if (!plot_started && args.gui.enable) {
+        ue->start_plot();
+        plot_started = true; 
+      }
+      /*
+      cnt++;
+      if (cnt==5) {
+        ue->test_con_restablishment();
+      }
+      */
+    }
     sleep(1);
   }
   pthread_cancel(input);

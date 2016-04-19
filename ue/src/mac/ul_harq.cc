@@ -195,7 +195,7 @@ void ul_harq_entity::ul_harq_process::set_harq_feedback(bool ack) {
 }
 
 bool ul_harq_entity::ul_harq_process::init(uint32_t pid_, ul_harq_entity* parent) {
-  if (srslte_softbuffer_tx_init(&softbuffer, 100)) {
+  if (srslte_softbuffer_tx_init(&softbuffer, 110)) {
     fprintf(stderr, "Error initiating soft buffer\n");
     return false; 
   } else {

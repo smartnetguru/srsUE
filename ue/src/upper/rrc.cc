@@ -30,6 +30,9 @@
 
 #include "upper/rrc.h"
 #include <srslte/utils/bit.h>
+#include "liblte_security.h"
+
+#define TIMEOUT_RESYNC_REESTABLISH 100
 
 using namespace srslte;
 
@@ -46,6 +49,7 @@ void rrc::init(phy_interface_rrc     *phy_,
                pdcp_interface_rrc    *pdcp_,
                nas_interface_rrc     *nas_,
                usim_interface_rrc    *usim_,
+               mac_interface_timers  *mac_timers_,
                srslte::log           *rrc_log_)
 {
   pool    = buffer_pool::get_instance();
@@ -56,8 +60,12 @@ void rrc::init(phy_interface_rrc     *phy_,
   nas     = nas_;
   usim    = usim_;
   rrc_log = rrc_log_;
+  mac_timers = mac_timers_;
 
   transaction_id = 0;
+  
+  // Set default values for constants and timers 
+  set_rrc_default();
 }
 
 void rrc::stop()
@@ -107,16 +115,53 @@ uint16_t rrc::get_mnc()
 }
 
 /*******************************************************************************
-  PHY/MAC interface
+  MAC interface
 *******************************************************************************/
-/* Forces a UE-initiated connection release after a synchronization error or SR timeout */
-void rrc::connection_release()
+/* Reception of PUCCH/SRS release procedure (Section 5.3.13) */
+void rrc::release_pucch_srs()
 {
-  if (state == RRC_STATE_RRC_CONNECTED) {
-    rrc_connection_release(); 
+  // Apply default configuration for PUCCH (CQI and SR) and SRS (release)
+  set_phy_default_pucch_srs();
+  
+  // Configure UL signals without pregeneration because default option is release
+  phy->configure_ul_params(true);
+  
+}
+
+void rrc::ra_problem() {
+  radio_link_failure();
+}
+
+/*******************************************************************************
+  PHY interface
+*******************************************************************************/
+
+// Detection of physical layer problems (5.3.11.1)
+void rrc::out_of_sync()
+{
+  if (!mac_timers->get(t311)->is_running() && !mac_timers->get(t310)->is_running()) {
+    n310_cnt++;
+    if (n310_cnt == N310) {
+      mac_timers->get(t310)->reset();
+      mac_timers->get(t310)->run();
+      n310_cnt = 0; 
+      rrc_log->info("Detected %d out-of-sync from PHY. Starting T310 timer\n", N310);
+    }
   }
 }
 
+// Recovery of physical layer problems (5.3.11.2)
+void rrc::in_sync()
+{
+  if (mac_timers->get(t310)->is_running()) {
+    n311_cnt++;
+    if (n311_cnt == N311) {
+      mac_timers->get(t310)->stop();      
+      n311_cnt = 0; 
+      rrc_log->info("Detected %d in-sync from PHY. Stopping T310 timer\n", N311);
+    }
+  }
+}
 
 /*******************************************************************************
   GW interface
@@ -124,19 +169,22 @@ void rrc::connection_release()
 
 bool rrc::rrc_connected()
 {
-  if(RRC_STATE_RRC_CONNECTED == state) {
-    return true;
-  }
+  boost::mutex::scoped_lock lock(mutex);
+  return (RRC_STATE_RRC_CONNECTED == state);
+}
+
+void rrc::rrc_connect() {
+  boost::mutex::scoped_lock lock(mutex);
   if(RRC_STATE_IDLE == state) {
     rrc_log->info("RRC in IDLE state - sending connection request.\n");
     state = RRC_STATE_WAIT_FOR_CON_SETUP;
     send_con_request();
   }
-  return false;
 }
 
 bool rrc::have_drb()
 {
+  boost::mutex::scoped_lock lock(mutex);
   return drb_up;
 }
 
@@ -224,38 +272,42 @@ void rrc::write_pdu_bcch_dlsch(byte_buffer_t *pdu)
 
 void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 {
-  rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
-  LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
-  srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
-  bit_buf.N_bits = pdu->N_bytes*8;
-  pool->deallocate(pdu);
-  liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
-  
-  if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
-    pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
-  }
+  if (pdu->N_bytes > 0 && pdu->N_bytes < SRSUE_MAX_BUFFER_SIZE_BITS) {
+    rrc_log->info_hex(pdu->msg, pdu->N_bytes, "PCCH message received %d bytes\n", pdu->N_bytes);
+    rrc_log->console("PCCH message received %d bytes\n", pdu->N_bytes);
+    
+    LIBLTE_RRC_PCCH_MSG_STRUCT pcch_msg;
+    srslte_bit_unpack_vector(pdu->msg, bit_buf.msg, pdu->N_bytes*8);
+    bit_buf.N_bits = pdu->N_bytes*8;
+    pool->deallocate(pdu);
+    liblte_rrc_unpack_pcch_msg((LIBLTE_BIT_MSG_STRUCT*)&bit_buf, &pcch_msg);
+    
+    if (pcch_msg.paging_record_list_size > LIBLTE_RRC_MAX_PAGE_REC) {
+      pcch_msg.paging_record_list_size = LIBLTE_RRC_MAX_PAGE_REC;     
+    }
 
-  LIBLTE_RRC_S_TMSI_STRUCT s_tmsi;
-  if(!nas->get_s_tmsi(&s_tmsi)) {
-    rrc_log->info("No S-TMSI present in NAS\n");
-    return;
-  }
-  
-  LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi_paged;
-  for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
-    s_tmsi_paged = &pcch_msg.paging_record_list[i].ue_identity.s_tmsi;
-    rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
-                  pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
-    rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
-                     pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
-    if(s_tmsi.mmec == s_tmsi_paged->mmec && s_tmsi.m_tmsi == s_tmsi_paged->m_tmsi) {
-      rrc_log->info("S-TMSI match in paging message\n");
-      rrc_log->console("S-TMSI match in paging message\n");
-      mac->pcch_stop_rx();
-      if(RRC_STATE_IDLE == state) {
-        rrc_log->info("RRC in IDLE state - sending connection request.\n");
-        state = RRC_STATE_WAIT_FOR_CON_SETUP;
-        send_con_request();
+    LIBLTE_RRC_S_TMSI_STRUCT s_tmsi;
+    if(!nas->get_s_tmsi(&s_tmsi)) {
+      rrc_log->info("No S-TMSI present in NAS\n");
+      return;
+    }
+    
+    LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi_paged;
+    for (int i=0;i<pcch_msg.paging_record_list_size;i++) {
+      s_tmsi_paged = &pcch_msg.paging_record_list[i].ue_identity.s_tmsi;
+      rrc_log->info("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
+                    pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+      rrc_log->console("Received paging (%d/%d) for UE 0x%x\n", i+1, pcch_msg.paging_record_list_size,
+                      pcch_msg.paging_record_list[i].ue_identity.s_tmsi);
+      if(s_tmsi.mmec == s_tmsi_paged->mmec && s_tmsi.m_tmsi == s_tmsi_paged->m_tmsi) {
+        rrc_log->info("S-TMSI match in paging message\n");
+        rrc_log->console("S-TMSI match in paging message\n");
+        mac->pcch_stop_rx();
+        if(RRC_STATE_IDLE == state) {
+          rrc_log->info("RRC in IDLE state - sending connection request.\n");
+          state = RRC_STATE_WAIT_FOR_CON_SETUP;
+          send_con_request();
+        }
       }
     }
   }
@@ -268,6 +320,7 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 void rrc::max_retx_attempted()
 {
   //TODO: Handle the radio link failure
+  radio_link_failure();
 }
 
 /*******************************************************************************
@@ -316,6 +369,120 @@ void rrc::send_con_request()
   rrc_log->info("Sending RRC Connection Request on SRB0\n");
   state = RRC_STATE_WAIT_FOR_CON_SETUP;
   pdcp->write_sdu(RB_ID_SRB0, pdcp_buf);
+}
+
+
+/* RRC connection re-establishment procedure (5.3.7) */
+void rrc::send_con_restablish_request()
+{
+  LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
+  LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
+
+  // Compute shortMAC-I
+  uint8_t varShortMAC[128], varShortMAC_packed[16];
+  bzero(varShortMAC, 128);
+  bzero(varShortMAC_packed, 16);
+  uint8_t *msg_ptr = varShortMAC; 
+  liblte_rrc_pack_cell_identity_ie(0x1a2d0, &msg_ptr);
+  liblte_rrc_pack_phys_cell_id_ie(phy->get_param(srsue::phy_interface_params::PHY_CELL_ID), &msg_ptr);
+  liblte_rrc_pack_c_rnti_ie(mac->get_param(srsue::mac_interface_params::RNTI_C), &msg_ptr);
+  srslte_bit_pack_vector(varShortMAC, varShortMAC_packed, msg_ptr - varShortMAC);
+  
+  uint8_t mac_key[4];
+  liblte_security_128_eia2(&k_rrc_int[16],
+                           1,
+                           1,
+                           1,
+                           varShortMAC_packed,
+                           7,
+                           mac_key);
+  
+  // Prepare ConnectionRestalishmentRequest packet
+  ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REEST_REQ;
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.c_rnti = mac->get_param(srsue::mac_interface_params::RNTI_C);
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.phys_cell_id = phy->get_param(srsue::phy_interface_params::PHY_CELL_ID);
+  ul_ccch_msg.msg.rrc_con_reest_req.ue_id.short_mac_i = mac_key[2]<<8 | mac_key[3];
+  ul_ccch_msg.msg.rrc_con_reest_req.cause = LIBLTE_RRC_CON_REEST_REQ_CAUSE_OTHER_FAILURE;
+  liblte_rrc_pack_ul_ccch_msg(&ul_ccch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
+
+  rrc_log->info("Initiating RRC Connection Restablishment Procedure\n");
+  rrc_log->console("RRC Connection Restablishment\n");
+  mac_timers->get(t310)->stop();
+  mac_timers->get(t311)->reset();
+  mac_timers->get(t311)->run();
+  
+  set_phy_default_uci();
+  set_phy_default_powerctrl();
+  set_phy_default_pucch_srs(); 
+  set_mac_default();
+  mac->reset();
+  
+  // FIXME: Cell selection should be different??
+  phy->resync_sfn();
+  
+  // Wait for cell re-synchronization  
+  uint32_t timeout_cnt = 0; 
+  while(!phy->status_is_sync() && timeout_cnt < TIMEOUT_RESYNC_REESTABLISH){
+    usleep(10000);
+    timeout_cnt++; 
+  }
+  mac_timers->get(t301)->reset();
+  mac_timers->get(t301)->run();
+  mac_timers->get(t311)->stop();
+  rrc_log->info("Cell Selection finished. Initiating transmission of RRC Connection Restablishment Request\n");
+  
+  // Byte align and pack the message bits for PDCP
+  if((bit_buf.N_bits % 8) != 0)
+  {
+    for(int i=0; i<8-(bit_buf.N_bits % 8); i++)
+      bit_buf.msg[bit_buf.N_bits + i] = 0;
+    bit_buf.N_bits += 8 - (bit_buf.N_bits % 8);
+  }
+  byte_buffer_t *pdcp_buf = pool->allocate();
+  srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
+  pdcp_buf->N_bytes = bit_buf.N_bits/8;
+
+  // Set UE contention resolution ID in MAC
+  uint64_t uecri=0;
+  uint8_t *ue_cri_ptr = (uint8_t*) &uecri;
+  uint32_t nbytes = 6;
+  for (int i=0;i<nbytes;i++) {
+    ue_cri_ptr[nbytes-i-1] = pdcp_buf->msg[i];
+  }
+  rrc_log->debug("Setting UE contention resolution ID: %d\n", uecri);
+  mac->set_param(srsue::mac_interface_params::CONTENTION_ID, uecri);
+
+  rrc_log->info("Sending RRC Connection Resetablishment Request on SRB0\n");
+  state = RRC_STATE_WAIT_FOR_CON_SETUP;
+  pdcp->write_sdu(RB_ID_SRB0, pdcp_buf);
+}
+
+
+void rrc::send_con_restablish_complete()
+{
+  rrc_log->debug("Preparing RRC Connection Reestablishment Complete\n");
+  LIBLTE_RRC_UL_DCCH_MSG_STRUCT ul_dcch_msg;
+
+  // Prepare ConnectionSetupComplete packet
+  ul_dcch_msg.msg_type = LIBLTE_RRC_UL_DCCH_MSG_TYPE_RRC_CON_REEST_COMPLETE;
+  ul_dcch_msg.msg.rrc_con_reest_complete.rrc_transaction_id = transaction_id;
+  liblte_rrc_pack_ul_dcch_msg(&ul_dcch_msg, (LIBLTE_BIT_MSG_STRUCT*)&bit_buf);
+
+  // Byte align and pack the message bits for PDCP
+  if((bit_buf.N_bits % 8) != 0)
+  {
+    for(int i=0; i<8-(bit_buf.N_bits % 8); i++)
+      bit_buf.msg[bit_buf.N_bits + i] = 0;
+    bit_buf.N_bits += 8 - (bit_buf.N_bits % 8);
+  }
+  byte_buffer_t *pdcp_buf = pool->allocate();
+  srslte_bit_pack_vector(bit_buf.msg, pdcp_buf->msg, bit_buf.N_bits);
+  pdcp_buf->N_bytes = bit_buf.N_bits/8;
+
+  state = RRC_STATE_RRC_CONNECTED;
+  rrc_log->console("RRC Connected\n");
+  rrc_log->info("Sending RRC Connection Reestablishment Complete\n");
+  pdcp->write_sdu(RB_ID_SRB1, pdcp_buf);
 }
 
 void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
@@ -539,10 +706,16 @@ void rrc::parse_dl_ccch(byte_buffer_t *pdu)
     nas->notify_connection_setup();
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST:
-    rrc_log->error("Not handling Connection Reestablishment message");
+    transaction_id = dl_ccch_msg.msg.rrc_con_reest.rrc_transaction_id;
+    rrc_log->info("Connection Reestablishment received\n");
+    rrc_log->console("Reestablishment OK\n");
+    handle_con_reest(&dl_ccch_msg.msg.rrc_con_reest);
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST_REJ:
-    rrc_log->error("Not handling Connection Reestablishment Reject message");
+    rrc_log->info("Connection Reestablishment Reject received\n");
+    rrc_log->console("Reestablishment Reject\n");
+    usleep(50000);
+    rrc_connection_release();
     break;
   default:
     break;
@@ -605,18 +778,60 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
   }
 }
 
+
+/*******************************************************************************
+  Timer expiration callback 
+*******************************************************************************/
+void rrc::timer_expired(uint32_t timeout_id)
+{
+  if (timeout_id == t310) {
+    rrc_log->info("Timer T310 expired: Radio Link Failure");
+    radio_link_failure();
+  } else if (timeout_id == t311) {
+    rrc_log->info("Timer T311 expired: Going to RRC IDLE");
+    rrc_connection_release();
+  } else if (timeout_id == t301) {
+    rrc_log->info("Timer T301 expired: Going to RRC IDLE");
+    rrc_connection_release();
+  } else {
+    rrc_log->error("Timeout from unknown timer id %d\n", timeout_id);
+  }
+}
+
 /*******************************************************************************
   Helpers
 *******************************************************************************/
 
 void rrc::rrc_connection_release() {
+    boost::mutex::scoped_lock lock(mutex);
     drb_up = false;
     state  = RRC_STATE_IDLE;
+    set_phy_default_pucch_srs();
+    phy->reset();
     mac->reset();
     rlc->reset();
     pdcp->reset();
+    mac_timers->get(t310)->stop();
+    mac_timers->get(t311)->stop();
     rrc_log->console("RRC Connection released.\n");
     mac->pcch_start_rx();
+}
+
+void rrc::test_con_restablishment()
+{
+  printf("Testing connection Restablishment\n"); 
+  send_con_restablish_request();
+}
+
+/* Detection of radio link failure (5.3.11.3) */
+void rrc::radio_link_failure() {
+  // TODO: Generate and store failure report 
+  
+  if (state != RRC_STATE_RRC_CONNECTED) {
+    rrc_connection_release();
+  } else {
+    send_con_restablish_request();
+  }
 }
 
 void* rrc::start_sib_thread(void *rrc_)
@@ -631,6 +846,8 @@ void rrc::sib_search()
   uint32_t  tti ;
   uint32_t  si_win_start, si_win_len;
   uint16_t  period;
+  uint32_t  nof_sib1_trials = 0; 
+  const int SIB1_SEARCH_TIMEOUT = 30; 
 
   while(searching)
   {
@@ -647,7 +864,13 @@ void rrc::sib_search()
       mac->bcch_start_rx(si_win_start, 1);
       rrc_log->debug("Instructed MAC to search for SIB1, win_start=%d, win_len=%d\n",
                      si_win_start, 1);
-
+      nof_sib1_trials++;
+      if (nof_sib1_trials >= SIB1_SEARCH_TIMEOUT) {
+        rrc_log->info("Timeout while searching for SIB1. Resynchronizing SFN...\n");
+        rrc_log->console("Timeout while searching for SIB1. Resynchronizing SFN...\n");
+        phy->resync_sfn();
+        nof_sib1_trials = 0; 
+      }
       break;
     case RRC_STATE_SIB2_SEARCH:
       // Instruct MAC to look for SIB2
@@ -806,22 +1029,20 @@ void rrc::apply_sib2_configs()
                 sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg,
                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
 
+  mac_timers->get(t301)->set(this, liblte_rrc_t301_num[sib2.ue_timers_and_constants.t301]);
+  mac_timers->get(t310)->set(this, liblte_rrc_t310_num[sib2.ue_timers_and_constants.t310]);
+  mac_timers->get(t311)->set(this, liblte_rrc_t311_num[sib2.ue_timers_and_constants.t311]);
+  N310 = liblte_rrc_n310_num[sib2.ue_timers_and_constants.n310];
+  N311 = liblte_rrc_n311_num[sib2.ue_timers_and_constants.n311];
+  
+  rrc_log->info("Set Constants and Timers: N310=%d, N311=%d, t301=%d, t310=%d, t311=%d\n", 
+    N310, N311, mac_timers->get(t301)->get_timeout(), 
+    mac_timers->get(t310)->get_timeout(), mac_timers->get(t311)->get_timeout());
+  
   phy->configure_ul_params();
 }
 
-void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
-{
-  // PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
-  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_ACK, 10);
-  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_CQI, 15);
-  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_RI, 12);
-  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUSCH, 0);
-  phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_MCS_EN, 0);
-  phy->set_param(srsue::phy_interface_params::PWRCTRL_ACC_EN, 0);
-  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUCCH, 0);
-  phy->set_param(srsue::phy_interface_params::PWRCTRL_SRS_OFFSET, 7);
-
-  LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg = &setup->rr_cnfg;
+void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg) {   
   if(cnfg->phy_cnfg_ded_present)
   {
       // PHY CONFIG DEDICATED
@@ -917,8 +1138,6 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
           //TODO
       }
 
-      phy->configure_ul_params();
-
       rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d, SRS-ConfigIndex=%d, SRS-bw=%d, SRS-Nrcc=%d, SRS-hop=%d, SRS-Ncs=%d\n",
                    phy_cnfg->sched_request_cnfg.sr_pucch_resource_idx,
                    phy_cnfg->sched_request_cnfg.sr_cnfg_idx,
@@ -929,12 +1148,7 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
                    phy_cnfg->srs_ul_cnfg_ded.srs_hopping_bandwidth,
                    phy_cnfg->srs_ul_cnfg_ded.cyclic_shift);
   }
-
-  // MAC MAIN CONFIG Defaults (3GPP 36.331 v10 9.2.2)
-  mac->set_param(srsue::mac_interface_params::HARQ_MAXTX, 5);
-  mac->set_param(srsue::mac_interface_params::BSR_TIMER_PERIODIC, -1);
-  mac->set_param(srsue::mac_interface_params::BSR_TIMER_RETX, 2560);
-
+  
   if(cnfg->mac_main_cnfg_present && !cnfg->mac_main_cnfg.default_value)
   {
     // MAC MAIN CONFIG
@@ -973,30 +1187,74 @@ void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
                  liblte_rrc_periodic_bsr_timer_num[mac_cnfg->ulsch_cnfg.periodic_bsr_timer]);
   }
 
-  if(setup->rr_cnfg.sps_cnfg_present)
+  if(cnfg->sps_cnfg_present)
   {
     //TODO
   }
-  if(setup->rr_cnfg.rlf_timers_and_constants_present)
+  if(cnfg->rlf_timers_and_constants_present)
   {
     //TODO
   }
-  for(int i=0; i<setup->rr_cnfg.srb_to_add_mod_list_size; i++)
+  for(int i=0; i<cnfg->srb_to_add_mod_list_size; i++)
   {
     // TODO: handle SRB modification
-    add_srb(&setup->rr_cnfg.srb_to_add_mod_list[i]);
+    add_srb(&cnfg->srb_to_add_mod_list[i]);
   }
-  for(int i=0; i<setup->rr_cnfg.drb_to_add_mod_list_size; i++)
+  for(int i=0; i<cnfg->drb_to_release_list_size; i++)
+  {
+    release_drb(cnfg->drb_to_release_list[i]);
+  }
+  for(int i=0; i<cnfg->drb_to_add_mod_list_size; i++)
   {
     // TODO: handle DRB modification
-    add_drb(&setup->rr_cnfg.drb_to_add_mod_list[i]);
+    add_drb(&cnfg->drb_to_add_mod_list[i]);
   }
 }
+
+void rrc::handle_con_setup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *setup)
+{
+  // PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
+  set_phy_default_uci();
+  set_phy_default_powerctrl();
+  set_phy_default_pucch_srs();
+  
+  // MAC MAIN CONFIG Defaults (3GPP 36.331 v10 9.2.2)
+  set_mac_default();
+  
+  // Apply the Radio Resource configuration
+  apply_rr_config_dedicated(&setup->rr_cnfg);
+  
+  // Apply changes to PHY
+  phy->configure_ul_params();
+}
+
+/* Reception of RRCConnectionRestablishment by the UE 5.3.7.5 */
+void rrc::handle_con_reest(LIBLTE_RRC_CONNECTION_REESTABLISHMENT_STRUCT *setup) 
+{
+  mac_timers->get(t301)->stop();
+  
+  // TODO: Restablish DRB1. Not done because never was suspended
+
+  // Apply the Radio Resource configuration
+  apply_rr_config_dedicated(&setup->rr_cnfg);
+
+  // Apply changes to phy
+  phy->configure_ul_params();
+
+  // TODO: Some security stuff here... is it necessary?
+  
+  send_con_restablish_complete();
+}
+
 
 void rrc::handle_rrc_con_reconfig(uint32_t lcid, LIBLTE_RRC_CONNECTION_RECONFIGURATION_STRUCT *reconfig, byte_buffer_t *pdu)
 {
   uint32_t i;
-
+  
+  if (reconfig->rr_cnfg_ded_present) {
+    apply_rr_config_dedicated(&reconfig->rr_cnfg_ded);
+    phy->configure_ul_params(true);
+  }
   if(reconfig->meas_cnfg_present)
   {
     //TODO: handle meas_cnfg
@@ -1004,27 +1262,6 @@ void rrc::handle_rrc_con_reconfig(uint32_t lcid, LIBLTE_RRC_CONNECTION_RECONFIGU
   if(reconfig->mob_ctrl_info_present)
   {
     //TODO: handle mob_ctrl_info
-  }
-
-  if(reconfig->rr_cnfg_ded_present)
-  {
-    uint32_t n_srb = reconfig->rr_cnfg_ded.srb_to_add_mod_list_size;
-    for(i=0; i<n_srb; i++)
-    {
-      add_srb(&reconfig->rr_cnfg_ded.srb_to_add_mod_list[i]);
-    }
-
-    uint32_t n_drb_rel = reconfig->rr_cnfg_ded.drb_to_release_list_size;
-    for(i=0; i<n_drb_rel; i++)
-    {
-      release_drb(reconfig->rr_cnfg_ded.drb_to_release_list[i]);
-    }
-
-    uint32_t n_drb = reconfig->rr_cnfg_ded.drb_to_add_mod_list_size;
-    for(i=0; i<n_drb; i++)
-    {
-      add_drb(&reconfig->rr_cnfg_ded.drb_to_add_mod_list[i]);
-    }
   }
 
   send_rrc_con_reconfig_complete(lcid, pdu);
@@ -1136,6 +1373,52 @@ void rrc::add_drb(LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT *drb_cnfg)
 void rrc::release_drb(uint8_t lcid)
 {
   // TODO
+}
+
+/************************** 
+ *  DEFAULT VALUES Section 9
+****************************/
+
+// PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
+void rrc::set_phy_default_pucch_srs()
+{
+  // Default is to release CQI, SRS and SR configuration
+  phy->set_param(srsue::phy_interface_params::CQI_PERIODIC_CONFIGURED, 0);
+  phy->set_param(srsue::phy_interface_params::SRS_IS_CONFIGURED, 0);
+  mac->set_param(srsue::mac_interface_params::SR_PUCCH_CONFIGURED, 0);
+}
+
+// PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
+void rrc::set_phy_default_uci() {
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_ACK, 10);
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_CQI, 15);
+  phy->set_param(srsue::phy_interface_params::UCI_I_OFFSET_RI, 12);
+}
+
+  // PHY CONFIG DEDICATED Defaults (3GPP 36.331 v10 9.2.4)
+void rrc::set_phy_default_powerctrl() {
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUSCH, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_MCS_EN, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_ACC_EN, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_UE_PUCCH, 0);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_SRS_OFFSET, 7);  
+}
+
+// MAC MAIN CONFIG Defaults (3GPP 36.331 v10 9.2.2)
+void rrc::set_mac_default() {
+  mac->set_param(srsue::mac_interface_params::HARQ_MAXTX, 5);
+  mac->set_param(srsue::mac_interface_params::BSR_TIMER_PERIODIC, -1);
+  mac->set_param(srsue::mac_interface_params::BSR_TIMER_RETX, 2560);
+}
+
+void rrc::set_rrc_default() {
+  N310 = 1;
+  N311 = 1; 
+  t301 = mac_timers->get_unique_id();
+  t310 = mac_timers->get_unique_id();
+  t311 = mac_timers->get_unique_id();
+  mac_timers->get(t310)->set(this, 1000);
+  mac_timers->get(t311)->set(this, 1000);
 }
 
 } // namespace srsue

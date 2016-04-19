@@ -28,7 +28,7 @@
 #define STR(x) STR_HELPER(x)
 
 #define REQ_SRSLTE_VMAJOR  001
-#define REQ_SRSLTE_VMINOR  001
+#define REQ_SRSLTE_VMINOR  002
 #define REQ_SRSLTE_VPATCH  000
 
 #include <srslte/srslte.h>

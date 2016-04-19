@@ -55,10 +55,13 @@ void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* pa
 
 void bsr_proc::reset()
 {
-  timer_periodic = false; 
   params_db->set_param(mac_interface_params::BSR_TIMER_PERIODIC, 0);
-  timer_retx = false; 
   params_db->set_param(mac_interface_params::BSR_TIMER_RETX, 0);
+  timers_db->get(mac::BSR_TIMER_PERIODIC)->stop();
+  timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
+  timers_db->get(mac::BSR_TIMER_RETX)->stop();
+  timers_db->get(mac::BSR_TIMER_RETX)->reset();
+  
   reset_sr = false; 
   sr_is_sent = false; 
   triggered_bsr_type = NONE; 
@@ -78,7 +81,7 @@ void bsr_proc::timer_expired(uint32_t timer_id) {
       if (triggered_bsr_type == NONE) {
         // Check condition 4 in Sec 5.4.5 
         triggered_bsr_type = PERIODIC; 
-        Info("Triggering BSR PERIODIC\n");
+        Info("Triggering Periodic BSR\n");
       }
       break;
     case mac::BSR_TIMER_RETX:
@@ -214,18 +217,22 @@ void bsr_proc::step(uint32_t tti)
     return;
   }  
   
-  if (!timer_periodic) {
-    if (params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC)) {
-      timer_periodic = true; 
-      timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));
-    }
+  if (params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC) != 
+      timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() &&
+      params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC) > 0) 
+  {
+    timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));
+    timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
+    Info("Configured BSR Timer periodic %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));    
   }
 
-  if (!timer_retx) {
-    if (params_db->get_param(mac_interface_params::BSR_TIMER_RETX)) {
-      timer_retx = true; 
-      timers_db->get(mac::BSR_TIMER_RETX)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
-    }
+  if (params_db->get_param(mac_interface_params::BSR_TIMER_RETX) != 
+      timers_db->get(mac::BSR_TIMER_RETX)->get_timeout() && 
+      params_db->get_param(mac_interface_params::BSR_TIMER_RETX) > 0) 
+  {
+    timers_db->get(mac::BSR_TIMER_RETX)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
+    timers_db->get(mac::BSR_TIMER_RETX)->run();
+    Info("Configured BSR Timer reTX %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
   }
 
   // Check condition 1 in Sec 5.4.5   
@@ -297,7 +304,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
           grant_size, total_data, bsr_sz);
       ret = true; 
     }    
-    if (timer_periodic && bsr->format != TRUNC_BSR) {
+    if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
       timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
       timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
     }
@@ -306,7 +313,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
   triggered_bsr_type = NONE; 
   reset_sr = true;     
   // Restart or Start ReTX timer
-  if (timer_retx) {
+  if (timers_db->get(mac::BSR_TIMER_RETX)->get_timeout()) {
     timers_db->get(mac::BSR_TIMER_RETX)->reset();
     timers_db->get(mac::BSR_TIMER_RETX)->run();
   }
@@ -327,7 +334,7 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr)
     Info("Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
            bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes);
     
-    if (timer_periodic && bsr->format != TRUNC_BSR) {
+    if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
       timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
       timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
     }

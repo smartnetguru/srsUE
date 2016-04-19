@@ -56,7 +56,7 @@ class mac
 {
 public:
   mac();
-  bool init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_phymac* rrc, srslte::log *log_h);
+  bool init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_mac* rrc, srslte::log *log_h);
   void stop();
 
   void get_metrics(mac_metrics_t &m);

@@ -45,11 +45,13 @@ class phch_recv : public thread
 {
 public:
   phch_recv();
-  bool init(srslte::radio* radio_handler, mac_interface_phy *mac,rrc_interface_phymac *rrc, 
+  bool init(srslte::radio* radio_handler, mac_interface_phy *mac,rrc_interface_phy *rrc, 
             prach *prach_buffer, srslte::thread_pool *_workers_pool,
             phch_common *_worker_com, srslte::log* _log_h, uint32_t prio);
   void stop();
   void set_agc_enable(bool enable);
+
+  void     resync_sfn(); 
   
   uint32_t get_current_tti();
   
@@ -64,6 +66,7 @@ public:
 
 private:
   
+  void   set_ue_sync_opts(srslte_ue_sync_t *q); 
   void   run_thread();
   int    sync_sfn();
   
@@ -71,7 +74,7 @@ private:
   
   srslte::radio        *radio_h;
   mac_interface_phy    *mac;
-  rrc_interface_phymac *rrc;
+  rrc_interface_phy *rrc;
   srslte::log          *log_h;
   srslte::thread_pool  *workers_pool;
   phch_common          *worker_com;
@@ -100,7 +103,10 @@ private:
   float         cellsearch_cfo;
   uint32_t      nof_tx_mutex;
   uint32_t      tx_mutex_cnt;
-    
+
+  uint32_t      sync_sfn_cnt;
+  const static uint32_t SYNC_SFN_TIMEOUT = 5000;
+  
   bool          cell_search(int force_N_id_2 = -1);
   bool          init_cell();
   void          free_cell();

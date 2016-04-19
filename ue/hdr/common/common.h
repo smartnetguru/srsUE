@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 /*******************************************************************************
                               DEFINES
@@ -49,6 +50,8 @@
 #define SRSUE_MAX_BUFFER_SIZE_BITS  102048
 #define SRSUE_MAX_BUFFER_SIZE_BYTES 12756
 #define SRSUE_BUFFER_HEADER_OFFSET  1024
+
+namespace bpt = boost::posix_time;
 
 /*******************************************************************************
                               TYPEDEFS
@@ -100,15 +103,16 @@ static const char rb_id_text[RB_ID_N_ITEMS][20] = { "SRB0",
 /******************************************************************************
  * Byte and Bit buffers
  *
- * Generic buffers with headroom to accommodate packet headers and custo
+ * Generic buffers with headroom to accommodate packet headers and custom
  * copy constructors & assignment operators for quick copying. Byte buffer
  * holds a next pointer to support linked lists.
  *****************************************************************************/
 class byte_buffer_t{
 public:
-    uint32_t  N_bytes;
-    uint8_t   buffer[SRSUE_MAX_BUFFER_SIZE_BYTES];
-    uint8_t  *msg;
+    uint32_t    N_bytes;
+    uint8_t     buffer[SRSUE_MAX_BUFFER_SIZE_BYTES];
+    uint8_t    *msg;
+    bpt::ptime  timestamp;
 
     byte_buffer_t():N_bytes(0)
     {
@@ -126,12 +130,20 @@ public:
     }
     void reset()
     {
-      msg     = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
-      N_bytes = 0;
+      msg       = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
+      N_bytes   = 0;
+      timestamp = bpt::not_a_date_time;
     }
     uint32_t get_headroom()
     {
       return msg-buffer;
+    }
+    long get_latency_us()
+    {
+      if(timestamp.is_not_a_date_time())
+        return 0;
+      bpt::time_duration td = bpt::microsec_clock::local_time() - timestamp;
+      return td.total_microseconds();
     }
 
     // Linked list support
@@ -142,9 +154,10 @@ private:
 };
 
 struct bit_buffer_t{
-    uint32_t  N_bits;
-    uint8_t   buffer[SRSUE_MAX_BUFFER_SIZE_BITS];
-    uint8_t  *msg;
+    uint32_t    N_bits;
+    uint8_t     buffer[SRSUE_MAX_BUFFER_SIZE_BITS];
+    uint8_t    *msg;
+    bpt::ptime  timestamp;
 
     bit_buffer_t():N_bits(0)
     {
@@ -160,12 +173,20 @@ struct bit_buffer_t{
     }
     void reset()
     {
-      msg     = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
-      N_bits  = 0;
+      msg       = &buffer[SRSUE_BUFFER_HEADER_OFFSET];
+      N_bits    = 0;
+      timestamp = bpt::not_a_date_time;
     }
     uint32_t get_headroom()
     {
       return msg-buffer;
+    }
+    long get_latency_us()
+    {
+      if(timestamp.is_not_a_date_time())
+        return 0;
+      bpt::time_duration td = bpt::microsec_clock::local_time() - timestamp;
+      return td.total_microseconds();
     }
 };
 

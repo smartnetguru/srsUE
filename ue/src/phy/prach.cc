@@ -66,40 +66,46 @@ void prach::init(phy_params* params_db_, srslte::log* log_h_)
 
 bool prach::init_cell(srslte_cell_t cell_)
 {
-  cell = cell_; 
-  preamble_idx = -1; 
-
-  Info("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
-       params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
-       params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
-       params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
-  
-  if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
-                        srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
-                        params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
-                        params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
-                        params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
-  {
-    Error("Initiating PRACH library\n");
-    return false; 
-  }
-  
-  len = prach_obj.N_seq + prach_obj.N_cp;
-  for (int i=0;i<64;i++) {
-    buffer[i] = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t));
-    if(!buffer[i]) {
-      return false; 
-    }    
-    if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
-      Error("Generating PRACH preamble %d\n", i);
-      return false;
+  // TODO: Check if other PRACH parameters changed
+  if (cell_.id != cell.id || !initiated) {
+    if (initiated) {
+      free_cell();
     }
+    cell = cell_; 
+    preamble_idx = -1; 
+
+    Info("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
+        params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
+        params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
+        params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
+    
+    if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
+                          srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
+                          params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
+                          params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
+                          params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
+    {
+      Error("Initiating PRACH library\n");
+      return false; 
+    }
+    
+    len = prach_obj.N_seq + prach_obj.N_cp;
+    for (int i=0;i<64;i++) {
+      buffer[i] = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t));
+      if(!buffer[i]) {
+        return false; 
+      }    
+      if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
+        Error("Generating PRACH preamble %d\n", i);
+        return false;
+      }
+    }
+    srslte_cfo_init(&cfo_h, len);
+    signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
+    initiated = signal_buffer?true:false; 
+    transmitted_tti = -1; 
+    Info("PRACH Initiated %s\n", initiated?"OK":"KO");
   }
-  srslte_cfo_init(&cfo_h, len);
-  signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
-  initiated = signal_buffer?true:false; 
-  transmitted_tti = -1; 
-  Info("PRACH Initiated %s\n", initiated?"OK":"KO");
   return initiated;  
 }
 
@@ -148,16 +154,18 @@ float prach::get_p0_preamble()
 
 bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte_timestamp_t tx_time)
 {
+  
+  // Get current TX gain 
+  float old_gain = radio_handler->get_tx_gain(); 
+  
   // Correct CFO before transmission
   srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo /srslte_symbol_sz(cell.nof_prb));            
 
-  // If power control is not disabled, choose amplitude and power 
-  if (params_db->get_param(phy_interface_params::PRACH_GAIN) < 0) {
+  // If power control is enabled, choose amplitude and power 
+  if (params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {
     // Get PRACH transmission power 
     float tx_power = SRSLTE_MIN(SRSLTE_PC_MAX, pathloss + target_power_dbm);
     
-    tx_power += (float) params_db->get_param(phy_interface_params::UL_PWR_CTRL_OFFSET);
-
     // Get output power for amplitude 1
     radio_handler->set_tx_power(tx_power);
         
@@ -170,8 +178,10 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
           pathloss, target_power_dbm, tx_power, radio_handler->get_tx_gain(), scale);
     
   } else {
-    radio_handler->set_tx_gain((float) params_db->get_param(phy_interface_params::PRACH_GAIN));
-    
+    float prach_gain = (float) params_db->get_param(phy_interface_params::PRACH_GAIN); 
+    if (prach_gain > 0) {
+      radio_handler->set_tx_gain(prach_gain);
+    }
     Info("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", 
       (float) params_db->get_param(phy_interface_params::PRACH_GAIN));
   }
@@ -183,12 +193,8 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
        cfo*15000, preamble_idx, len, tx_time.frac_secs);
   preamble_idx = -1; 
 
-  // Set UL gain if power control for the rest of the channels is disabled
-  if (params_db->get_param(phy_interface_params::UL_GAIN) > 0) {
-    radio_handler->set_tx_gain((float) params_db->get_param(phy_interface_params::UL_GAIN));    
-    Info("UL power control is disabled. Fixing TX gain to %.0f dB\n", (float) params_db->get_param(phy_interface_params::UL_GAIN));
-  } 
-  
+  radio_handler->set_tx_gain(old_gain);    
+  Info("Restoring TX gain to %.0f dB\n", old_gain);  
 }
   
 } // namespace srsue

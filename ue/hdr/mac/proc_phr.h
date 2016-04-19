@@ -28,7 +28,6 @@
 #define PROCPHR_H
 
 #include <stdint.h>
-#include "mac/proc.h"
 #include "mac_params.h"
 #include "common/timers.h"
 #include "common/phy_interface.h"
@@ -39,7 +38,7 @@
 
 namespace srsue {
 
-class phr_proc : public proc, srslte::timer_callback
+class phr_proc : public srslte::timer_callback
 {
 public:
   phr_proc();  

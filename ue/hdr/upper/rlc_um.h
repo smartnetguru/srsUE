@@ -59,6 +59,7 @@ public:
             mac_interface_timers *mac_timers_);
   void configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg);
   void reset();
+  void empty_queue(); 
 
   rlc_mode_t    get_mode();
   uint32_t      get_bearer();
@@ -97,6 +98,7 @@ private:
 
   // RX SDU buffers
   byte_buffer_t      *rx_sdu;
+  uint32_t            vr_ur_in_rx_sdu;
 
   // Mutexes
   boost::mutex        mutex;

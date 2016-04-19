@@ -57,7 +57,7 @@ phy::phy() : workers_pool(MAX_WORKERS),
 {
 }
 
-bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phymac *rrc, 
+bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phy *rrc, 
                srslte::log *log_h_, uint32_t nof_workers_)
 {
 
@@ -116,10 +116,11 @@ void phy::get_metrics(phy_metrics_t &m) {
   workers_common.get_dl_metrics(m.dl);
   workers_common.get_ul_metrics(m.ul);
   workers_common.get_sync_metrics(m.sync);
-  m.mabr = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.dl.mcs), workers_common.get_nof_prb());
-
-  // Estimate IP-layer MABR as 75% of MAC-layer MABR
-  m.mabr = m.mabr*4/5;
+  int dl_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.dl.mcs), workers_common.get_nof_prb());
+  int ul_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.ul.mcs), workers_common.get_nof_prb());
+  m.dl.mabr_mbps = dl_tbs/1000.0; // TBS is bits/ms - convert to mbps
+  m.ul.mabr_mbps = ul_tbs/1000.0; // TBS is bits/ms - convert to mbps
+  Info("PHY MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
 }
 
 void phy::set_timeadv_rar(uint32_t ta_cmd) {
@@ -158,11 +159,11 @@ void phy::configure_prach_params()
   }
 }
 
-void phy::configure_ul_params()
+void phy::configure_ul_params(bool pregen_disabled)
 {
   Info("Configuring UL parameters\n");
   for (int i=0;i<nof_workers;i++) {
-    workers[i].set_ul_params();
+    workers[i].set_ul_params(pregen_disabled);
   }
 }
 
@@ -213,6 +214,10 @@ int phy::prach_tx_tti()
 void phy::reset()
 {
   // TODO 
+  pdcch_dl_search_reset();
+  for(uint32_t i=0;i<nof_workers;i++) {
+    workers[i].reset();
+  }    
 }
 
 uint32_t phy::get_current_tti()
@@ -236,6 +241,10 @@ bool phy::status_is_sync()
   return sf_recv.status_is_sync();
 }
 
+void phy::resync_sfn() {
+  sf_recv.resync_sfn();
+}
+
 void phy::sync_start()
 {
   sf_recv.sync_start();
@@ -257,12 +266,17 @@ void phy::set_crnti(uint16_t rnti) {
   }    
 }
 
+// Start GUI 
+void phy::start_plot() {
+  ((phch_worker) workers[0]).start_plot();
+}
+
 void phy::enable_pregen_signals(bool enable)
-{
+{  
   for(uint32_t i=0;i<nof_workers;i++) {
     workers[i].enable_pregen_signals(enable);
-  }
-}
+  }  
+} 
 
 
 uint32_t phy::tti_to_SFN(uint32_t tti) {

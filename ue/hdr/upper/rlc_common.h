@@ -136,6 +136,7 @@ public:
                     mac_interface_timers *mac_timers_) = 0;
   virtual void configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg) = 0;
   virtual void reset() = 0;
+  virtual void empty_queue() = 0; 
 
   virtual rlc_mode_t    get_mode() = 0;
   virtual uint32_t      get_bearer() = 0;

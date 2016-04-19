@@ -29,6 +29,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 include(SRSUEVersion) #sets version information
 
 ########################################################################
+# Options
+########################################################################
+option(ENABLE_GUI "ENABLE_GUI" ON)
+
+########################################################################
 # Add general includes and dependencies
 ########################################################################
 include_directories(${PROJECT_SOURCE_DIR})
@@ -47,25 +52,25 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ########################################################################
 # Compiler specific setup
 ########################################################################
-IF(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX)
     #Any additional flags for CXX
-ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
-IF( ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") )
+if( ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-write-strings -Wno-format-extra-args -Winline -Wno-unused-result -Wno-format -std=c99 -D_GNU_SOURCE -g")
-ENDIF( ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") )
+endif( ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") )
 
-IF(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-ELSE(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  FIND_PACKAGE(SSE)
+else(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  find_package(SSE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-  IF(HAVE_AVX) 
+  if(HAVE_AVX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mfpmath=sse -mavx -DLV_HAVE_AVX -DLV_HAVE_SSE")      
-  ELSEIF(HAVE_SSE)
+  elseif(HAVE_SSE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mfpmath=sse -msse4.1 -DLV_HAVE_SSE")
-  ENDIF(HAVE_AVX)    
-ENDIF(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  endif(HAVE_AVX)
+endif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
 ########################################################################
 # Find boost
@@ -99,6 +104,15 @@ endif()
 ########################################################################
 find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
+
+if(ENABLE_GUI)
+    find_package(SRSGUI)
+    if(SRSGUI_FOUND)
+        add_definitions(-DENABLE_GUI)
+        include_directories(${SRSGUI_INCLUDE_DIRS})
+        link_directories(${SRSGUI_LIBRARY_DIRS})
+    endif(SRSGUI_FOUND)
+endif(ENABLE_GUI)
 
 ########################################################################
 # Setup the include and linker paths

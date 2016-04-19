@@ -52,7 +52,7 @@ class phy
 {
 public:
   phy();
-  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phymac *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
+  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phy *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
   void stop();
 
   void set_agc_enable(bool enabled);
@@ -61,8 +61,6 @@ public:
   
   void set_crnti(uint16_t rnti);
   
-  // Get status 
-  bool status_is_sync();
   
   static uint32_t tti_to_SFN(uint32_t tti);
   static uint32_t tti_to_subf(uint32_t tti);
@@ -72,14 +70,19 @@ public:
   void start_trace();
   void write_trace(std::string filename); 
   
+  /********** RRC INTERFACE ********************/
+  void    reset();
+  bool    status_is_sync();
+  void    configure_ul_params(bool pregen_disabled = false);
+  void    resync_sfn(); 
+  
   /********** MAC INTERFACE ********************/
-  /* Instructs the PHY to configure using the parameters written by set_param() */
-  void    configure_prach_params();
-  void    configure_ul_params();
-
   /* Functions to synchronize with a cell */
   void    sync_start(); 
   void    sync_stop();
+
+  /* Instructs the PHY to configure using the parameters written by set_param() */
+  void    configure_prach_params();
   
   /* Transmits PRACH in the next opportunity */
   void    prach_send(uint32_t preamble_idx, int allowed_subframe = -1, float target_power_dbm = 0.0);  
@@ -107,12 +110,13 @@ public:
   int64_t get_param(phy_param_t param);
 
   float   get_phr();
-  
-  void    reset();
-  
+    
   uint32_t get_current_tti();
   void     get_current_cell(srslte_cell_t *cell);
   
+  void    start_plot();
+  void    start_channel_emulator(const char *filename, int *path_taps, int nof_paths, int nof_coeffs, int nof_samples, int nof_tti);
+    
 private:
     
   uint32_t nof_workers; 
