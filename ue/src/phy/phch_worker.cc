@@ -294,8 +294,10 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
     
     // Setup estimator filter 
     float w_coeff = (float) phy->params_db->get_param(phy_interface_params::ESTIMATOR_FIL_W_1000)/1000; 
-    if (w_coeff >= 0.0) {
+    if (w_coeff > 0.0) {
       srslte_chest_dl_set_smooth_filter3_coeff(&ue_dl.chest, w_coeff); 
+    } else if (w_coeff == 0.0) {
+      srslte_chest_dl_set_smooth_filter(&ue_dl.chest, NULL, 0); 
     }
   
     if (srslte_ue_dl_decode_fft_estimate(&ue_dl, signal_buffer, tti%10, &cfi) < 0) {
