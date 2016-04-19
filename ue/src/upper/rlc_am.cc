@@ -179,8 +179,13 @@ uint32_t rlc_am::get_buffer_state()
     return prepare_status();
 
   // Bytes needed for retx
-  if(retx_queue.size() > 0)
-    return tx_window[retx_queue.front()].buf->N_bytes;
+  if(retx_queue.size() > 0) {
+    if (tx_window[retx_queue.front()].buf) {
+      return tx_window[retx_queue.front()].buf->N_bytes;      
+    } else {
+      return 0; 
+    }
+  }
 
   // Bytes needed for tx SDUs
   uint32_t n_sdus  = tx_sdu_queue.size();
@@ -413,29 +418,35 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     pdu_space -= to_move;
     header.fi |= RLC_FI_FIELD_NOT_START_ALIGNED; // First byte does not correspond to first byte of SDU
   }
-
+  
   // Pull SDUs from queue
-  while(pdu_space > head_len && tx_sdu_queue.size() > 0)
+  bool has_space=true; 
+  while(tx_sdu_queue.size() > 0 && has_space)
   {
     if(last_li > 0)
       header.li[header.N_li++] = last_li;
     head_len = rlc_am_packed_length(&header);
-    tx_sdu_queue.read(&tx_sdu);
-    to_move = ((pdu_space-head_len) >= tx_sdu->N_bytes) ? tx_sdu->N_bytes : pdu_space-head_len;
-    memcpy(pdu_ptr, tx_sdu->msg, to_move);
-    last_li          = to_move;
-    pdu_ptr         += to_move;
-    pdu->N_bytes    += to_move;
-    tx_sdu->N_bytes -= to_move;
-    tx_sdu->msg     += to_move;
-    if(tx_sdu->N_bytes == 0)
-    {
-      log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
-                rb_id_text[lcid], tx_sdu->get_latency_us());
-      pool->deallocate(tx_sdu);
-      tx_sdu = NULL;
+    
+    if (pdu_space > head_len) {
+      tx_sdu_queue.read(&tx_sdu);
+      to_move = ((pdu_space-head_len) >= tx_sdu->N_bytes) ? tx_sdu->N_bytes : pdu_space-head_len;
+      memcpy(pdu_ptr, tx_sdu->msg, to_move);
+      last_li          = to_move;
+      pdu_ptr         += to_move;
+      pdu->N_bytes    += to_move;
+      tx_sdu->N_bytes -= to_move;
+      tx_sdu->msg     += to_move;
+      if(tx_sdu->N_bytes == 0)
+      {
+        log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
+                  rb_id_text[lcid], tx_sdu->get_latency_us());
+        pool->deallocate(tx_sdu);
+        tx_sdu = NULL;
+      }
+      pdu_space -= to_move;
+    } else {
+      has_space = false; 
     }
-    pdu_space -= to_move;
   }
 
   if(tx_sdu)
@@ -758,10 +769,10 @@ void rlc_am_write_data_pdu_header(rlc_amd_pdu_header_t *header, byte_buffer_t *p
   uint8_t ext = (header->N_li > 0) ? 1 : 0;
 
   // Make room for the header
-  uint32_t len = rlc_am_packed_length(header);
+  uint32_t len = rlc_am_packed_length(header);  
   pdu->msg -= len;
   uint8_t *ptr = pdu->msg;
-
+  
   // Fixed part
   *ptr  = (header->dc & 0x01) << 7;
   *ptr |= (header->rf & 0x01) << 6;
