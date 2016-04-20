@@ -329,7 +329,7 @@ void rrc::max_retx_attempted()
 
 void rrc::send_con_request()
 {
-  rrc_log->debug("Preparing RRC Connection Request");
+  rrc_log->debug("Preparing RRC Connection Request\n");
   LIBLTE_RRC_UL_CCCH_MSG_STRUCT ul_ccch_msg;
   LIBLTE_RRC_S_TMSI_STRUCT      s_tmsi;
 

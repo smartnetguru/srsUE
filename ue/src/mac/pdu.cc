@@ -200,6 +200,7 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
     bzero(&pdu_start_ptr[pdu_len-rem_len], rem_len*sizeof(uint8_t));
   }
 
+  /* Sanity check and print if error */
   if (log_h) {
     log_h->debug("Wrote PDU: pdu_len=%d, header_and_ce=%d (%d+%d), nof_subh=%d, last_sdu=%d, sdu_len=%d, onepad=%d, multi=%d\n", 
          pdu_len, header_sz+ce_payload_sz, header_sz, ce_payload_sz, 

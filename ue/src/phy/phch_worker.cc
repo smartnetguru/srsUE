@@ -206,7 +206,7 @@ void phch_worker::work_imp()
       if (dl_action.generate_ack_callback && dl_action.decode_enabled) {
         phy->mac->tb_decoded(dl_ack, dl_mac_grant.rnti_type, dl_mac_grant.pid);
         dl_ack = dl_action.generate_ack_callback(dl_action.generate_ack_callback_arg);
-        Info("Calling generate ACK callback returned=%d\n", dl_ack);
+        Debug("Calling generate ACK callback returned=%d\n", dl_ack);
       }
       if (dl_action.generate_ack) {
         set_uci_ack(dl_ack);
@@ -482,7 +482,6 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   bool ret = false; 
   if (phy->get_pending_rar(tti, &rar_grant)) {
 
-    Info("Pending RAR UL grant\n");
     if (srslte_dci_rar_to_ul_grant(&rar_grant, cell.nof_prb, pusch_hopping.hopping_offset, 
       &dci_unpacked, &grant->phy_grant.ul)) 
     {
@@ -491,7 +490,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
     } 
     grant->rnti_type = SRSLTE_RNTI_TEMP;
     grant->is_from_rar = true; 
-    Info("RAR grant found for TTI=%d\n", tti);
+    Debug("RAR grant found for TTI=%d\n", tti);
     rar_cqi_request = rar_grant.cqi_request;    
     ret = true;  
   } else {
@@ -573,7 +572,7 @@ void phch_worker::set_uci_sr()
   if (phy->sr_enabled) {
     // Get I_sr parameter
     if (srslte_ue_ul_sr_send_tti(I_sr, (tti+4)%10240)) {
-      Info("SR transmission at TTI=%d\n", (tti+4)%10240);
+      Info("PUCCH: SR transmission at TTI=%d\n", (tti+4)%10240);
       uci_data.scheduling_request = true; 
       phy->sr_last_tx_tti = (tti+4)%10240; 
       phy->sr_enabled = false;
@@ -592,7 +591,7 @@ void phch_worker::set_uci_periodic_cqi()
         cqi_report.subband.subband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);
         cqi_report.subband.subband_label = 0;
         phy->log_h->console("Warning: Subband CQI periodic reports not implemented\n");
-        Info("CQI: subband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.subband.subband_cqi);
+        Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
         cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);        
@@ -600,7 +599,7 @@ void phch_worker::set_uci_periodic_cqi()
         if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
           cqi_report.wideband.wideband_cqi = cqi_max;
         }
-        Info("CQI: wideband snr=%.1f dB, cqi=%d\n", phy->avg_snr_db, cqi_report.wideband.wideband_cqi);
+        Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db);
       }
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       
@@ -659,8 +658,8 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
   snprintf(timestr, 64, ", total_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-  Info("PUSCH: power=%.2f dBm, tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s%s\n", 
-         tx_power, (tti+4)%10240,
+  Info("PUSCH: tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s%s\n", 
+         (tti+4)%10240,
          grant->L_prb, grant->n_prb[0], 
          grant->mcs.tbs/8, grant->mcs.mod, grant->mcs.idx, rv,
          uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",
@@ -735,7 +734,7 @@ void phch_worker::encode_srs()
   float gain = set_power(tx_power);
   uint32_t fi = srslte_vec_max_fi((float*) signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb));
   float *f = (float*) signal_buffer;
-  Info("SRS: power=%.2f dBm, tti_tx=%d%s\n", tx_power, (tti+4)%10240, timestr);
+  Debug("SRS:   power=%.2f dBm, tti_tx=%d%s\n", tx_power, (tti+4)%10240, timestr);
   
 }
 
@@ -829,7 +828,7 @@ void phch_worker::set_ul_params(bool pregen_disabled)
   I_sr                         = (uint32_t) phy->params_db->get_param(phy_interface_params::SR_CONFIG_INDEX);
   
   if (pregen_enabled && !pregen_disabled) { 
-    Info("Pre-generating UL signals\n");
+    Debug("Pre-generating UL signals\n");
     srslte_ue_ul_pregen_signals(&ue_ul);
   }  
 }

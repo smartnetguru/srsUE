@@ -187,10 +187,10 @@ void ul_harq_entity::ul_harq_process::set_harq_feedback(bool ack) {
   harq_feedback = ack; 
   // UL packet successfully delivered
   if (ack) {
-    Info("UL PID %d: HARQ = ACK for UL transmission. Discarting TB.\n", pid);
+    Info("UL %d:  HARQ = ACK for UL transmission. Discarting TB.\n", pid);
     reset();
   } else {
-    Info("UL PID %d: HARQ = NACK for UL transmission\n", pid);
+    Info("UL %d:  HARQ = NACK for UL transmission\n", pid);
   }
 }
 
@@ -225,7 +225,7 @@ void ul_harq_entity::ul_harq_process::run_tti(uint32_t tti_tx, mac_interface_phy
 
       // Uplink grant in a RAR
       if (grant->is_from_rar) {
-        Info("Getting Msg3 buffer payload, grant size=%d bytes\n", grant->n_bytes);
+        Debug("Getting Msg3 buffer payload, grant size=%d bytes\n", grant->n_bytes);
         pdu_ptr  = harq_entity->mux_unit->msg3_get(payload_buffer, grant->n_bytes);
         if (pdu_ptr) {
           generate_new_tx(tti_tx, true, grant, action);
@@ -279,11 +279,11 @@ void ul_harq_entity::ul_harq_process::generate_retx(uint32_t tti_tx, mac_interfa
     // HARQ entity requests an adaptive transmission
     current_irv = irv_of_rv[grant->rv%4];
     harq_feedback = false; 
-    Info("UL PID %d: Adaptive retx=%d, RV=%d, TBS=%d\n", 
+    Info("UL %d:  Adaptive retx=%d, RV=%d, TBS=%d\n", 
          pid, current_tx_nb, get_rv(), grant->n_bytes);
     generate_tx(tti_tx, action);
   } else {
-    Info("UL PID %d: Non-Adaptive retx=%d, RV=%d, TBS=%d\n", 
+    Info("UL %d:  Non-Adaptive retx=%d, RV=%d, TBS=%d\n", 
          pid, current_tx_nb, get_rv(), cur_grant.n_bytes);
     // HARQ entity requests a non-adaptive transmission
     if (!harq_feedback) {
@@ -309,7 +309,7 @@ void ul_harq_entity::ul_harq_process::generate_new_tx(uint32_t tti_tx, bool is_m
     current_tx_nb = 0; 
     current_irv = 0;         
     is_msg3 = is_msg3_;
-    Info("UL PID %d: New TX%s, RV=%d, TBS=%d, RNTI=%d\n", 
+    Info("UL %d:  New TX%s, RV=%d, TBS=%d, RNTI=%d\n", 
          pid, is_msg3?" for Msg3":"", get_rv(), cur_grant.n_bytes, cur_grant.rnti);
     generate_tx(tti_tx, action);
   }
@@ -331,14 +331,14 @@ void ul_harq_entity::ul_harq_process::generate_tx(uint32_t tti_tx, mac_interface
   tti_last_tx = tti_tx; 
   if (is_msg3) {
     if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX)) {
-      Info("UL PID %d: Maximum number of ReTX for Msg3 reached (%d). Discarting TB.\n", pid, 
+      Info("UL %d:  Maximum number of ReTX for Msg3 reached (%d). Discarting TB.\n", pid, 
            harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX));
       reset();          
       action->expect_ack = false;
     }        
   } else {
     if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX)) {
-      Info("UL PID %d: Maximum number of ReTX reached (%d). Discarting TB.\n", pid, 
+      Info("UL %d:  Maximum number of ReTX reached (%d). Discarting TB.\n", pid, 
            harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX));
       reset();
       action->expect_ack = false;

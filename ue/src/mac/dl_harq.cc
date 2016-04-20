@@ -315,7 +315,7 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
     }
   } 
   
-  Info("DL PID %d: %s tbs=%d, rv=%d, ack=%s, ndi=%d (%d), tti=%d (%d)\n", 
+  Info("DL %d:  %s tbs=%d, rv=%d, ack=%s, ndi=%d (%d), tti=%d (%d)\n", 
        pid, is_new_transmission?"newTX":"reTX ", 
        cur_grant.n_bytes, cur_grant.rv, ack?"OK":"KO", 
        cur_grant.ndi, cur_grant.last_ndi, cur_grant.tti, cur_grant.last_tti);

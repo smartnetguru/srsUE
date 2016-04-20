@@ -74,7 +74,7 @@ bool prach::init_cell(srslte_cell_t cell_)
     cell = cell_; 
     preamble_idx = -1; 
 
-    Info("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
+    Debug("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
         params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
         params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
         params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
@@ -104,7 +104,7 @@ bool prach::init_cell(srslte_cell_t cell_)
     signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
     initiated = signal_buffer?true:false; 
     transmitted_tti = -1; 
-    Info("PRACH Initiated %s\n", initiated?"OK":"KO");
+    Debug("PRACH Initiated %s\n", initiated?"OK":"KO");
   }
   return initiated;  
 }
@@ -116,7 +116,7 @@ bool prach::prepare_to_send(uint32_t preamble_idx_, int allowed_subframe_, float
     target_power_dbm = target_power_dbm_;
     allowed_subframe = allowed_subframe_; 
     transmitted_tti = -1; 
-    Info("PRACH prepare to send preamble %d\n", preamble_idx);
+    Debug("PRACH prepare to send preamble %d\n", preamble_idx);
     return true; 
   } else {
     if (!initiated) {
@@ -134,7 +134,7 @@ bool prach::is_ready_to_send(uint32_t current_tti_) {
     uint32_t current_tti = (current_tti_ + tx_advance_sf)%10240;
     uint32_t config_idx = (uint32_t) params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX); 
     if (srslte_prach_send_tti(config_idx, current_tti, allowed_subframe)) {
-      Info("PRACH Buffer: Ready to send at tti: %d (now is %d)\n", current_tti, current_tti_);
+      Debug("PRACH Buffer: Ready to send at tti: %d (now is %d)\n", current_tti, current_tti_);
       transmitted_tti = current_tti; 
       return true; 
     }
@@ -174,7 +174,7 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
     float scale = sqrtf(pow(10,tx_power/10)/digital_power);
     
     srslte_vec_sc_prod_cfc(signal_buffer, scale, signal_buffer, len);
-    log_h->console("TX PRACH: Pathloss=%.2f dB, Target power %.2f dBm, TX_power %.2f dBm, TX_gain %.1f dB\n",
+    log_h->console("PRACH: Pathloss=%.2f dB, Target power %.2f dBm, TX_power %.2f dBm, TX_gain %.1f dB\n",
           pathloss, target_power_dbm, tx_power, radio_handler->get_tx_gain(), scale);
     
   } else {
@@ -182,19 +182,19 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
     if (prach_gain > 0) {
       radio_handler->set_tx_gain(prach_gain);
     }
-    Info("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", 
+    Debug("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", 
       (float) params_db->get_param(phy_interface_params::PRACH_GAIN));
   }
     
   radio_handler->tx(signal_buffer, len, tx_time);
   radio_handler->tx_end();
   
-  Debug("PRACH transmitted CFO: %f, preamble=%d, len=%d tx_time=%f\n", 
-       cfo*15000, preamble_idx, len, tx_time.frac_secs);
+  Info("PRACH: Transmitted preamble=%d, CFO=%.2f KHz, tx_time=%f\n", 
+       preamble_idx, cfo*15, tx_time.frac_secs);
   preamble_idx = -1; 
 
   radio_handler->set_tx_gain(old_gain);    
-  Info("Restoring TX gain to %.0f dB\n", old_gain);  
+  Debug("Restoring TX gain to %.0f dB\n", old_gain);  
 }
   
 } // namespace srsue

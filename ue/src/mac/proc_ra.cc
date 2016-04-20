@@ -137,17 +137,17 @@ bool ra_proc::is_error() {
 }
 
 const char* state_str[12] = {"Idle",
-                            "RA Initializat.: ",
-                            "RA ResSelection: ",
-                            "RA PreambleTx  : ",
-                            "RA PDCCH setup : ",
-                            "RA ResponseRcv : ",
-                            "RA ResponseErr : ",
-                            "RA BackoffWait : ",
-                            "RA ContentResol: ",
-                            "RA Completed   : ",
-                            "RA Completed   : ",
-                            "RA Problem     : "};
+                            "RA:    INIT:   ",
+                            "RA:    Select: ",
+                            "RA:    TX:     ",
+                            "RA:    PDCCH:  ",
+                            "RA:    Rx:     ",
+                            "RA:    RxErr:  ",
+                            "RA:    Backof: ",
+                            "RA:    ConRes: ",
+                            "RA:    Done:   ",
+                            "RA:    Done:   ",
+                            "RA:    Error:  "};
 
                            
 #define rError(fmt, ...) Error("%s" fmt, state_str[state], ##__VA_ARGS__)                         
@@ -162,13 +162,13 @@ void ra_proc::process_timeadv_cmd(uint32_t ta) {
     phy_h->set_timeadv_rar(ta);
     timers_db->get(mac::TIME_ALIGNMENT)->reset();
     timers_db->get(mac::TIME_ALIGNMENT)->run();
-    Info("Applying RAR TA CMD %d\n", ta);
+    Debug("Applying RAR TA CMD %d\n", ta);
   } else {
     // Preamble selected by UE MAC 
     if (!timers_db->get(mac::TIME_ALIGNMENT)->is_running()) {
       phy_h->set_timeadv_rar(ta);
       timers_db->get(mac::TIME_ALIGNMENT)->run();
-      Info("Applying RAR TA CMD %d\n", ta);
+      Debug("Applying RAR TA CMD %d\n", ta);
     } else {
       // Ignore TA CMD
       Warning("Ignoring RAR TA CMD because timeAlignmentTimer still running\n");
@@ -224,7 +224,7 @@ void ra_proc::step_resource_selection() {
     sel_maskIndex = 0;           
   }
   
-  rInfo("Selected preambleIndex=%d maskIndex=%d nof_GroupApreambles=%d\n", 
+  rDebug("Selected preambleIndex=%d maskIndex=%d nof_GroupApreambles=%d\n", 
         sel_preamble, sel_maskIndex,nof_groupA_preambles);
   state = PREAMBLE_TRANSMISSION;
 }
@@ -243,6 +243,7 @@ void ra_proc::step_pdcch_setup() {
   int ra_tti = phy_h->prach_tx_tti();
   if (ra_tti > 0) {    
     ra_rnti = 1+ra_tti%10;
+    rInfo("seq=%d, ra-rnti=%d\n", sel_preamble, ra_rnti);
     log_h->console("Random Access Transmission: seq=%d, ra-rnti=%d\n", sel_preamble, ra_rnti);
     phy_h->pdcch_dl_search(SRSLTE_RNTI_RAR, ra_rnti, ra_tti+3, ra_tti+3+responseWindowSize);
     state = RESPONSE_RECEPTION;
@@ -252,7 +253,7 @@ void ra_proc::step_pdcch_setup() {
 void ra_proc::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t* action) 
 {
   if (grant.n_bytes < MAX_RAR_PDU_LEN) {
-    rInfo("DL grant found RA-RNTI=%d\n", ra_rnti);        
+    rDebug("DL grant found RA-RNTI=%d\n", ra_rnti);        
     action->decode_enabled = true; 
     action->default_ack = false; 
     action->generate_ack = false; 
@@ -291,7 +292,6 @@ void ra_proc::tb_decoded_ok() {
   
   while(rar_pdu_msg.next()) {
     if (rar_pdu_msg.get()->get_rapid() == sel_preamble) {
-      rInfo("Received RAPID=%d\n", sel_preamble);
 
       rar_received = true; 
       process_timeadv_cmd(rar_pdu_msg.get()->get_ta_cmd());
@@ -305,6 +305,8 @@ void ra_proc::tb_decoded_ok() {
       phy_h->pdcch_dl_search_reset();
       
       phy_h->set_rar_grant(rar_grant_tti, grant);          
+      
+      rInfo("RAPID=%d, TA=%d\n", sel_preamble, rar_pdu_msg.get()->get_ta_cmd()); 
       
       if (preambleIndex > 0) {
         // Preamble selected by Network
@@ -322,7 +324,7 @@ void ra_proc::tb_decoded_ok() {
           
           // If we have a C-RNTI, tell Mux unit to append C-RNTI CE if no CCCH SDU transmission
           if (transmitted_crnti) {
-            Info("Appending C-RNTI MAC CE in next transmission\n");
+            rDebug("Appending C-RNTI MAC CE in next transmission\n");
             mux_unit->append_crnti_ce_next_tx(transmitted_crnti);
             phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, transmitted_crnti);
             phy_h->pdcch_dl_search(SRSLTE_RNTI_USER, transmitted_crnti);
@@ -347,7 +349,7 @@ void ra_proc::step_response_reception() {
   if (ra_tti >= 0 && !rar_received) {
     uint32_t interval = srslte_tti_interval(phy_h->get_current_tti(), ra_tti+3+responseWindowSize); 
     if (interval > 1 && interval < 100) {
-      rInfo("RA response not received within the response window\n");
+      rDebug("RA response not received within the response window\n");
       state = RESPONSE_ERROR;
     }
   }
@@ -360,10 +362,6 @@ void ra_proc::step_response_error() {
     rError("Maximum number of transmissions reached (%d)\n", preambleTransMax);
     rrc->ra_problem();
     state = RA_PROBLEM;
-  } else if (transmitted_crnti) {
-    log_h->console("FIXME: RA in connected state not working\n");
-    rrc->ra_problem();
-    state = RA_PROBLEM;
   } else {
     backoff_interval_start = phy_h->get_current_tti(); 
     if (backoff_param_ms) {
@@ -372,10 +370,10 @@ void ra_proc::step_response_error() {
       backoff_inteval = 0; 
     }
     if (backoff_inteval) {
-      rInfo("Backoff wait interval %d\n", backoff_inteval);
+      rDebug("Backoff wait interval %d\n", backoff_inteval);
       state = BACKOFF_WAIT; 
     } else {
-      rInfo("Transmitting inmediatly (%d/%d)\n", preambleTransmissionCounter, preambleTransMax);
+      rDebug("Transmitting inmediatly (%d/%d)\n", preambleTransmissionCounter, preambleTransMax);
       state = RESOURCE_SELECTION;
     }
   }
@@ -433,7 +431,7 @@ void ra_proc::step_contention_resolution() {
       if ((!started_by_pdcch && pdcch_to_crnti_received == PDCCH_CRNTI_UL_GRANT) || 
             started_by_pdcch && pdcch_to_crnti_received != PDCCH_CRNTI_NOT_RECEIVED) 
       {
-        rInfo("PDCCH for C-RNTI received\n");
+        rDebug("PDCCH for C-RNTI received\n");
         timers_db->get(mac::CONTENTION_TIMER)->stop();
         params_db->set_param(mac_interface_params::RNTI_TEMP, 0);
         state = COMPLETION;           
@@ -455,6 +453,9 @@ void ra_proc::step_contention_resolution() {
 
 void ra_proc::step_completition() {
   log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", 
+                   params_db->get_param(mac_interface_params::RNTI_C), 
+                   rar_pdu_msg.get()->get_ta_cmd());
+  rInfo("Random Access Complete.     c-rnti=%d, ta=%d\n", 
                    params_db->get_param(mac_interface_params::RNTI_C), 
                    rar_pdu_msg.get()->get_ta_cmd());
   params_db->set_param(mac_interface_params::RA_PREAMBLEINDEX, 0);
@@ -508,7 +509,7 @@ void ra_proc::start_mac_order()
   if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = false;
     state = INITIALIZATION;    
-    Info("Starting PRACH by MAC order\n");
+    rInfo("Starting PRACH by MAC order\n");
   }
 }
 
@@ -517,7 +518,7 @@ void ra_proc::start_pdcch_order()
   if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = true;
     state = INITIALIZATION;    
-    Info("Starting PRACH by PDCCH order\n");
+    rInfo("Starting PRACH by PDCCH order\n");
   }
 }
 
@@ -531,7 +532,7 @@ void ra_proc::timer_expired(uint32_t timer_id)
 }
 
 void ra_proc::pdcch_to_crnti(bool contains_uplink_grant) {
-  rInfo("PDCCH to C-RNTI received %s UL grant\n", contains_uplink_grant?"with":"without");
+  rDebug("PDCCH to C-RNTI received %s UL grant\n", contains_uplink_grant?"with":"without");
   if (contains_uplink_grant) {
     pdcch_to_crnti_received = PDCCH_CRNTI_UL_GRANT;     
   } else if (pdcch_to_crnti_received == PDCCH_CRNTI_NOT_RECEIVED) {

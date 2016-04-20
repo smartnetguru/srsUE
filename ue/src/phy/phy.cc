@@ -95,7 +95,6 @@ void phy::start_trace()
   for (int i=0;i<nof_workers;i++) {
     workers[i].start_trace();
   }
-  printf("trace started\n");
 }
 
 void phy::write_trace(std::string filename)
@@ -120,19 +119,19 @@ void phy::get_metrics(phy_metrics_t &m) {
   int ul_tbs = srslte_ra_tbs_from_idx(srslte_ra_tbs_idx_from_mcs(m.ul.mcs), workers_common.get_nof_prb());
   m.dl.mabr_mbps = dl_tbs/1000.0; // TBS is bits/ms - convert to mbps
   m.ul.mabr_mbps = ul_tbs/1000.0; // TBS is bits/ms - convert to mbps
-  Info("PHY MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
+  Info("PHY:   MABR estimates. DL: %4.6f Mbps. UL: %4.6f Mbps.\n", m.dl.mabr_mbps, m.ul.mabr_mbps);
 }
 
 void phy::set_timeadv_rar(uint32_t ta_cmd) {
   n_ta = srslte_N_ta_new_rar(ta_cmd);
   sf_recv.set_time_adv_sec(((float) n_ta)*SRSLTE_LTE_TS);
-  Info("Set TA RAR: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
+  Debug("PHY:   Set TA RAR: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
 }
 
 void phy::set_timeadv(uint32_t ta_cmd) {
   n_ta = srslte_N_ta_new(n_ta, ta_cmd);
   sf_recv.set_time_adv_sec(((float) n_ta)*SRSLTE_LTE_TS);  
-  Info("Set TA: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
+  Debug("PHY:   Set TA: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
 }
 
 void phy::set_param(phy_interface_params::phy_param_t param, int64_t value) {
@@ -146,14 +145,12 @@ int64_t phy::get_param(phy_interface_params::phy_param_t param) {
 void phy::configure_prach_params()
 {
   if (sf_recv.status_is_sync()) {
-    Info("Configuring PRACH parameters\n");
+    Debug("Configuring PRACH parameters\n");
     srslte_cell_t cell; 
     sf_recv.get_current_cell(&cell);
     if (!prach_buffer.init_cell(cell)) {
       Error("Configuring PRACH parameters\n");
-    } else {
-      Info("Done\n");
-    }
+    } 
   } else {
     Error("Cell is not synchronized\n");
   }
@@ -161,7 +158,7 @@ void phy::configure_prach_params()
 
 void phy::configure_ul_params(bool pregen_disabled)
 {
-  Info("Configuring UL parameters\n");
+  Info("PHY:   Configuring UL parameters\n");
   for (int i=0;i<nof_workers;i++) {
     workers[i].set_ul_params(pregen_disabled);
   }

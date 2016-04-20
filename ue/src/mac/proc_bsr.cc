@@ -81,13 +81,13 @@ void bsr_proc::timer_expired(uint32_t timer_id) {
       if (triggered_bsr_type == NONE) {
         // Check condition 4 in Sec 5.4.5 
         triggered_bsr_type = PERIODIC; 
-        Info("Triggering Periodic BSR\n");
+        Info("BSR:   Triggering Periodic BSR\n");
       }
       break;
     case mac::BSR_TIMER_RETX:
       // Enable reTx of SR 
       triggered_bsr_type = REGULAR; 
-      Info("Triggering BSR reTX\n");
+      Info("BSR:   Triggering BSR reTX\n");
       sr_is_sent = false; 
       break;      
   }
@@ -117,7 +117,7 @@ bool bsr_proc::check_highest_channel() {
     if (nbytes > last_pending_data[pending_data_lcid]) 
     {
       if (triggered_bsr_type != REGULAR) {        
-        Info("Triggered REGULAR BSR for Max Priority LCID=%d\n", pending_data_lcid);
+        Info("BSR:   Triggered REGULAR BSR for Max Priority LCID=%d\n", pending_data_lcid);
       }
       triggered_bsr_type = REGULAR; 
       return true; 
@@ -154,7 +154,7 @@ bool bsr_proc::check_single_channel() {
     // If there is new data available for this logical channel 
     if (nbytes > last_pending_data[pending_data_lcid]) {
       triggered_bsr_type = REGULAR; 
-      Info("Triggered REGULAR BSR for single LCID=%d\n", pending_data_lcid);
+      Info("BSR:   Triggered REGULAR BSR for single LCID=%d\n", pending_data_lcid);
       return true; 
     } 
   }
@@ -223,7 +223,7 @@ void bsr_proc::step(uint32_t tti)
   {
     timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));
     timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
-    Info("Configured BSR Timer periodic %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));    
+    Info("BSR:   Configured timer periodic %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));    
   }
 
   if (params_db->get_param(mac_interface_params::BSR_TIMER_RETX) != 
@@ -232,7 +232,7 @@ void bsr_proc::step(uint32_t tti)
   {
     timers_db->get(mac::BSR_TIMER_RETX)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
     timers_db->get(mac::BSR_TIMER_RETX)->run();
-    Info("Configured BSR Timer reTX %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
+    Info("BSR:   Configured timer reTX %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
   }
 
   // Check condition 1 in Sec 5.4.5   
@@ -251,7 +251,7 @@ void bsr_proc::step(uint32_t tti)
     for (int i=0;i<MAX_LCID;i++) {
       sprintf(str, "%s%d (%d), ", str, rlc->get_buffer_state(i), last_pending_data[i]);
     }
-    Info("QUEUE status: %s\n", str);
+    Info("BSR:   QUEUE status: %s\n", str);
     last_print = tti; 
   }
   
@@ -300,7 +300,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
     if (total_data <= grant_size && total_data + 1 + bsr_sz > grant_size) {
       Debug("Grant is not enough to accomodate the BSR MAC CE\n");
     } else {
-      Info("Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d\n", 
+      Debug("BSR:   Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d\n", 
           grant_size, total_data, bsr_sz);
       ret = true; 
     }    
@@ -331,7 +331,7 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr)
     }
     generate_bsr(bsr, nof_padding_bytes);
     ret = true; 
-    Info("Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
+    Debug("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
            bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes);
     
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
@@ -357,7 +357,7 @@ bool bsr_proc::need_to_send_sr() {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
     reset_sr = false; 
     sr_is_sent = true; 
-    Info("Need to send sr: sr_is_sent=true, reset_sr=false\n");
+    Debug("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false\n");
     return true; 
   } 
   return false; 

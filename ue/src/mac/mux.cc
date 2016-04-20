@@ -244,7 +244,7 @@ bool mux::allocate_sdu(uint32_t lcid, srsue::sch_pdu* pdu_msg, int max_sdu_sz, u
             *sdu_sz = sdu_len; 
           }
           
-          Info("Allocated SDU lcid=%d nbytes=%d, buffer_state=%d, grant_size=%d, remaining_size=%d\n", 
+          Debug("Allocated SDU lcid=%d nbytes=%d, buffer_state=%d, grant_size=%d, remaining_size=%d\n", 
                  lcid, sdu_len, buffer_state, pdu_msg->get_pdu_len(), pdu_msg->rem_size());
           return true;               
         } else {
@@ -262,7 +262,7 @@ bool mux::allocate_sdu(uint32_t lcid, srsue::sch_pdu* pdu_msg, int max_sdu_sz, u
 
 void mux::msg3_flush()
 {
-  Info("Msg3 buffer flushed\n");
+  Debug("Msg3 buffer flushed\n");
   msg3_buff.flush();
   msg3_has_been_transmitted = false; 
 }
@@ -295,7 +295,7 @@ bool mux::pdu_move_to_msg3(uint32_t pdu_sz)
 uint8_t* mux::msg3_get(uint8_t *payload, uint32_t pdu_sz)
 {
   if (msg3_buff.isempty()) {
-    Info("Moving PDU from Mux unit to Msg3 buffer\n");
+    Debug("Moving PDU from Mux unit to Msg3 buffer\n");
     if (!pdu_move_to_msg3(pdu_sz)) {
       Error("Moving PDU from Mux unit to Msg3 buffer\n");
       return NULL;

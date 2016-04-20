@@ -64,14 +64,14 @@ void sr_proc::step(uint32_t tti)
           int last_tx_tti = phy_h->sr_last_tx_tti(); 
           if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4 || sr_counter == 0) {
             sr_counter++;
-            Info("SR signalling PHY. sr_counter=%d, PHY TTI=%d\n", sr_counter, phy_h->get_current_tti());
+            Info("SR:    Signalling PHY sr_counter=%d\n", sr_counter);
             phy_h->sr_send();
           }
         } else {
           int last_tx_tti = phy_h->sr_last_tx_tti(); 
           if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4) {
-            Info("Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d, tx=%d, now=%d\n", 
-                 sr_counter, dsr_transmax, last_tx_tti, tti);
+            Info("SR:    Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", 
+                 sr_counter, dsr_transmax);
             log_h->console("Scheduling request failed: releasing RRC connection...\n");
             rrc->release_pucch_srs();
             do_ra = true; 
@@ -79,7 +79,7 @@ void sr_proc::step(uint32_t tti)
           }
         }
       } else {
-        Info("SR PUCCH not configured. Starting RA procedure\n");
+        Info("SR:    PUCCH not configured. Starting RA procedure\n");
         do_ra = true; 
         reset();
       }
@@ -106,7 +106,7 @@ void sr_proc::start()
       is_pending_sr = true; 
     }
     dsr_transmax = params_db->get_param(mac_interface_params::SR_TRANS_MAX);
-    Info("SR starting dsrTransMax=%d. sr_counter=%d\n", dsr_transmax, sr_counter);
+    Debug("SR:    Starting Procedure. dsrTransMax=%d\n", dsr_transmax);
   }
 }
 

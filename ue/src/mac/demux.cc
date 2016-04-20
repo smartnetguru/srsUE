@@ -194,7 +194,7 @@ void demux::process_sch_pdu(sch_pdu *pdu_msg)
   while(pdu_msg->next()) {
     if (pdu_msg->get()->is_sdu()) {
       // Route logical channel 
-      Info("Delivering PDU for lcid=%d, %d bytes\n", pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_payload_size());
+      Debug("Delivering PDU for lcid=%d, %d bytes\n", pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_payload_size());
       rlc->write_pdu(pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_sdu_ptr(), pdu_msg->get()->get_payload_size());      
     } else {
       // Process MAC Control Element
@@ -216,7 +216,7 @@ bool demux::process_ce(sch_subh *subh) {
       // Start or restart timeAlignmentTimer
       timers_db->get(mac::TIME_ALIGNMENT)->reset();
       timers_db->get(mac::TIME_ALIGNMENT)->run();
-      Info("Received time advance command %d\n", subh->get_ta_cmd());
+      Debug("Received time advance command %d\n", subh->get_ta_cmd());
       break;
     case sch_subh::PADDING:
       break;

@@ -284,7 +284,7 @@ int phch_recv::sync_sfn(void) {
   if (ret == 1) {
     if (srslte_ue_sync_get_sfidx(&ue_sync) == 0) {
       int sfn_offset=0;
-      Info("SYNC_SFN: Decoding MIB...\n");
+      Info("SYNC:  Decoding MIB...\n");
       int n = srslte_ue_mib_decode(&ue_mib, sf_buffer, bch_payload, NULL, &sfn_offset);
       if (n < 0) {
         Error("Error decoding MIB while synchronising SFN");      
@@ -297,13 +297,13 @@ int phch_recv::sync_sfn(void) {
         tti = sfn*10;
         
         srslte_ue_sync_decode_sss_on_track(&ue_sync, true);
-        Info("SYNC_SFN: DONE, TTI=%d, sfn_offset=%d\n", tti, sfn_offset);
+        Info("SYNC:  DONE, TTI=%d, sfn_offset=%d\n", tti, sfn_offset);
         srslte_ue_mib_reset(&ue_mib);
         return 1;
       }
     }    
   } else {
-    Info("SYNC_SFN: PSS/SSS not found...\n");
+    Info("SYNC:  PSS/SSS not found...\n");
   }
   return 0;
 }
@@ -334,7 +334,7 @@ void phch_recv::run_thread()
 
           radio_h->set_rx_srate(srate);
           radio_h->set_tx_srate(srate);
-          Info("Cell found. Synchronizing...\n");
+          Info("SYNC:  Cell found. Synchronizing...\n");
           phy_state = SYNCING;
           sync_sfn_cnt = 0; 
           srslte_ue_mib_reset(&ue_mib);
@@ -412,9 +412,6 @@ void phch_recv::run_thread()
             if (prach_buffer->is_ready_to_send(tti)) {
               srslte_timestamp_t cur_time; 
               radio_h->get_time(&cur_time);
-              Info("TX PRACH now. RX time: %d:%f, Now: %d:%f\n", rx_time.full_secs, rx_time.frac_secs, 
-                   cur_time.full_secs, cur_time.frac_secs);
-              // send prach if we have to 
               prach_buffer->send(radio_h, metrics.cfo/15000, worker_com->pathloss, tx_time_prach);
               radio_h->tx_end();            
               worker_com->p0_preamble = prach_buffer->get_p0_preamble();
