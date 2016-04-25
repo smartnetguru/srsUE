@@ -30,4 +30,5 @@ target_link_libraries(ue    srsue_upper
                             srsue_phy
                             srsue_radio
                             lte
+                            ${CMAKE_THREAD_LIBS_INIT}
                             ${Boost_LIBRARIES})

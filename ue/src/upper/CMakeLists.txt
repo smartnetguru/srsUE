@@ -19,4 +19,4 @@
 
 file(GLOB SOURCES "*.cc")
 add_library(srsue_upper ${SOURCES})
-target_link_libraries(srsue_upper srsue_common lte ${SRSLTE_LIBRARY} ${Boost_LIBRARIES})
+target_link_libraries(srsue_upper srsue_common lte ${SRSLTE_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})

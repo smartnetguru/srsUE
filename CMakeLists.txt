@@ -102,6 +102,7 @@ endif()
 ########################################################################
 # Find dependencies
 ########################################################################
+find_package(Threads REQUIRED)
 find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
 
