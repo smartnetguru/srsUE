@@ -36,7 +36,7 @@
 #include "upper/rlc_common.h"
 #include <boost/thread/mutex.hpp>
 #include <map>
-#include <queue>
+#include <set>
 
 namespace srsue {
 
@@ -92,7 +92,7 @@ private:
 
   // Tx and Rx windows
   std::map<uint32_t, rlc_amd_tx_pdu_t>  tx_window;
-  std::queue<uint32_t>                  retx_queue;
+  std::set<uint32_t>                    retx_set;
   std::map<uint32_t, rlc_amd_rx_pdu_t>  rx_window;
 
   // RX SDU buffers
