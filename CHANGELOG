@@ -18,6 +18,7 @@ Change Log for Releases
 
   
 ## 001.001.000
+
 * Added support for BladeRF
 * Added paging support, RRC reconnection
 * Improved overall stability
