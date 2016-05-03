@@ -77,7 +77,8 @@ void* thread_loop_hex(void *a) {
 }
 
 void write(std::string filename) {
-  logger l(filename);
+  logger l;
+  l.init(filename);
   pthread_t threads[NTHREADS];
   args_t    args[NTHREADS];
   for(int i=0;i<NTHREADS;i++) {
