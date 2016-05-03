@@ -141,7 +141,7 @@ void rlc_am::reset()
 
   // Drop all messages in RETX queue
   while(retx_queue.size() > 0)
-    retx_queue.pop();
+    retx_queue.pop_front();
 
 }
 
@@ -303,7 +303,7 @@ int rlc_am::prepare_status()
   while(RX_MOD_BASE(i) < RX_MOD_BASE(vr_ms))
   {
     if(rx_window.find(i) == rx_window.end())
-      status.nack_sn[status.N_nack++] = i;
+      status.nacks[status.N_nack++].nack_sn = i;
     i = (i + 1)%MOD;
   }
 
@@ -350,7 +350,7 @@ int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
       tx_window[sn].buf->msg[0] &= ~(1 << 5); // Clear polling bit directly in PDU
     }
     memcpy(payload, tx_window[sn].buf->msg, tx_window[sn].buf->N_bytes);
-    retx_queue.pop();
+    retx_queue.pop_front();
     tx_window[sn].retx_count++;
     if(tx_window[sn].retx_count >= max_retx_thresh)
       rrc->max_retx_attempted();
@@ -415,7 +415,10 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
-    pdu_space -= to_move;
+    if(pdu_space > to_move)
+      pdu_space -= to_move;
+    else
+      pdu_space = 0;
     header.fi |= RLC_FI_FIELD_NOT_START_ALIGNED; // First byte does not correspond to first byte of SDU
   }
 
@@ -440,7 +443,10 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
       pool->deallocate(tx_sdu);
       tx_sdu = NULL;
     }
-    pdu_space -= to_move;
+    if(pdu_space > to_move)
+      pdu_space -= to_move;
+    else
+      pdu_space = 0;
   }
 
   if(tx_sdu)
@@ -517,8 +523,11 @@ void rlc_am::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   pdu.buf->msg += header_len;
   pdu.buf->N_bytes -= header_len;
   pdu.header = header;
-  if(!pdu.header.rf)
+  if(!pdu.header.rf) {
     pdu.pdu_complete = true;
+  }else{
+    log->warning("RX PDU segment not handled\n");
+  }
   rx_window[header.sn] = pdu;
 
   // Update vr_h
@@ -594,15 +603,22 @@ void rlc_am::handle_control_pdu(uint8_t *payload, uint32_t nof_bytes)
         TX_MOD_BASE(i) < TX_MOD_BASE(vt_s))
   {
     std::map<uint32_t, rlc_amd_tx_pdu_t>::iterator it;
+    std::deque<uint32_t>::iterator q_it;
     if(rlc_am_status_has_nack(&status, i))
     {
+      //NACKed SNs go into retx_queue
       update_vt_a = false;
       it = tx_window.find(i);
       if(tx_window.end() != it)
       {
-        retx_queue.push(i);
+        q_it = find(retx_queue.begin(), retx_queue.end(), i);
+        if(q_it == retx_queue.end())
+        {
+          retx_queue.push_back(i);
+        }
       }
     }else{
+      //ACKed SNs get marked and removed from tx_window if possible
       it = tx_window.find(i);
       if(tx_window.end() != it)
       {
@@ -687,7 +703,7 @@ bool rlc_am::inside_rx_window(uint16_t sn)
 
 void rlc_am::debug_state()
 {
-  log->debug("%s vt_a = %d, vt_ms = %d, vt_s = %d, poll_sn = %d \n"
+  log->debug("%s vt_a = %d, vt_ms = %d, vt_s = %d, poll_sn = %d "
              "vr_r = %d, vr_mr = %d, vr_x = %d, vr_ms = %d, vr_h = %d\n",
              rb_id_text[lcid], vt_a, vt_ms, vt_s, poll_sn,
              vr_r, vr_mr, vr_x, vr_ms, vr_h);
@@ -844,14 +860,16 @@ void rlc_am_read_status_pdu(uint8_t *payload, uint32_t nof_bytes, rlc_status_pdu
       status->N_nack  = 0;
       while(ext1)
       {
-        status->nack_sn[status->N_nack++] = srslte_bit_pack(&ptr, 10);
+        status->nacks[status->N_nack].nack_sn = srslte_bit_pack(&ptr, 10);
         ext1 = srslte_bit_pack(&ptr, 1);  // 1 bits E1
         ext2 = srslte_bit_pack(&ptr, 1);  // 1 bits E2
         if(ext2)
         {
-          // TODO: skipping resegmentation for now
-          srslte_bit_pack(&ptr, 30); // 15-bit SOstart + 15-bit SOend
+          status->nacks[status->N_nack].has_so = true;
+          status->nacks[status->N_nack].so_start = srslte_bit_pack(&ptr, 15);
+          status->nacks[status->N_nack].so_end   = srslte_bit_pack(&ptr, 15);
         }
+        status->N_nack++;
       }
     }
   }
@@ -876,11 +894,16 @@ int rlc_am_write_status_pdu(rlc_status_pdu_t *status, uint8_t *payload)
   srslte_bit_unpack(ext1,                     &ptr, 1);  // E1
   for(i=0;i<status->N_nack;i++)
   {
-    srslte_bit_unpack(status->nack_sn[i],     &ptr, 10); // 10 bit NACK_SN
+    srslte_bit_unpack(status->nacks[i].nack_sn, &ptr, 10); // 10 bit NACK_SN
     ext1 = ((status->N_nack-1) == i) ? 0 : 1;
-    srslte_bit_unpack(ext1,                   &ptr, 1);  // E1
-    srslte_bit_unpack(0   ,                   &ptr, 1);  // E2
-    // TODO: skipping resegmentation for now
+    srslte_bit_unpack(ext1, &ptr, 1);  // E1
+    if(status->nacks[i].has_so) {
+      srslte_bit_unpack(1 , &ptr, 1);  // E2
+      srslte_bit_unpack(status->nacks[i].so_start , &ptr, 15);
+      srslte_bit_unpack(status->nacks[i].so_end   , &ptr, 15);
+    }else{
+      srslte_bit_unpack(0 , &ptr, 1);  // E2
+    }
   }
 
   // Pad
@@ -904,8 +927,17 @@ uint32_t rlc_am_packed_length(rlc_amd_pdu_header_t *header)
 
 uint32_t rlc_am_packed_length(rlc_status_pdu_t *status)
 {
+  uint32_t i;
   uint32_t len_bits = 15;                 // Fixed part is 15 bits
-  len_bits += status->N_nack*12;          // Each nack is 12 bits (10 bits + 2 ext bits)
+  for(i=0;i<status->N_nack;i++)
+  {
+    if(status->nacks[i].has_so) {
+      len_bits += 42;      // 10 bits SN, 2 bits ext, 15 bits so_start, 15 bits so_end
+    }else{
+      len_bits += 12;      // 10 bits SN, 2 bits ext
+    }
+  }
+
   return (len_bits+7)/8;                  // Convert to bytes - integer rounding up
 }
 
@@ -922,7 +954,7 @@ bool rlc_am_is_control_pdu(uint8_t *payload)
 bool rlc_am_status_has_nack(rlc_status_pdu_t *status, uint32_t sn)
 {
   for(int i=0;i<status->N_nack;i++)
-    if(status->nack_sn[i] == sn)
+    if(status->nacks[i].nack_sn == sn)
       return true;
   return false;
 }
@@ -937,7 +969,7 @@ std::string rlc_am_to_string(rlc_status_pdu_t *status)
     ss << ", NACK_SN = ";
     for(int i=0; i<status->N_nack; i++)
     {
-      ss << "[" << status->nack_sn[i] << "]";
+      ss << "[" << status->nacks[i].nack_sn << "]";
     }
   }
   return ss.str();

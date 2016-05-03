@@ -113,11 +113,21 @@ struct rlc_amd_pdu_header_t{
   }
 };
 
+// NACK helper
+struct rlc_status_nack_t{
+  uint16_t nack_sn;
+  bool     has_so;
+  uint16_t so_start;
+  uint16_t so_end;
+
+  rlc_status_nack_t(){has_so=false;}
+};
+
 // STATUS PDU
 struct rlc_status_pdu_t{
-  uint32_t N_nack;
-  uint16_t ack_sn;
-  uint16_t nack_sn[RLC_AM_WINDOW_SIZE];
+  uint16_t          ack_sn;
+  uint32_t          N_nack;
+  rlc_status_nack_t nacks[RLC_AM_WINDOW_SIZE];
 
   rlc_status_pdu_t(){N_nack=0;}
 };
