@@ -139,9 +139,8 @@ void rlc_am::reset()
   }
   tx_window.clear();
 
-  // Drop all messages in RETX queue
-  while(retx_queue.size() > 0)
-    retx_queue.pop();
+  // Drop all messages in RETX set
+  retx_set.clear();
 
 }
 
@@ -179,8 +178,17 @@ uint32_t rlc_am::get_buffer_state()
     return prepare_status();
 
   // Bytes needed for retx
-  if(retx_queue.size() > 0)
-    return tx_window[retx_queue.front()].buf->N_bytes;
+  if(!retx_set.empty()) {
+    std::set<uint32_t>::const_iterator const retx_it = retx_set.begin();
+    std::map<uint32_t, rlc_amd_tx_pdu_t>::iterator const tx_it =
+      tx_window.find(*retx_it);
+    if (tx_window.end() != tx_it) {
+      return tx_it->second.buf->N_bytes;      
+    } else {
+      log->warning("tx_window %u not found\n", (unsigned) *retx_it);
+      return 0; 
+    }
+  }
 
   // Bytes needed for tx SDUs
   uint32_t n_sdus  = tx_sdu_queue.size();
@@ -213,7 +221,7 @@ int rlc_am::read_pdu(uint8_t *payload, uint32_t nof_bytes)
     return build_status_pdu(payload, nof_bytes);
 
   // RETX if required
-  if(retx_queue.size() > 0)
+  if(!retx_set.empty())
     return build_retx_pdu(payload, nof_bytes);
 
   // Build a PDU from SDUs
@@ -329,7 +337,8 @@ int  rlc_am::build_status_pdu(uint8_t *payload, uint32_t nof_bytes)
 
 int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
-  uint32_t sn = retx_queue.front();
+  std::set<uint32_t>::const_iterator const retx_it = retx_set.begin();
+  uint32_t const sn = *retx_it;
   if(tx_window[sn].buf->N_bytes <= nof_bytes)
   {
     pdu_without_poll++;
@@ -345,7 +354,7 @@ int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
       tx_window[sn].buf->msg[0] &= ~(1 << 5); // Clear polling bit directly in PDU
     }
     memcpy(payload, tx_window[sn].buf->msg, tx_window[sn].buf->N_bytes);
-    retx_queue.pop();
+    retx_set.erase(retx_it);
     tx_window[sn].retx_count++;
     if(tx_window[sn].retx_count >= max_retx_thresh)
       rrc->max_retx_attempted();
@@ -595,7 +604,7 @@ void rlc_am::handle_control_pdu(uint8_t *payload, uint32_t nof_bytes)
       it = tx_window.find(i);
       if(tx_window.end() != it)
       {
-        retx_queue.push(i);
+        retx_set.insert(i);
       }
     }else{
       it = tx_window.find(i);
