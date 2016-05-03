@@ -39,10 +39,6 @@ logger::logger()
   ,not_done(true)
 {}
 
-logger::logger(std::string file) {
-  init(file);
-}
-
 logger::~logger() {
   not_done = false;
   log("Closing log");
