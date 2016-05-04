@@ -102,9 +102,22 @@ endif()
 ########################################################################
 # Find dependencies
 ########################################################################
-find_package(Threads REQUIRED)
-find_package(Polarssl REQUIRED)
 find_package(srsLTE REQUIRED)
+find_package(Threads REQUIRED)
+find_package(Polarssl)
+
+if (POLARSSL_FOUND) 
+  set(${POLAR_INCLUDE_DIRS} ${POLARSSL_INCLUDE_DIRS})
+  set(${POLAR_LIBRARIES} ${POLARSSL_LIBRARIES})
+else(POLARSSL_FOUND) 
+  find_package(MbedTLS)
+  if (MBEDTLS_FOUND) 
+    set(${POLAR_INCLUDE_DIRS} ${MBEDTLS_INCLUDE_DIRS})
+    set(${POLAR_LIBRARIES} ${MBEDTLS_LIBRARIES})
+  else(MBEDTLS_FOUND) 
+    message(FATAL_ERROR "Either polarssl or mbedtls with 1.2 compatibility is required to compile srsUE")
+  endif (MBEDTLS_FOUND) 
+endif(POLARSSL_FOUND)
 
 if(ENABLE_GUI)
     find_package(SRSGUI)
@@ -120,13 +133,13 @@ endif(ENABLE_GUI)
 ########################################################################
 include_directories(
     ${Boost_INCLUDE_DIRS}
-    ${POLARSSL_INCLUDE_DIRS}
+    ${POLAR_INCLUDE_DIRS}
     ${SRSLTE_INCLUDE_DIRS}
 )
 
 link_directories(
     ${Boost_LIBRARY_DIRS}
-    ${POLARSSL_LIBRARY_DIRS}
+    ${POLAR_LIBRARY_DIRS}
     ${SRSLTE_LIBRARY_DIRS}
 )
 
