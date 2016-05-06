@@ -58,10 +58,10 @@ int main(int argc, char **argv) {
   rlc_am_read_status_pdu(&b1, &s);
   assert(s.ack_sn == 8);
   assert(s.N_nack == 4);
-  assert(s.nack_sn[0] == 0);
-  assert(s.nack_sn[1] == 1);
-  assert(s.nack_sn[2] == 3);
-  assert(s.nack_sn[3] == 4);
+  assert(s.nacks[0].nack_sn == 0);
+  assert(s.nacks[1].nack_sn == 1);
+  assert(s.nacks[2].nack_sn == 3);
+  assert(s.nacks[3].nack_sn == 4);
   rlc_am_write_status_pdu(&s, &b2);
   assert(b2.N_bytes == PDU2_LEN);
   for(int i=0;i<b2.N_bytes;i++)
