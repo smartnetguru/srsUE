@@ -40,6 +40,7 @@ bool radio::init(char *args, char *devname)
     return false;
   }
   
+  tx_adv_negative = false; 
   agc_enabled = false; 
   burst_preamble_samples = 0; 
   burst_preamble_time_rounded = 0; 
@@ -80,7 +81,15 @@ void radio::set_burst_preamble(double preamble_us)
 void radio::set_tx_adv(uint32_t nsamples)
 {
   tx_adv_auto = false;
-  tx_adv_nsamples = nsamples;;
+  tx_adv_nsamples = nsamples;
+  if (!nsamples) {
+    tx_adv_sec = 0; 
+  }
+  
+}
+
+void radio::set_tx_adv_neg(bool tx_adv_is_neg) {
+  tx_adv_negative = tx_adv_is_neg; 
 }
 
 void radio::tx_offset(int offset_)
@@ -150,7 +159,11 @@ bool radio::has_rssi()
 
 bool radio::tx(void* buffer, uint32_t nof_samples, srslte_timestamp_t tx_time)
 {
-  srslte_timestamp_sub(&tx_time, 0, tx_adv_sec);
+  if (!tx_adv_negative) {
+    srslte_timestamp_sub(&tx_time, 0, tx_adv_sec);
+  } else {
+    srslte_timestamp_add(&tx_time, 0, tx_adv_sec);
+  }
   
   if (is_start_of_burst) {
     if (burst_preamble_samples != 0) {
