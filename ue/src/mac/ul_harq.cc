@@ -58,7 +58,7 @@ uint32_t ul_harq_entity::pidof(uint32_t tti) {
   return (uint32_t) tti%NOF_HARQ_PROC;  
 }
 
-void ul_harq_entity::start_pcap(mac_pcap* pcap_)
+void ul_harq_entity::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
 }

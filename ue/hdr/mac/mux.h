@@ -33,7 +33,7 @@
 #include "common/log.h"
 #include "common/mac_interface.h"
 #include "mac/mac_params.h"
-#include "mac/pdu.h"
+#include "common/pdu.h"
 #include "mac/proc_bsr.h"
 #include "mac/proc_phr.h"
 
@@ -41,7 +41,7 @@
 
 
 namespace srsue {
-
+  
 class mux
 {
 public:
@@ -64,7 +64,7 @@ public:
       
 private:  
   bool     pdu_move_to_msg3(uint32_t pdu_sz);
-  bool     allocate_sdu(uint32_t lcid, sch_pdu *pdu, int max_sdu_sz, uint32_t *sdu_sz);
+  bool     allocate_sdu(uint32_t lcid, srslte::sch_pdu *pdu, int max_sdu_sz, uint32_t *sdu_sz);
   
   const static int NOF_UL_LCH = 10; 
   const static int MIN_RLC_SDU_LEN = 0; 
@@ -91,7 +91,7 @@ private:
   srslte::qbuff         msg3_buff;
   
   /* PDU Buffer */
-  sch_pdu               pdu_msg; 
+  srslte::sch_pdu    pdu_msg; 
   bool msg3_has_been_transmitted;
   
   

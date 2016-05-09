@@ -38,7 +38,7 @@
 
 #include <stdint.h>
 
-namespace srsue {
+namespace srslte {
   
 class tti_sync
 {

@@ -107,7 +107,7 @@ void demux::push_pdu_temp_crnti(uint32_t pid, uint8_t *buff, uint32_t nof_bytes)
       // Look for Contention Resolution UE ID 
       is_uecrid_successful = false; 
       while(pending_mac_msg.next() && !is_uecrid_successful) {
-        if (pending_mac_msg.get()->ce_type() == sch_subh::CON_RES_ID) {
+        if (pending_mac_msg.get()->ce_type() == srslte::sch_subh::CON_RES_ID) {
           Debug("Found Contention Resolution ID CE\n");
           is_uecrid_successful = uecrid_callback(uecrid_callback_arg, pending_mac_msg.get()->get_con_res_id());
         }
@@ -189,7 +189,7 @@ void demux::process_pdu(uint8_t *mac_pdu, uint32_t nof_bytes)
   Debug("MAC PDU processed\n");
 }
 
-void demux::process_sch_pdu(sch_pdu *pdu_msg)
+void demux::process_sch_pdu(srslte::sch_pdu *pdu_msg)
 {  
   while(pdu_msg->next()) {
     if (pdu_msg->get()->is_sdu()) {
@@ -205,12 +205,12 @@ void demux::process_sch_pdu(sch_pdu *pdu_msg)
   }      
 }
 
-bool demux::process_ce(sch_subh *subh) {
+bool demux::process_ce(srslte::sch_subh *subh) {
   switch(subh->ce_type()) {
-    case sch_subh::CON_RES_ID:
+    case srslte::sch_subh::CON_RES_ID:
       // Do nothing
       break;
-    case sch_subh::TA_CMD:
+    case srslte::sch_subh::TA_CMD:
       phy_h->set_timeadv(subh->get_ta_cmd());
       
       // Start or restart timeAlignmentTimer
@@ -218,7 +218,7 @@ bool demux::process_ce(sch_subh *subh) {
       timers_db->get(mac::TIME_ALIGNMENT)->run();
       Debug("Received time advance command %d\n", subh->get_ta_cmd());
       break;
-    case sch_subh::PADDING:
+    case srslte::sch_subh::PADDING:
       break;
     default:
       Error("MAC CE 0x%x not supported\n", subh->ce_type());

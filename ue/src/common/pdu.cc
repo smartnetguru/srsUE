@@ -28,11 +28,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "mac/pdu.h"
+#include "common/pdu.h"
 #include "srslte/srslte.h"
 
 
-namespace srsue {
+namespace srslte {
    
     
 void sch_pdu::fprint(FILE* stream)
@@ -514,7 +514,7 @@ bool sch_subh::set_ta_cmd(uint8_t ta_cmd)
   }
 }
 
-int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, rlc_interface_mac *rlc)
+int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, srsue::rlc_interface_mac *rlc)
 {
   if (((sch_pdu*)parent)->has_space_sdu(requested_bytes)) {
     lcid = lcid_;

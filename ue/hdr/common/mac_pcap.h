@@ -28,9 +28,9 @@
 #define MACPCAP_H
 
 #include <stdint.h>
-#include "mac/pcap.h"
+#include "common/pcap.h"
 
-namespace srsue {
+namespace srslte {
 
 class mac_pcap
 {

@@ -33,7 +33,7 @@
 #include "common/qbuff.h"
 #include "common/timers.h"
 #include "mac/mac_params.h"
-#include "mac/pdu.h"
+#include "common/pdu.h"
 
 /* Logical Channel Demultiplexing and MAC CE dissassemble */   
 
@@ -64,12 +64,12 @@ private:
   bool (*uecrid_callback) (void*, uint64_t);
   void *uecrid_callback_arg; 
   
-  sch_pdu mac_msg;
-  sch_pdu pending_mac_msg;
+  srslte::sch_pdu mac_msg;
+  srslte::sch_pdu pending_mac_msg;
   
   void process_pdu(uint8_t *pdu, uint32_t nof_bytes);
-  void process_sch_pdu(sch_pdu *pdu);
-  bool process_ce(sch_subh *subheader);
+  void process_sch_pdu(srslte::sch_pdu *pdu);
+  bool process_ce(srslte::sch_subh *subheader);
   
   bool       is_uecrid_successful; 
   

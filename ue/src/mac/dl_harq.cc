@@ -63,7 +63,7 @@ bool dl_harq_entity::init(srslte::log* log_h_, mac_params *params_db_, srslte::t
 
 }
 
-void dl_harq_entity::start_pcap(mac_pcap* pcap_)
+void dl_harq_entity::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
 }

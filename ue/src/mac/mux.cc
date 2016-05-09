@@ -113,14 +113,14 @@ void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint
   }  
 }
 
-sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
+srslte::sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
   switch(format) {
     case bsr_proc::LONG_BSR: 
-      return sch_subh::LONG_BSR;
+      return srslte::sch_subh::LONG_BSR;
     case bsr_proc::SHORT_BSR: 
-      return sch_subh::SHORT_BSR;
+      return srslte::sch_subh::SHORT_BSR;
     case bsr_proc::TRUNC_BSR: 
-      return sch_subh::TRUNC_BSR;   
+      return srslte::sch_subh::TRUNC_BSR;   
   }
 }
 
@@ -220,7 +220,7 @@ void mux::append_crnti_ce_next_tx(uint16_t crnti) {
 }
 
 
-bool mux::allocate_sdu(uint32_t lcid, srsue::sch_pdu* pdu_msg, int max_sdu_sz, uint32_t* sdu_sz) 
+bool mux::allocate_sdu(uint32_t lcid, srslte::sch_pdu* pdu_msg, int max_sdu_sz, uint32_t* sdu_sz) 
 {
  
   // Get n-th pending SDU pointer and length

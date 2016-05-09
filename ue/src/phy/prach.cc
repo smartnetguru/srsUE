@@ -132,8 +132,7 @@ bool prach::is_ready_to_send(uint32_t current_tti_) {
   if (initiated && preamble_idx >= 0 && preamble_idx < 64 && params_db != NULL) {
     // consider the number of subframes the transmission must be anticipated 
     uint32_t current_tti = (current_tti_ + tx_advance_sf)%10240;
-    uint32_t config_idx = (uint32_t) params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX); 
-    if (srslte_prach_send_tti(config_idx, current_tti, allowed_subframe)) {
+    if (srslte_prach_tti_opportunity(&prach_obj, current_tti, allowed_subframe)) {
       Debug("PRACH Buffer: Ready to send at tti: %d (now is %d)\n", current_tti, current_tti_);
       transmitted_tti = current_tti; 
       return true; 

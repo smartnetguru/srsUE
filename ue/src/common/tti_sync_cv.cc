@@ -29,7 +29,7 @@
 #include "common/tti_sync_cv.h"
 
 
-namespace srsue {
+namespace srslte {
 
   tti_sync_cv::tti_sync_cv(uint32_t modulus): tti_sync(modulus)
   {

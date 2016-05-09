@@ -36,7 +36,7 @@
 
 #include "common/log.h"
 #include "mac/mac.h"
-#include "mac/pcap.h"
+#include "common/pcap.h"
 
 
 namespace srsue {
@@ -90,7 +90,7 @@ void mac::stop()
   wait_thread_finish();
 }
 
-void mac::start_pcap(mac_pcap* pcap_)
+void mac::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
   dl_harq.start_pcap(pcap);

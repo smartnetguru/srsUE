@@ -32,7 +32,7 @@
 #include "mac/mac_params.h"
 #include "mac/mux.h"
 #include "mac/ul_sps.h"
-#include "mac/mac_pcap.h"
+#include "common/mac_pcap.h"
 #include "common/timers.h"
 
 /* Uplink HARQ entity as defined in 5.4.2 of 36.321 */
@@ -52,7 +52,7 @@ public:
   void reset();
   void reset_ndi();
 
-  void start_pcap(mac_pcap* pcap);
+  void start_pcap(srslte::mac_pcap* pcap);
 
   
   /***************** PHY->MAC interface for UL processes **************************/
@@ -122,7 +122,7 @@ private:
   ul_harq_process proc[NOF_HARQ_PROC];
   srslte::log     *log_h;
   mac_params      *params_db; 
-  mac_pcap        *pcap; 
+  srslte::mac_pcap *pcap; 
 };
 
 } // namespace srsue
