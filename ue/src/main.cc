@@ -127,6 +127,14 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             bpo::value<int>(&args->expert.cqi_fixed)->default_value(-1), 
             "Fixes the reported CQI to a constant value. Default disabled.")
         
+        ("expert.snr_ema_coeff",         
+            bpo::value<float>(&args->expert.snr_ema_coeff)->default_value(0.1), 
+            "Sets the SNR exponential moving average coefficient (Default 0.1)")
+        
+        ("expert.snr_estim_alg",         
+            bpo::value<string>(&args->expert.snr_estim_alg)->default_value("pss"), 
+            "Sets the noise estimation algorithm. (Default pss)")
+        
         ("expert.pdsch_max_its",         
             bpo::value<int>(&args->expert.pdsch_max_its)->default_value(4), 
             "Maximum number of turbo decoder iterations")

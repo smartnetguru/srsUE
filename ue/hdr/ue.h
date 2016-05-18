@@ -117,6 +117,8 @@ typedef struct {
   int cqi_max; 
   int cqi_offset; 
   int cqi_fixed; 
+  float snr_ema_coeff; 
+  std::string snr_estim_alg; 
   bool cfo_integer_enabled; 
   float cfo_correct_tol_hz; 
   int time_correct_period; 
