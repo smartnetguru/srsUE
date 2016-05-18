@@ -208,6 +208,18 @@ void ue::set_expert_parameters() {
   
   phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
   phy.set_param(phy_interface_params::CQI_MAX, args->expert.cqi_max);      
+  phy.set_param(phy_interface_params::CQI_OFFSET, args->expert.cqi_offset);      
+  phy.set_param(phy_interface_params::CQI_FIXED, args->expert.cqi_fixed);
+  
+  if (!args->expert.snr_estim_alg.compare("refs")) {
+    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 1);
+  } else if (!args->expert.snr_estim_alg.compare("empty")) {
+    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 2);
+  } else {
+    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 0);
+  }
+  
+  phy.set_param(phy_interface_params::SNR_EMA_COEFF_100, 100*args->expert.snr_ema_coeff);      
   phy.set_param(phy_interface_params::PDSCH_MAX_ITS, args->expert.pdsch_max_its);
   phy.set_param(phy_interface_params::FORCE_ENABLE_64QAM, args->expert.attach_enable_64qam?1:0);
     

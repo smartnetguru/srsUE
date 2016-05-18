@@ -299,6 +299,18 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
     } else if (w_coeff == 0.0) {
       srslte_chest_dl_set_smooth_filter(&ue_dl.chest, NULL, 0); 
     }
+    
+    switch(phy->params_db->get_param(phy_interface_params::SNR_ESTIM_ALG)) {
+      case 1:
+        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_REFS);
+        break;
+      case 2:
+        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_EMPTY);
+        break;
+      default:
+        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_PSS);
+        break;
+    }
   
     if (srslte_ue_dl_decode_fft_estimate(&ue_dl, signal_buffer, tti%10, &cfi) < 0) {
       Error("Getting PDCCH FFT estimate\n");
@@ -594,10 +606,16 @@ void phch_worker::set_uci_periodic_cqi()
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);        
-        int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
-        if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
-          cqi_report.wideband.wideband_cqi = cqi_max;
+        int cqi_fixed = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
+        if (cqi_fixed < 0) {
+          cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
+          cqi_report.wideband.wideband_cqi -= phy->params_db->get_param(phy_interface_params::CQI_OFFSET);          
+          int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
+          if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
+            cqi_report.wideband.wideband_cqi = cqi_max;
+          }
+        } else {
+          cqi_report.wideband.wideband_cqi = cqi_fixed; 
         }
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db);
       }
@@ -884,6 +902,7 @@ int phch_worker::read_pdsch_d(cf_t* pdsch_d)
 
 void phch_worker::update_measurements() 
 {
+  float snr_ema_coeff = (float) phy->params_db->get_param(phy_interface_params::SNR_EMA_COEFF_100)/100;
   if (chest_done) {
     /* Compute ADC/RX gain offset every 20 ms */
     if ((tti%20) == 0 || phy->rx_gain_offset == 0) {
@@ -905,64 +924,60 @@ void phch_worker::update_measurements()
       }
     }
     
-    // Adjust measurements with RX gain offset    
-    if (phy->rx_gain_offset) {
-      // Average RSRQ
-      float cur_rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
-      if (isnormal(cur_rsrq)) {
-        phy->avg_rsrq_db = SRSLTE_VEC_EMA(phy->avg_rsrq_db, cur_rsrq, SNR_FILTER_COEFF);
-      }
-      
-      // Average RSRP
-      float cur_rsrp = srslte_chest_dl_get_rsrp(&ue_dl.chest);
-      if (isnormal(cur_rsrp)) {
-        phy->avg_rsrp = SRSLTE_VEC_EMA(phy->avg_rsrp, cur_rsrp, SNR_FILTER_COEFF);
-      }
-      
-      /* Correct absolute power measurements by RX gain offset */
-      float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-      float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
-      
-      // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
-      if (isnormal(rsrp)) {
-        if (!phy->avg_rsrp_db) {
-          phy->avg_rsrp_db = rsrp;
-        } else {
-          uint32_t k = 4; // Set by RRC reconfiguration message
-          float coeff = pow(0.5,(float) k/4);
-          phy->avg_rsrp_db = SRSLTE_VEC_EMA(phy->avg_rsrp_db, rsrp, coeff);          
-        }    
-      }
-      // Compute PL
-      float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
-      phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
-
-      // Average noise 
-      float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-      if (isnormal(cur_noise)) {
-        if (!phy->avg_noise) {  
-          phy->avg_noise = cur_noise;          
-        } else {
-          phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, SNR_FILTER_COEFF);                      
-        }
-      }
-      
-      // Compute SNR
-      phy->avg_snr_db = 10*log10(phy->avg_rsrp/phy->avg_noise);      
-      
-      // Store metrics
-      dl_metrics.n      = phy->avg_noise;
-      dl_metrics.rsrp   = phy->avg_rsrp_db;
-      dl_metrics.rsrq   = phy->avg_rsrq_db;
-      dl_metrics.rssi   = rssi;
-      dl_metrics.pathloss = phy->pathloss;
-      dl_metrics.sinr   = phy->avg_snr_db;
-      dl_metrics.turbo_iters = srslte_pdsch_last_noi(&ue_dl.pdsch);
-      phy->set_dl_metrics(dl_metrics);
-      
-      phy->set_ul_metrics(ul_metrics);
-
+    // Average RSRQ
+    float cur_rsrq = 10*log10(srslte_chest_dl_get_rsrq(&ue_dl.chest));
+    if (isnormal(cur_rsrq)) {
+      phy->avg_rsrq_db = SRSLTE_VEC_EMA(phy->avg_rsrq_db, cur_rsrq, snr_ema_coeff);
     }
+    
+    // Average RSRP
+    float cur_rsrp = srslte_chest_dl_get_rsrp(&ue_dl.chest);
+    if (isnormal(cur_rsrp)) {
+      phy->avg_rsrp = SRSLTE_VEC_EMA(phy->avg_rsrp, cur_rsrp, snr_ema_coeff);
+    }
+    
+    /* Correct absolute power measurements by RX gain offset */
+    float rsrp = 10*log10(srslte_chest_dl_get_rsrp(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
+    float rssi = 10*log10(srslte_chest_dl_get_rssi(&ue_dl.chest)) + 30 - phy->rx_gain_offset;
+    
+    // TODO: Send UE measurements to RRC where filtering is done. Now do filtering here
+    if (isnormal(rsrp)) {
+      if (!phy->avg_rsrp_db) {
+        phy->avg_rsrp_db = rsrp;
+      } else {
+        uint32_t k = 4; // Set by RRC reconfiguration message
+        float coeff = pow(0.5,(float) k/4);
+        phy->avg_rsrp_db = SRSLTE_VEC_EMA(phy->avg_rsrp_db, rsrp, coeff);          
+      }    
+    }
+    // Compute PL
+    float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
+    phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
+
+    // Average noise 
+    float cur_noise = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+    if (isnormal(cur_noise)) {
+      if (!phy->avg_noise) {  
+        phy->avg_noise = cur_noise;          
+      } else {
+        phy->avg_noise = SRSLTE_VEC_EMA(phy->avg_noise, cur_noise, snr_ema_coeff);                      
+      }
+    }
+    
+    // Compute SNR
+    phy->avg_snr_db = 10*log10(phy->avg_rsrp/phy->avg_noise);      
+    
+    // Store metrics
+    dl_metrics.n      = phy->avg_noise;
+    dl_metrics.rsrp   = phy->avg_rsrp_db;
+    dl_metrics.rsrq   = phy->avg_rsrq_db;
+    dl_metrics.rssi   = rssi;
+    dl_metrics.pathloss = phy->pathloss;
+    dl_metrics.sinr   = phy->avg_snr_db;
+    dl_metrics.turbo_iters = srslte_pdsch_last_noi(&ue_dl.pdsch);
+    phy->set_dl_metrics(dl_metrics);
+    
+    phy->set_ul_metrics(ul_metrics);
   }
 }
 
