@@ -115,6 +115,8 @@ typedef struct {
   int nof_phy_threads;  
   std::string equalizer_mode; 
   int cqi_max; 
+  int cqi_offset; 
+  int cqi_fixed; 
   bool cfo_integer_enabled; 
   float cfo_correct_tol_hz; 
   int time_correct_period; 

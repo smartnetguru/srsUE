@@ -208,6 +208,8 @@ void ue::set_expert_parameters() {
   
   phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
   phy.set_param(phy_interface_params::CQI_MAX, args->expert.cqi_max);      
+  phy.set_param(phy_interface_params::CQI_OFFSET, args->expert.cqi_offset);      
+  phy.set_param(phy_interface_params::CQI_FIXED, args->expert.cqi_fixed);      
   phy.set_param(phy_interface_params::PDSCH_MAX_ITS, args->expert.pdsch_max_its);
   phy.set_param(phy_interface_params::FORCE_ENABLE_64QAM, args->expert.attach_enable_64qam?1:0);
     

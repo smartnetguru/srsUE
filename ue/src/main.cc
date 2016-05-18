@@ -119,6 +119,14 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             bpo::value<int>(&args->expert.cqi_max)->default_value(15), 
             "Upper bound on the maximum CQI to be reported. Default 15.")
         
+        ("expert.cqi_offset",         
+            bpo::value<int>(&args->expert.cqi_offset)->default_value(0), 
+            "Adds a postive or negative offset to the CQI calculated by the UE. Default 0.")
+        
+        ("expert.cqi_fixed",         
+            bpo::value<int>(&args->expert.cqi_fixed)->default_value(-1), 
+            "Fixes the reported CQI to a constant value. Default disabled.")
+        
         ("expert.pdsch_max_its",         
             bpo::value<int>(&args->expert.pdsch_max_its)->default_value(4), 
             "Maximum number of turbo decoder iterations")

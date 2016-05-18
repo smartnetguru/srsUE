@@ -594,10 +594,16 @@ void phch_worker::set_uci_periodic_cqi()
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);        
-        int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
-        if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
-          cqi_report.wideband.wideband_cqi = cqi_max;
+        int cqi_fixed = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
+        if (cqi_fixed < 0) {
+          cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
+          cqi_report.wideband.wideband_cqi -= phy->params_db->get_param(phy_interface_params::CQI_OFFSET);          
+          int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
+          if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
+            cqi_report.wideband.wideband_cqi = cqi_max;
+          }
+        } else {
+          cqi_report.wideband.wideband_cqi = cqi_fixed; 
         }
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db);
       }
