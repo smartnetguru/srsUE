@@ -343,7 +343,7 @@ void retx_test()
   byte_buffer_t pdu_bufs[NBUFS];
   for(int i=0;i<NBUFS;i++)
   {
-    len = rlc1.read_pdu(pdu_bufs[i].msg, 3); // 3 bytes for header + payload
+    len = rlc1.read_pdu(pdu_bufs[i].msg, 3); // 2 byte header + 1 byte payload
     pdu_bufs[i].N_bytes = len;
   }
 
@@ -369,9 +369,11 @@ void retx_test()
   // Write status PDU to RLC1
   rlc1.write_pdu(status_buf.msg, status_buf.N_bytes);
 
+  assert(3 == rlc1.get_buffer_state()); // 2 byte header + 1 byte payload
+
   // Read the retx PDU from RLC1
   byte_buffer_t retx;
-  len = rlc1.read_pdu(retx.msg, 3); // 3 bytes for header + payload
+  len = rlc1.read_pdu(retx.msg, 3); // 2 byte header + 1 byte payload
   retx.N_bytes = len;
 
   // Write the retx PDU to RLC2
@@ -464,6 +466,8 @@ void resegment_test_1()
   // Write status PDU to RLC1
   rlc1.write_pdu(status_buf.msg, status_buf.N_bytes);
 
+  assert(12 == rlc1.get_buffer_state()); // 2 byte header + 10 data
+
   // Read the retx PDU from RLC1 and force resegmentation
   byte_buffer_t retx1;
   len = rlc1.read_pdu(retx1.msg, 9); // 4 byte header + 5 data
@@ -471,6 +475,8 @@ void resegment_test_1()
 
   // Write the retx PDU to RLC2
   rlc2.write_pdu(retx1.msg, retx1.N_bytes);
+
+  assert(9 == rlc1.get_buffer_state()); // 4 byte header + 5 data
 
   // Read the remaining segment
   byte_buffer_t retx2;
@@ -568,12 +574,16 @@ void resegment_test_2()
   // Write status PDU to RLC1
   rlc1.write_pdu(status_buf.msg, status_buf.N_bytes);
 
+  assert(25 == rlc1.get_buffer_state()); // 4 byte header + 20 data
+
   // Read the retx PDU from RLC1 and force resegmentation
   byte_buffer_t retx1;
   retx1.N_bytes = rlc1.read_pdu(retx1.msg, 16); // 6 byte header + 10 data
 
   // Write the retx PDU to RLC2
   rlc2.write_pdu(retx1.msg, retx1.N_bytes);
+
+  assert(16 == rlc1.get_buffer_state()); // 6 byte header + 10 data
 
   // Read the remaining segment
   byte_buffer_t retx2;

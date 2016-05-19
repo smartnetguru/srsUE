@@ -982,38 +982,63 @@ bool rlc_am::add_segment_and_check(rlc_amd_rx_pdu_segments_t *pdu, rlc_amd_rx_pd
 int rlc_am::required_buffer_size(rlc_amd_retx_t retx)
 {
   if(!retx.is_segment){
-    retx.so_start = 0;
-    retx.so_end   = tx_window[retx.sn].buf->N_bytes;
+    return rlc_am_packed_length(&tx_window[retx.sn].header) + tx_window[retx.sn].buf->N_bytes;
   }
 
-  rlc_amd_pdu_header_t tmp_header;
+  // Construct new header
+  rlc_amd_pdu_header_t new_header;
   rlc_amd_pdu_header_t old_header = tx_window[retx.sn].header;
 
-  tmp_header.N_li = 0;
+  new_header.dc   = RLC_DC_FIELD_DATA_PDU;
+  new_header.rf   = 1;
+  new_header.p    = 0;
+  new_header.fi   = RLC_FI_FIELD_NOT_START_OR_END_ALIGNED;
+  new_header.sn   = old_header.sn;
+  new_header.lsf  = 0;
+  new_header.so   = retx.so_start;
+  new_header.N_li = 0;
 
-  // Need to rebuid the li table based on so_start and so_end
-  uint32_t lower    = 0;
-  uint32_t upper    = 0;
-  uint32_t li       = 0;
+  uint32_t head_len  = 0;
+
+  // Need to rebuild the li table & update fi based on so_start and so_end
+  if(retx.so_start != 0 && rlc_am_start_aligned(old_header.fi))
+    new_header.fi &= RLC_FI_FIELD_NOT_END_ALIGNED;   // segment is start aligned
+
+  uint32_t lower     = 0;
+  uint32_t upper     = 0;
+  uint32_t li        = 0;
 
   for(int i=0; i<old_header.N_li; i++) {
+    if(lower >= retx.so_end)
+      break;
+
     upper += old_header.li[i];
-    if(upper > retx.so_start && lower < retx.so_end) {
+
+    head_len    = rlc_am_packed_length(&new_header);
+
+    if(upper > retx.so_start && lower < retx.so_end) {  // Current SDU is needed
       li = upper - lower;
-      if(upper > retx.so_end) {
+      if(upper > retx.so_end)
         li -= upper - retx.so_end;
-      }
-      if(lower < retx.so_start) {
+      if(lower < retx.so_start)
         li -= retx.so_start - lower;
+      if(lower > 0 && lower == retx.so_start)
+        new_header.fi &= RLC_FI_FIELD_NOT_END_ALIGNED;   // segment start is aligned with this SDU
+      if(upper == retx.so_end) {
+        new_header.fi &= RLC_FI_FIELD_NOT_START_ALIGNED; // segment end is aligned with this SDU
       }
-      tmp_header.li[tmp_header.N_li++] = li;
+      new_header.li[new_header.N_li++] = li;
     }
+
     lower += old_header.li[i];
   }
 
-  tmp_header.N_li--; // No li for last segment
+  if(tx_window[retx.sn].buf->N_bytes != retx.so_end) {
+    if(new_header.N_li > 0)
+      new_header.N_li--; // No li for last segment
+  }
 
-  return rlc_am_packed_length(&tmp_header) + (retx.so_end-retx.so_start);
+  return rlc_am_packed_length(&new_header) + (retx.so_end-retx.so_start);
 }
 
 bool rlc_am::retx_queue_has_sn(uint32_t sn)
