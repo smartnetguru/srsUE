@@ -34,6 +34,7 @@
 #define INTERFACES_H
 
 #include "liblte_rrc.h"
+#include "common/interfaces_common.h"
 #include "common/common.h"
 #include "mac_interface.h"
 #include "phy_interface.h"
@@ -195,7 +196,7 @@ public:
 };
 
 //RLC interface for MAC
-class rlc_interface_mac
+class rlc_interface_mac : public srslte::read_pdu_interface
 {
 public:
   /* MAC calls RLC to get buffer state for a logical channel.

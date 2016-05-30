@@ -514,7 +514,7 @@ bool sch_subh::set_ta_cmd(uint8_t ta_cmd)
   }
 }
 
-int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, srsue::rlc_interface_mac *rlc)
+int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, read_pdu_interface *sdu_itf)
 {
   if (((sch_pdu*)parent)->has_space_sdu(requested_bytes)) {
     lcid = lcid_;
@@ -522,7 +522,7 @@ int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, srsue::rlc_inter
     payload = ((sch_pdu*)parent)->get_current_sdu_ptr();
     
     // Copy data and get final number of bytes written to the MAC PDU 
-    int sdu_sz = rlc->read_pdu(lcid, payload, requested_bytes);
+    int sdu_sz = sdu_itf->read_pdu(lcid, payload, requested_bytes);
     
     if (sdu_sz < 0 || sdu_sz > requested_bytes) {
       return -1;
@@ -716,7 +716,7 @@ bool rar_pdu::write_packet(uint8_t* ptr)
   for (int i=0;i<nof_subheaders;i++) {
     subheaders[i].write_payload(&ptr);
   }
-  // Set paddint to zeros (if any) 
+  // Set padding to zeros (if any) 
   bzero(ptr, rem_len*sizeof(uint8_t));
   
   return true; 
