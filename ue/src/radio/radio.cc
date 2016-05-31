@@ -299,7 +299,7 @@ void radio::set_tx_srate(float srate)
       if (srate_khz == 1.92e3) {
         tx_adv_sec = 105*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 52*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 48*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
         tx_adv_sec = 36*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
