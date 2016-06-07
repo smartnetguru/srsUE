@@ -397,7 +397,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
 }
 
 bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload, 
-                               srslte_softbuffer_rx_t* softbuffer, uint32_t rv, uint16_t rnti, uint32_t harq_pid)
+                               srslte_softbuffer_rx_t* softbuffer, int rv, uint16_t rnti, uint32_t harq_pid)
 {
   char timestr[64];
   timestr[0]='\0';
@@ -405,56 +405,60 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
   Debug("DL Buffer TTI %d: Decoding PDSCH\n", tti);
 
   /* Setup PDSCH configuration for this CFI, SFIDX and RVIDX */
-  if (!srslte_ue_dl_cfg_grant(&ue_dl, grant, cfi, tti%10, rv)) {
-    if (ue_dl.pdsch_cfg.grant.mcs.mod > 0 && ue_dl.pdsch_cfg.grant.mcs.tbs >= 0) {
-      
-      float noise_estimate = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
-      
-      if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
-        noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
-      }
-      
-      /* Set decoder iterations */
-      if (phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS) > 0) {
-        srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS));
-      }
+  if (rv >= 0 && rv <= 3) {
+    if (!srslte_ue_dl_cfg_grant(&ue_dl, grant, cfi, tti%10, rv)) {
+      if (ue_dl.pdsch_cfg.grant.mcs.mod > 0 && ue_dl.pdsch_cfg.grant.mcs.tbs >= 0) {
+        
+        float noise_estimate = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
+        
+        if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
+          noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
+        }
+        
+        /* Set decoder iterations */
+        if (phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS) > 0) {
+          srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS));
+        }
 
-      
-#ifdef LOG_EXECTIME
-      struct timeval t[3];
-      gettimeofday(&t[1], NULL);
-#endif
-      
-      bool ack = srslte_pdsch_decode_rnti(&ue_dl.pdsch, &ue_dl.pdsch_cfg, softbuffer, ue_dl.sf_symbols, 
-                                    ue_dl.ce, noise_estimate, rnti, payload) == 0;
-#ifdef LOG_EXECTIME
-      gettimeofday(&t[2], NULL);
-      get_time_interval(t);
-      snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
-#endif
-            
-      /*
-      if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
-	srslte_ue_dl_save_signal(&ue_dl, softbuffer, tti, rv);
-      }*/
-      
-      Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
-             grant->nof_prb, harq_pid, 
-             grant->mcs.tbs/8, grant->mcs.idx, rv, 
-             ack?"OK":"KO", 
-             10*log10(srslte_chest_dl_get_snr(&ue_dl.chest)), 
-             srslte_pdsch_last_noi(&ue_dl.pdsch),
-             timestr);
+        
+  #ifdef LOG_EXECTIME
+        struct timeval t[3];
+        gettimeofday(&t[1], NULL);
+  #endif
+        
+        bool ack = srslte_pdsch_decode_rnti(&ue_dl.pdsch, &ue_dl.pdsch_cfg, softbuffer, ue_dl.sf_symbols, 
+                                      ue_dl.ce, noise_estimate, rnti, payload) == 0;
+  #ifdef LOG_EXECTIME
+        gettimeofday(&t[2], NULL);
+        get_time_interval(t);
+        snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
+  #endif
+              
+        /*
+        if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
+          srslte_ue_dl_save_signal(&ue_dl, softbuffer, tti, rv);
+        }*/
+        
+        Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
+              grant->nof_prb, harq_pid, 
+              grant->mcs.tbs/8, grant->mcs.idx, rv, 
+              ack?"OK":"KO", 
+              10*log10(srslte_chest_dl_get_snr(&ue_dl.chest)), 
+              srslte_pdsch_last_noi(&ue_dl.pdsch),
+              timestr);
 
-      // Store metrics
-      dl_metrics.mcs    = grant->mcs.idx;
-      
-      return ack; 
+        // Store metrics
+        dl_metrics.mcs    = grant->mcs.idx;
+        
+        return ack; 
+      } else {
+        Warning("Received grant for TBS=0\n");
+      }
     } else {
-      Warning("Received grant for TBS=0\n");
+      Error("Error configuring DL grant\n"); 
     }
   } else {
-    Error("Error configuring DL grant\n"); 
+    Error("Error RV is not set or is invalid (%d)\n", rv);
   }
   return true; 
 }

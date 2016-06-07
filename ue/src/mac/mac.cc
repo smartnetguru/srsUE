@@ -205,7 +205,7 @@ void mac::bcch_start_rx()
 void mac::bcch_start_rx(int si_window_start, int si_window_length)
 {
   if (si_window_length >= 0 && si_window_start >= 0) {
-    dl_harq.set_si_window_length(si_window_length);
+    dl_harq.set_si_window_start(si_window_start);
     phy_h->pdcch_dl_search(SRSLTE_RNTI_SI, SRSLTE_SIRNTI, si_window_start, si_window_start+si_window_length);
   } else {
     phy_h->pdcch_dl_search(SRSLTE_RNTI_SI, SRSLTE_SIRNTI, si_window_start);

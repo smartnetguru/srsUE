@@ -52,7 +52,7 @@ bool dl_harq_entity::init(srslte::log* log_h_, mac_params *params_db_, srslte::t
   timers_db  = timers_; 
   demux_unit = demux_unit_; 
   params_db  = params_db_; 
-  si_window_length = 0; 
+  si_window_start = 0; 
   log_h = log_h_; 
   for (uint32_t i=0;i<NOF_HARQ_PROC+1;i++) {
     if (!proc[i].init(i, this)) {
@@ -148,9 +148,9 @@ bool dl_harq_entity::generate_ack_callback(void *arg)
   return demux_unit->get_uecrid_successful();
 }
 
-void dl_harq_entity::set_si_window_length(int si_window_length_)
+void dl_harq_entity::set_si_window_start(int si_window_start_)
 {
-  si_window_length = si_window_length_;
+  si_window_start = si_window_start_;
 }
 
 
@@ -223,11 +223,11 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
     uint32_t k; 
     if ((grant.tti/10)%2 == 0 && grant.tti%10 == 5) { // This is SIB1, k is different
       k = (grant.tti/20)%4; 
-    } else {      
-      uint32_t nw = harq_entity->si_window_length;
-      k = (grant.tti%nw)%4; 
+      grant.rv = ((uint32_t) ceilf((float)1.5*k))%4;
+    } else if (grant.rv == -1) {      
+      k = (grant.tti-harq_entity->si_window_start)%4; 
+      grant.rv = ((uint32_t) ceilf((float)1.5*k))%4;
     }
-    grant.rv = ((uint32_t) ceilf((float)1.5*k))%4;
   }
   calc_is_new_transmission(grant);
   if (is_new_transmission) {
