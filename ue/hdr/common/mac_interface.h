@@ -53,7 +53,7 @@ public:
     bool        ndi; 
     bool        last_ndi; 
     uint32_t    n_bytes;
-    uint32_t    rv; 
+    int         rv; 
     uint16_t    rnti; 
     bool        is_from_rar;
     bool        is_sps_release; 
@@ -63,7 +63,7 @@ public:
   
   typedef struct {
     bool                    decode_enabled;
-    uint32_t                rv;
+    int                     rv;
     uint16_t                rnti; 
     bool                    generate_ack; 
     bool                    default_ack; 
