@@ -126,7 +126,7 @@ sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
 
 
 // Multiplexing and logical channel priorization as defined in Section 5.4.3
-uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
+uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz, uint32_t tx_tti)
 {
   
   pthread_mutex_lock(&mutex);
@@ -159,7 +159,7 @@ uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
   pending_crnti_ce = 0; 
   
   bsr_proc::bsr_t bsr; 
-  bool regular_bsr = bsr_procedure->need_to_send_bsr_on_ul_grant(pdu_msg.rem_size(), &bsr);
+  bool regular_bsr = bsr_procedure->need_to_send_bsr_on_ul_grant(pdu_msg.rem_size(), &bsr, tx_tti);
   
   // MAC control element for BSR, with exception of BSR included for padding;
   if (regular_bsr) {
@@ -198,7 +198,7 @@ uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
 
   if (!regular_bsr) {
     // Insert Padding BSR if not inserted Regular/Periodic BSR 
-    if (bsr_procedure->generate_padding_bsr(pdu_msg.rem_size(), &bsr)) {
+    if (bsr_procedure->generate_padding_bsr(pdu_msg.rem_size(), &bsr, tx_tti)) {
       if (pdu_msg.new_subh()) {
         pdu_msg.get()->set_bsr(bsr.buff_size, bsr_format_convert(bsr.format));
       }    
@@ -277,7 +277,7 @@ bool mux::pdu_move_to_msg3(uint32_t pdu_sz)
 {
   uint8_t *msg3_start = (uint8_t*) msg3_buff.request();
   if (msg3_start) {
-    uint8_t *msg3_pdu = pdu_get(msg3_start, pdu_sz); 
+    uint8_t *msg3_pdu = pdu_get(msg3_start, pdu_sz, 0); 
     if (msg3_pdu) {
       memmove(msg3_start, msg3_pdu, pdu_sz*sizeof(uint8_t));
       msg3_buff.push(pdu_sz);

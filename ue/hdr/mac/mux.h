@@ -52,7 +52,7 @@ public:
   bool     is_pending_any_sdu();
   bool     is_pending_sdu(uint32_t lcid); 
   
-  uint8_t* pdu_get(uint8_t *payload, uint32_t pdu_sz);
+  uint8_t* pdu_get(uint8_t *payload, uint32_t pdu_sz, uint32_t tx_tti);
   uint8_t* msg3_get(uint8_t* payload, uint32_t pdu_sz);
   
   void     msg3_flush();

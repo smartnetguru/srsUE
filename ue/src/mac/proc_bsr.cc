@@ -40,7 +40,9 @@ bsr_proc::bsr_proc()
 {
   initiated = false; 
   last_print = 0; 
+  next_tx_tti = 0; 
   triggered_bsr_type=NONE; 
+  
 }
 
 void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_)
@@ -72,6 +74,7 @@ void bsr_proc::reset()
   }        
   lcg[0] = 0; 
   priorities[0] = 99;   
+  next_tx_tti = 0; 
 }
 
 /* Process Periodic BSR */
@@ -279,7 +282,7 @@ char* bsr_proc::bsr_format_tostring(bsr_format_t format) {
   }
 }
 
-bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr) 
+bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr, uint32_t tx_tti) 
 {
   bool ret = false; 
 
@@ -300,8 +303,9 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
     if (total_data <= grant_size && total_data + 1 + bsr_sz > grant_size) {
       Debug("Grant is not enough to accomodate the BSR MAC CE\n");
     } else {
-      Debug("BSR:   Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d\n", 
-          grant_size, total_data, bsr_sz);
+      Debug("BSR:   Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d, tx_tti=%d\n", 
+          grant_size, total_data, bsr_sz, tx_tti);
+      next_tx_tti = tx_tti; 
       ret = true; 
     }    
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
@@ -320,7 +324,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
   return ret;   
 }
 
-bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr) 
+bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint32_t tx_tti) 
 {
   bool ret = false; 
 
@@ -331,13 +335,15 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr)
     }
     generate_bsr(bsr, nof_padding_bytes);
     ret = true; 
-    Debug("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
-           bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes);
+    next_tx_tti = tx_tti; 
+    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d, tti=d\n", 
+           bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes, tx_tti);
     
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
       timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
       timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
-    }
+    }    
+    
   }
   return ret; 
 }
@@ -353,12 +359,16 @@ bool bsr_proc::need_to_reset_sr() {
   }
 }
 
-bool bsr_proc::need_to_send_sr() {
+bool bsr_proc::need_to_send_sr(uint32_t tti) {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
-    reset_sr = false; 
-    sr_is_sent = true; 
-    Debug("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false\n");
-    return true; 
+    if (tti > next_tx_tti) {
+      reset_sr = false; 
+      sr_is_sent = true; 
+      Info("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false, tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
+      return true; 
+    } else {
+      Debug("BSR:   Not sending SR because tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
+    }
   } 
   return false; 
 }

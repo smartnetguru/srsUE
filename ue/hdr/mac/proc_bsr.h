@@ -63,9 +63,9 @@ public:
     uint32_t buff_size[4];
   } bsr_t; 
 
-  bool need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr); 
-  bool generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr);
-  bool need_to_send_sr(); 
+  bool need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr, uint32_t tx_tti); 
+  bool generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint32_t tx_tti);
+  bool need_to_send_sr(uint32_t tti); 
   bool need_to_reset_sr(); 
   
 private:
@@ -88,6 +88,7 @@ private:
   
   bool sr_is_sent;
   uint32_t last_print;
+  uint32_t next_tx_tti;
   void update_pending_data(); 
   bool check_highest_channel(); 
   bool check_single_channel(); 
