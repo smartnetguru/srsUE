@@ -433,7 +433,14 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
         get_time_interval(t);
         snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
   #endif
-              
+        
+        // Skip SIB1 crc check 
+        if (ack == false && (tti%10) == 5 && (tti/10%2)==0 && rnti == SRSLTE_SIRNTI) {
+          printf("Forcing SIB1 to skip CRC check and correcting word 3\n");
+          ack = true; 
+          payload[2]=0xD0;
+        }
+        
         /*
         if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
           srslte_ue_dl_save_signal(&ue_dl, softbuffer, tti, rv);
