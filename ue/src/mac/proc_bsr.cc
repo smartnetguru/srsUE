@@ -336,7 +336,7 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint
     generate_bsr(bsr, nof_padding_bytes);
     ret = true; 
     next_tx_tti = tx_tti; 
-    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d, tti=d\n", 
+    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d, tti=%d\n", 
            bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes, tx_tti);
     
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
@@ -361,7 +361,7 @@ bool bsr_proc::need_to_reset_sr() {
 
 bool bsr_proc::need_to_send_sr(uint32_t tti) {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
-    if (tti > next_tx_tti) {
+    if (srslte_tti_interval(tti,next_tx_tti) > 0) {
       reset_sr = false; 
       sr_is_sent = true; 
       Info("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false, tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
