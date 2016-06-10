@@ -282,7 +282,7 @@ char* bsr_proc::bsr_format_tostring(bsr_format_t format) {
   }
 }
 
-bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr, uint32_t tx_tti) 
+bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr) 
 {
   bool ret = false; 
 
@@ -303,9 +303,8 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr, uin
     if (total_data <= grant_size && total_data + 1 + bsr_sz > grant_size) {
       Debug("Grant is not enough to accomodate the BSR MAC CE\n");
     } else {
-      Debug("BSR:   Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d, tx_tti=%d\n", 
-          grant_size, total_data, bsr_sz, tx_tti);
-      next_tx_tti = tx_tti; 
+      Debug("BSR:   Including Regular BSR: grant_size=%d, total_data=%d, bsr_sz=%d\n", 
+          grant_size, total_data, bsr_sz);
       ret = true; 
     }    
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
@@ -324,7 +323,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr, uin
   return ret;   
 }
 
-bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint32_t tx_tti) 
+bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr) 
 {
   bool ret = false; 
 
@@ -335,9 +334,8 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint
     }
     generate_bsr(bsr, nof_padding_bytes);
     ret = true; 
-    next_tx_tti = tx_tti; 
-    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d, tti=%d\n", 
-           bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes, tx_tti);
+    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
+           bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes);
     
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
       timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
@@ -348,13 +346,9 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint
   return ret; 
 }
 
-void bsr_proc::pusch_retx(uint32_t tti) {
-  if (tti == (next_tx_tti+4)%10240) {
-    Debug("BSR:   Detected reTX of BSR next_tx_tti=%d, new next_tx_tti=%d\n", next_tx_tti, tti);
-    next_tx_tti = tti;
-  } else {
-    Debug("BSR:   Retx for tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
-  }
+void bsr_proc::set_tx_tti(uint32_t tti) {
+  Debug("BSR:   Set next_tx_tti=%d\n", tti);
+  next_tx_tti = tti;  
 }
 
 bool bsr_proc::need_to_reset_sr() {
