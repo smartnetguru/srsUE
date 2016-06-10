@@ -124,6 +124,10 @@ sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
   }
 }
 
+void mux::pusch_retx(uint32_t tti_tx)
+{
+  bsr_procedure->pusch_retx(tti_tx);
+}
 
 // Multiplexing and logical channel priorization as defined in Section 5.4.3
 uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz, uint32_t tx_tti)

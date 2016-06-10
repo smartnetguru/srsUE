@@ -348,11 +348,18 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint
   return ret; 
 }
 
+void bsr_proc::pusch_retx(uint32_t tti) {
+  if (tti == (next_tx_tti+4)%10240) {
+    Debug("BSR:   Detected reTX of BSR next_tx_tti=%d, new next_tx_tti=%d\n", next_tx_tti, tti);
+    next_tx_tti = tti;
+  }
+}
+
 bool bsr_proc::need_to_reset_sr() {
   if (reset_sr) {
     reset_sr = false; 
     sr_is_sent = false; 
-    Debug("SR reset. sr_is_sent and reset_rs false\n");
+    Debug("BSR:   SR reset. sr_is_sent and reset_rs false\n");
     return true; 
   } else {
     return false; 
@@ -361,7 +368,7 @@ bool bsr_proc::need_to_reset_sr() {
 
 bool bsr_proc::need_to_send_sr(uint32_t tti) {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
-    if (srslte_tti_interval(next_tx_tti,tti) > 0) {
+    if (tti > next_tx_tti) {
       reset_sr = false; 
       sr_is_sent = true; 
       Info("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false, tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);

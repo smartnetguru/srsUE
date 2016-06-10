@@ -61,6 +61,7 @@ public:
   void     append_crnti_ce_next_tx(uint16_t crnti); 
   
   void     set_priority(uint32_t lcid, uint32_t priority, int PBR_x_tti, uint32_t BSD);
+  void     pusch_retx(uint32_t tti_tx);
       
 private:  
   bool     pdu_move_to_msg3(uint32_t pdu_sz);

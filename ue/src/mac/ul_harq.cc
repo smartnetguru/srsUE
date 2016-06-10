@@ -295,6 +295,8 @@ void ul_harq_entity::ul_harq_process::generate_retx(uint32_t tti_tx, mac_interfa
   if (is_msg3) {
     harq_entity->timers_db->get(mac::CONTENTION_TIMER)->reset();
   }
+  
+  harq_entity->mux_unit->pusch_retx(tti_tx);
 }
 
 // New transmission (Section 5.4.2.2)

@@ -67,6 +67,7 @@ public:
   bool generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr, uint32_t tx_tti);
   bool need_to_send_sr(uint32_t tti); 
   bool need_to_reset_sr(); 
+  void pusch_retx(uint32_t tti); 
   
 private:
   
