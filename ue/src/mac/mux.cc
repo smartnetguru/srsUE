@@ -124,9 +124,15 @@ srslte::sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {
   }
 }
 
+void mux::pusch_retx(uint32_t tx_tti, uint32_t pid)
+{
+  if (pid_has_bsr[pid%MAX_HARQ_PROC]) {
+    bsr_procedure->set_tx_tti(tx_tti);
+  }
+}
 
 // Multiplexing and logical channel priorization as defined in Section 5.4.3
-uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
+uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz, uint32_t tx_tti, uint32_t pid)
 {
   
   pthread_mutex_lock(&mutex);
@@ -160,11 +166,13 @@ uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
   
   bsr_proc::bsr_t bsr; 
   bool regular_bsr = bsr_procedure->need_to_send_bsr_on_ul_grant(pdu_msg.rem_size(), &bsr);
+  bool bsr_is_inserted = false; 
   
   // MAC control element for BSR, with exception of BSR included for padding;
   if (regular_bsr) {
     if (pdu_msg.new_subh()) {
       pdu_msg.get()->set_bsr(bsr.buff_size, bsr_format_convert(bsr.format));    
+      bsr_is_inserted  = true; 
     }
   }
   // MAC control element for PHR
@@ -201,6 +209,7 @@ uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
     if (bsr_procedure->generate_padding_bsr(pdu_msg.rem_size(), &bsr)) {
       if (pdu_msg.new_subh()) {
         pdu_msg.get()->set_bsr(bsr.buff_size, bsr_format_convert(bsr.format));
+        bsr_is_inserted  = true; 
       }    
     }
   }
@@ -209,8 +218,14 @@ uint8_t* mux::pdu_get(uint8_t *payload, uint32_t pdu_sz)
 
   /* Generate MAC PDU and save to buffer */
   uint8_t *ret = pdu_msg.write_packet(log_h);   
+
+  pid_has_bsr[pid%MAX_HARQ_PROC] = bsr_is_inserted; 
+  if (bsr_is_inserted) {
+    bsr_procedure->set_tx_tti(tx_tti);
+  }
   
   pthread_mutex_unlock(&mutex);
+  
 
   return ret; 
 }
@@ -277,7 +292,7 @@ bool mux::pdu_move_to_msg3(uint32_t pdu_sz)
 {
   uint8_t *msg3_start = (uint8_t*) msg3_buff.request();
   if (msg3_start) {
-    uint8_t *msg3_pdu = pdu_get(msg3_start, pdu_sz); 
+    uint8_t *msg3_pdu = pdu_get(msg3_start, pdu_sz, 0, 0); 
     if (msg3_pdu) {
       memmove(msg3_start, msg3_pdu, pdu_sz*sizeof(uint8_t));
       msg3_buff.push(pdu_sz);

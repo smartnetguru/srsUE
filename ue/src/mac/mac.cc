@@ -163,8 +163,8 @@ void mac::run_thread() {
       
       // Check if BSR procedure need to start SR 
       
-      if (bsr_procedure.need_to_send_sr()) {
-        Debug("Starting SR procedure by BSR request, PHY TTI=%d\n", phy_h->get_current_tti());
+      if (bsr_procedure.need_to_send_sr(tti)) {
+        Debug("Starting SR procedure by BSR request, PHY TTI=%d\n", tti);
         sr_procedure.start();
       }
       if (bsr_procedure.need_to_reset_sr()) {

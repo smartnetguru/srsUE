@@ -63,6 +63,7 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
 
   mlockall(MCL_CURRENT | MCL_FUTURE);
   
+  n_ta = 0; 
   log_h = log_h_; 
   radio_handler = radio_handler_;
   nof_workers = nof_workers_; 
@@ -211,6 +212,7 @@ int phy::prach_tx_tti()
 void phy::reset()
 {
   // TODO 
+  n_ta = 0; 
   pdcch_dl_search_reset();
   for(uint32_t i=0;i<nof_workers;i++) {
     workers[i].reset();
