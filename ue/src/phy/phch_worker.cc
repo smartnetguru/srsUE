@@ -97,6 +97,7 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
     Error("Allocating memory\n");
     return false; 
   }
+
   if (srslte_ue_dl_init(&ue_dl, cell)) {    
     Error("Initiating UE DL\n");
     return false; 

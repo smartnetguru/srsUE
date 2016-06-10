@@ -79,6 +79,16 @@ bool prach::init_cell(srslte_cell_t cell_)
         params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
         params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
     
+    uint32_t freq_offset = params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET);
+    
+    log_h->console("Fixme forcing freq_offset=0\n");
+    freq_offset = 0; 
+    
+    if (6 + freq_offset > cell.nof_prb) {
+      log_h->console("Error no space for PRACH: frequency offset=%d, N_rb_ul=%d\n", freq_offset, cell.nof_prb);
+      return false; 
+    }
+    
     if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
                           srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
                           params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
@@ -95,7 +105,7 @@ bool prach::init_cell(srslte_cell_t cell_)
       if(!buffer[i]) {
         return false; 
       }    
-      if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
+      if(srslte_prach_gen(&prach_obj, i, freq_offset, buffer[i])) {
         Error("Generating PRACH preamble %d\n", i);
         return false;
       }
