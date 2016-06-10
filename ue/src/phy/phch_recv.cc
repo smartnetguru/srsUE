@@ -418,7 +418,6 @@ void phch_recv::run_thread()
               worker_com->cur_radio_power = SRSLTE_MIN(SRSLTE_PC_MAX, worker_com->pathloss + worker_com->p0_preamble);
             }            
             workers_pool->start_worker(worker);             
-            mac->tti_clock(tti);
             // Notify RRC in-sync every 1 frame
             if ((tti%10) == 0) {
               rrc->in_sync();

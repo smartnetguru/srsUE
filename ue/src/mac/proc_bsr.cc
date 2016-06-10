@@ -352,6 +352,8 @@ void bsr_proc::pusch_retx(uint32_t tti) {
   if (tti == (next_tx_tti+4)%10240) {
     Debug("BSR:   Detected reTX of BSR next_tx_tti=%d, new next_tx_tti=%d\n", next_tx_tti, tti);
     next_tx_tti = tti;
+  } else {
+    Debug("BSR:   Retx for tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
   }
 }
 
