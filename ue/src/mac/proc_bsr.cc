@@ -361,7 +361,7 @@ bool bsr_proc::need_to_reset_sr() {
 
 bool bsr_proc::need_to_send_sr(uint32_t tti) {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
-    if (srslte_tti_interval(tti,next_tx_tti) > 0) {
+    if (srslte_tti_interval(next_tx_tti,tti) > 0) {
       reset_sr = false; 
       sr_is_sent = true; 
       Info("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false, tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
