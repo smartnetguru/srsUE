@@ -148,7 +148,6 @@ float radio::get_max_tx_power()
 
 float radio::get_rssi()
 {
-  // FIXME: RSSI sensor gathering crashes in UHD C API
   return srslte_rf_get_rssi(&rf_device);  
 }
 
