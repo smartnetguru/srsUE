@@ -208,7 +208,6 @@ bool dl_harq_entity::dl_harq_process::calc_is_new_transmission(mac_interface_phy
       (pid == HARQ_BCCH_PID && grant.rv == 0))      // Broadcast PID and 1st TX (RV=0)
   {
     is_new_transmission = true; 
-    printf("is_new_tx=true, grant.ndi=%d, cur_grant.ndi=%d, is_new_tb=%d, pid=%d, rv=%d\n", grant.ndi, cur_grant.ndi,is_new_tb,  pid, grant.rv);
     Debug("Set HARQ for new transmission\n");
   } else {
     is_new_transmission = false; 
