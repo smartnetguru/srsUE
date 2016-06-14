@@ -260,7 +260,7 @@ class sch_pdu : public pdu<sch_subh>
 {
 public:
   
-  sch_pdu(uint32_t max_rars) : pdu(max_rars) {}
+  sch_pdu(uint32_t max_subh) : pdu(max_subh) {}
 
   void      parse_packet(uint8_t *ptr);
   uint8_t*  write_packet();
