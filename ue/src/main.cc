@@ -132,8 +132,8 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             "Sets the SNR exponential moving average coefficient (Default 0.1)")
         
         ("expert.snr_estim_alg",         
-            bpo::value<string>(&args->expert.snr_estim_alg)->default_value("pss"), 
-            "Sets the noise estimation algorithm. (Default pss)")
+            bpo::value<string>(&args->expert.snr_estim_alg)->default_value("refs"), 
+            "Sets the noise estimation algorithm. (Default refs)")
         
         ("expert.pdsch_max_its",         
             bpo::value<int>(&args->expert.pdsch_max_its)->default_value(4), 

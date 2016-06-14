@@ -98,7 +98,7 @@ enable = true
 # cqi_offset:           Adds a postive or negative offset to the CQI calculated by the UE. Default 0
 # cqi_fixed:            Fixes the reported CQI to a constant value. Default disabled.
 # snr_ema_coeff:        Sets the SNR exponential moving average coefficient (Default 0.1)
-# snr_estim_alg:        Sets the noise estimation algorithm. (Default pss)
+# snr_estim_alg:        Sets the noise estimation algorithm. (Default refs)
 #                          Options: pss:   use difference between received and known pss signal, 
 #                                   refs:  use difference between noise references and noiseless (after filtering)
 #                                   empty: use empty subcarriers in the boarder of pss/sss signal
@@ -130,7 +130,7 @@ enable = true
 #cqi_offset          = 0
 #cqi_fixed           = 10
 #snr_ema_coeff       = 0.1
-#snr_estim_alg       = pss
+#snr_estim_alg       = refs
 #pdsch_max_its       = 4
 #attach_enable_64qam = false
 #nof_phy_threads     = 2
