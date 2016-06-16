@@ -73,7 +73,7 @@ public:
             pdcp_interface_rrc    *pdcp_,
             nas_interface_rrc     *nas_,
             usim_interface_rrc    *usim_,
-            mac_interface_timers *mac_timers_,
+            srslte::mac_interface_timers *mac_timers_,
             srslte::log           *rrc_log_);
   void stop();
 
@@ -122,7 +122,7 @@ private:
   pthread_t             sib_search_thread;
 
   // RRC constants and timers 
-  mac_interface_timers *mac_timers;
+  srslte::mac_interface_timers *mac_timers;
   uint32_t n310_cnt, N310; 
   uint32_t n311_cnt, N311; 
   uint32_t t301, t310, t311;

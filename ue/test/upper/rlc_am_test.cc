@@ -33,7 +33,7 @@
 using namespace srsue;
 
 class mac_dummy_timers
-    :public mac_interface_timers
+    :public srslte::mac_interface_timers
 {
 public:
   srslte::timers::timer* get(uint32_t timer_id)

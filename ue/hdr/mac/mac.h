@@ -50,7 +50,7 @@ namespace srsue {
 class mac
     :public mac_interface_phy
     ,public mac_interface_rrc
-    ,public mac_interface_timers
+    ,public srslte::mac_interface_timers
     ,public thread
     ,public srslte::timer_callback
 {

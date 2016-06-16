@@ -37,6 +37,7 @@
 #include <string>
 #include "srslte/srslte.h"
 
+#include "common/interfaces_common.h"
 #include "common/timers.h"
 
 namespace srsue {
@@ -168,15 +169,6 @@ public:
   virtual int64_t get_param(mac_param_t param) = 0;  
 };
 
-class mac_interface_timers
-{
-public: 
-  /* Timer services with ms resolution. 
-   * timer_id must be lower than MAC_NOF_UPPER_TIMERS
-   */
-  virtual srslte::timers::timer* get(uint32_t timer_id) = 0;
-  virtual uint32_t               get_unique_id() = 0;
-};
 
 /* Interface RRC -> MAC */
 class mac_interface_rrc
