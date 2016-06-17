@@ -598,6 +598,41 @@ void phch_worker::set_uci_sr()
 
 void phch_worker::set_uci_periodic_cqi()
 {
+  int cqi_period_ms = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_MS);
+  int cqi_random_ms = phy->params_db->get_param(phy_interface_params::CQI_RANDOM_MS);
+  int cqi_fixed     = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
+  int cqi_max       = phy->params_db->get_param(phy_interface_params::CQI_MAX);
+  int cqi_offset    = phy->params_db->get_param(phy_interface_params::CQI_OFFSET); 
+  int duty_cycle    = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_DUTY_100); 
+  int cqi_value; 
+  if (cqi_period_ms) {
+    phy->cqi_period_cnt++; 
+    if (phy->cqi_period_cnt >= cqi_period_ms*duty_cycle/100) {
+      if (cqi_fixed < 0) {
+        phy->cqi_period_value = 0; 
+      } else {
+        phy->cqi_period_value = cqi_fixed;
+      }
+    } else if (phy->cqi_period_cnt == cqi_period_ms) {
+      phy->cqi_period_cnt = 0; 
+      if (cqi_fixed < 0) {
+        phy->cqi_period_value = 15; 
+      } else {
+        phy->cqi_period_value = cqi_fixed+cqi_offset;
+      }
+    }
+  } else if (cqi_random_ms) {
+    phy->cqi_period_cnt++; 
+    if (phy->cqi_period_cnt == cqi_random_ms) {
+      phy->cqi_period_cnt = 0; 
+      if (cqi_fixed < 0) {
+        phy->cqi_random_value = rand()%15;
+      } else {
+        phy->cqi_random_value = cqi_fixed + (rand()%cqi_offset);              
+      }
+    }
+  }
+
   if ((period_cqi.configured || rar_cqi_request) && rnti_is_set) {
     if (srslte_cqi_send(period_cqi.pmi_idx, (tti+4)%10240)) {
       srslte_cqi_value_t cqi_report;
@@ -610,40 +645,10 @@ void phch_worker::set_uci_periodic_cqi()
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        int cqi_period_ms = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_MS);
-        int cqi_random_ms = phy->params_db->get_param(phy_interface_params::CQI_RANDOM_MS);
-        int cqi_fixed     = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
-        int cqi_max       = phy->params_db->get_param(phy_interface_params::CQI_MAX);
-        int cqi_offset    = phy->params_db->get_param(phy_interface_params::CQI_OFFSET); 
-        int duty_cycle    = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_DUTY_100); 
         if (cqi_period_ms) {
-          phy->cqi_period_cnt++; 
-          if (phy->cqi_period_cnt >= cqi_period_ms*duty_cycle/100) {
-            if (cqi_fixed < 0) {
-              phy->cqi_period_value = 0; 
-            } else {
-              phy->cqi_period_value = cqi_fixed;
-            }
-          } else if (phy->cqi_period_cnt == cqi_period_ms) {
-            phy->cqi_period_cnt = 0; 
-            if (cqi_fixed < 0) {
-              phy->cqi_period_value = 15; 
-            } else {
-              phy->cqi_period_value = cqi_fixed+cqi_offset;
-            }
-          }
           cqi_report.wideband.wideband_cqi = phy->cqi_period_value;
         } else if (cqi_random_ms) {
-          phy->cqi_period_cnt++; 
-          if (phy->cqi_period_cnt == cqi_random_ms) {
-            phy->cqi_period_cnt = 0; 
-            if (cqi_fixed < 0) {
-              phy->cqi_random_value = rand()%15;
-            } else {
-              phy->cqi_random_value = cqi_fixed + (rand()%cqi_offset);              
-            }
-          }
-          cqi_report.wideband.wideband_cqi = phy->cqi_random_value;
+          cqi_report.wideband.wideband_cqi = phy->cqi_random_value;          
         } else {
           if (cqi_fixed < 0) {
             cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
