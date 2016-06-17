@@ -127,6 +127,18 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             bpo::value<int>(&args->expert.cqi_fixed)->default_value(-1), 
             "Fixes the reported CQI to a constant value. Default disabled.")
         
+        ("expert.cqi_random_ms",         
+            bpo::value<int>(&args->expert.cqi_random_ms)->default_value(0), 
+            "If non-zero, randomly change the reported CQI in the interval [cqi_fixed,cqi_fixed+cqi_offset].")
+        
+        ("expert.cqi_period_ms",         
+            bpo::value<int>(&args->expert.cqi_period_ms)->default_value(0), 
+            "If non-zero, periodically change the reported CQI between cqi_fixed and cqi_fixed+cqi_offset")
+        
+        ("expert.cqi_period_duty",         
+            bpo::value<float>(&args->expert.cqi_period_duty)->default_value(0), 
+            "Sets the duty cycle in the interval (0,1) for cqi_period_ms option (Default 0.5)")
+        
         ("expert.snr_ema_coeff",         
             bpo::value<float>(&args->expert.snr_ema_coeff)->default_value(0.1), 
             "Sets the SNR exponential moving average coefficient (Default 0.1)")

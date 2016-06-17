@@ -136,7 +136,7 @@ private:
   uint32_t                          I_sr; 
   float                             cfo;
   bool                              rar_cqi_request;
-  
+    
   // Metrics
   dl_metrics_t dl_metrics;
   ul_metrics_t ul_metrics;
