@@ -136,7 +136,7 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             "If non-zero, periodically change the reported CQI between cqi_fixed and cqi_fixed+cqi_offset")
         
         ("expert.cqi_period_duty",         
-            bpo::value<float>(&args->expert.cqi_period_duty)->default_value(0), 
+            bpo::value<float>(&args->expert.cqi_period_duty)->default_value(0.5), 
             "Sets the duty cycle in the interval (0,1) for cqi_period_ms option (Default 0.5)")
         
         ("expert.snr_ema_coeff",         

@@ -607,13 +607,14 @@ void phch_worker::set_uci_periodic_cqi()
   int cqi_value; 
   if (cqi_period_ms) {
     phy->cqi_period_cnt++; 
-    if (phy->cqi_period_cnt >= cqi_period_ms*duty_cycle/100) {
+    if (phy->cqi_period_cnt >= (cqi_period_ms*duty_cycle)/100) {
       if (cqi_fixed < 0) {
         phy->cqi_period_value = 0; 
       } else {
         phy->cqi_period_value = cqi_fixed;
       }
-    } else if (phy->cqi_period_cnt == cqi_period_ms) {
+    } 
+    if (phy->cqi_period_cnt >= cqi_period_ms) {
       phy->cqi_period_cnt = 0; 
       if (cqi_fixed < 0) {
         phy->cqi_period_value = 15; 
