@@ -67,6 +67,9 @@ namespace srsue {
       bzero(&sync_metrics, sizeof(sync_metrics_t));
       sync_metrics_read = true;
       sync_metrics_count = 0;
+      cqi_period_cnt = 0; 
+      cqi_random_value = 0; 
+      cqi_period_value = 0; 
     }
     
     /* Common variables used by all phy workers */
@@ -87,7 +90,12 @@ namespace srsue {
     float avg_snr_db; 
     float avg_noise; 
     float avg_rsrp; 
-    
+  
+    // For artificial CQI reporting
+    uint32_t cqi_period_value; 
+    uint32_t cqi_random_value; 
+    uint32_t cqi_period_cnt; 
+
     phch_common(uint32_t max_mutex);
     void init(phy_params *_params, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac);
     

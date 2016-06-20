@@ -56,6 +56,7 @@ namespace srslte {
       
       void set_burst_preamble(double preamble_us);
       void set_tx_adv(uint32_t nsamples);
+      void set_tx_adv_neg(bool tx_adv_is_neg); 
       
       void set_manual_calibration(rf_cal_t *calibration);
       
@@ -118,6 +119,7 @@ namespace srslte {
       
       // Define default values for known radios
       bool tx_adv_auto;
+      bool tx_adv_negative; 
       const static double uhd_default_burst_preamble_sec = 600*1e-6;
       const static double uhd_default_tx_adv_samples     = 98;
       const static double uhd_default_tx_adv_offset_sec  = 4*1e-6; 

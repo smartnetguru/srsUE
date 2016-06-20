@@ -76,6 +76,8 @@ public:
   void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg=NULL);
 
 private:
+  void reset_metrics(); 
+  
   buffer_pool        *pool;
   srslte::log        *rlc_log;
   pdcp_interface_rlc *pdcp;
@@ -84,8 +86,8 @@ private:
   ue_interface       *ue;
   rlc_entity          rlc_array[SRSUE_N_RADIO_BEARERS];
 
-  long                ul_tput_bytes;
-  long                dl_tput_bytes;
+  long                ul_tput_bytes[SRSUE_N_RADIO_BEARERS];
+  long                dl_tput_bytes[SRSUE_N_RADIO_BEARERS];
   bpt::ptime          metrics_time;
 
   bool valid_lcid(uint32_t lcid);

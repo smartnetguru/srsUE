@@ -78,7 +78,7 @@ private:
   bool decode_pdcch_ul(mac_interface_phy::mac_grant_t *grant);
   bool decode_pdcch_dl(mac_interface_phy::mac_grant_t *grant);
   bool decode_phich(bool *ack); 
-  bool decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload, srslte_softbuffer_rx_t* softbuffer, uint32_t rv, uint16_t rnti, uint32_t pid);
+  bool decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload, srslte_softbuffer_rx_t* softbuffer, int rv, uint16_t rnti, uint32_t pid);
 
   /* ... for UL */
   void encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, uint32_t current_tx_nb, srslte_softbuffer_tx_t *softbuffer, 
@@ -101,8 +101,7 @@ private:
   srslte::trace<uint32_t> tr_exec;
   bool trace_enabled; 
   
-  const static float SNR_FILTER_COEFF = 0.5; 
-
+  
   /* Common objects */  
   phch_common    *phy;
   srslte_cell_t  cell; 
@@ -137,7 +136,7 @@ private:
   uint32_t                          I_sr; 
   float                             cfo;
   bool                              rar_cqi_request;
-  
+    
   // Metrics
   dl_metrics_t dl_metrics;
   ul_metrics_t ul_metrics;

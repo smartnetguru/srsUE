@@ -95,7 +95,20 @@ enable = true
 # prach_gain:           PRACH gain (dB). If defined, forces a gain for the tranmsission of PRACH only., 
 #                       Default is to use tx_gain in [rf] section. 
 # cqi_max:              Upper bound on the maximum CQI to be reported. Default 15. 
-# pdsch_max_its:        Maximum number of turbo decoder iterations (default 4)
+# cqi_offset:           Adds a postive or negative offset to the CQI calculated by the UE. Default 0
+# cqi_fixed:            Fixes the reported CQI to a constant value. Default disabled.
+# cqi_random_ms:        If non-zero, randomly change the reported CQI in the interval [cqi_fixed,cqi_fixed+cqi_offset]
+# cqi_period_ms:        If non-zero, periodically change the reported CQI between cqi_fixed and cqi_fixed+cqi_offset.
+#                       If cqi_random_ms != 0, the period option has priority over the random one. 
+#                       For period and random options, default cqi_fixed is 0
+#                       For period and random options, default cqi_offset is 15
+# cqi_period_duty:      Sets the duty cycle in the interval (0,1) for cqi_period_ms option (Default 0.5)
+# snr_ema_coeff:        Sets the SNR exponential moving average coefficient (Default 0.1)
+# snr_estim_alg:        Sets the noise estimation algorithm. (Default refs)
+#                          Options: pss:   use difference between received and known pss signal, 
+#                                   refs:  use difference between noise references and noiseless (after filtering)
+#                                   empty: use empty subcarriers in the boarder of pss/sss signal
+# pdsch_max_its:        Maximum number of turbo decoder iterations (Default 4)
 # attach_enable_64qam:  Enables PUSCH 64QAM modulation before attachment (Necessary for old 
 #                        Amarisoft LTE 100 eNodeB, disabled by default)
 # nof_phy_threads:      Selects the number of PHY threads (maximum 4, minimum 1, default 2)
@@ -120,6 +133,13 @@ enable = true
 [expert]
 #prach_gain          = 30
 #cqi_max             = 15
+#cqi_offset          = 0
+#cqi_fixed           = 10
+#cqi_random_ms       = 0
+#cqi_period_ms       = 0
+#cqi_period_duty     = 0.5
+#snr_ema_coeff       = 0.1
+#snr_estim_alg       = refs
 #pdsch_max_its       = 4
 #attach_enable_64qam = false
 #nof_phy_threads     = 2
