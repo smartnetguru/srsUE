@@ -31,6 +31,7 @@
 #include "common/log.h"
 #include "common/common.h"
 #include "common/interfaces.h"
+#include "common/security.h"
 
 namespace srsue {
 
@@ -69,14 +70,18 @@ public:
                                         uint8_t  *res);
 
   void generate_nas_keys(uint8_t *k_nas_enc,
-                         uint8_t *k_nas_int);
+                         uint8_t *k_nas_int,
+                         CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                         INTEGRITY_ALGORITHM_ID_ENUM integ_algo);
 
   // RRC interface
   void generate_as_keys(uint32_t count_ul,
                         uint8_t *k_rrc_enc,
                         uint8_t *k_rrc_int,
                         uint8_t *k_up_enc,
-                        uint8_t *k_up_int);
+                        uint8_t *k_up_int,
+                        CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                        INTEGRITY_ALGORITHM_ID_ENUM integ_algo);
 
 
 private:

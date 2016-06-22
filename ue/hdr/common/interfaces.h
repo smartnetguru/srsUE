@@ -35,6 +35,7 @@
 
 #include "liblte_rrc.h"
 #include "common/common.h"
+#include "common/security.h"
 #include "mac_interface.h"
 #include "phy_interface.h"
 
@@ -57,7 +58,10 @@ public:
                                                 uint16_t  mnc,
                                                 bool     *net_valid,
                                                 uint8_t  *res) = 0;
-  virtual void generate_nas_keys(uint8_t *k_nas_enc, uint8_t *k_nas_int) = 0;
+  virtual void generate_nas_keys(uint8_t *k_nas_enc,
+                                 uint8_t *k_nas_int,
+                                 CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                                 INTEGRITY_ALGORITHM_ID_ENUM integ_algo) = 0;
 };
 
 // USIM interface for RRC
@@ -68,7 +72,9 @@ public:
                                 uint8_t *k_rrc_enc,
                                 uint8_t *k_rrc_int,
                                 uint8_t *k_up_enc,
-                                uint8_t *k_up_int) = 0;
+                                uint8_t *k_up_int,
+                                CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                                INTEGRITY_ALGORITHM_ID_ENUM integ_algo) = 0;
 };
 
 // GW interface for NAS
@@ -162,7 +168,11 @@ public:
   virtual void reset() = 0;
   virtual void write_sdu(uint32_t lcid, byte_buffer_t *sdu) = 0;
   virtual void add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg=NULL) = 0;
-  virtual void config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int) = 0;
+  virtual void config_security(uint32_t lcid,
+                               uint8_t *k_rrc_enc_,
+                               uint8_t *k_rrc_int_,
+                               CIPHERING_ALGORITHM_ID_ENUM cipher_algo_,
+                               INTEGRITY_ALGORITHM_ID_ENUM integ_algo_) = 0;
 };
 
 // PDCP interface for RLC
