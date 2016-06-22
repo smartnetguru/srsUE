@@ -310,10 +310,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
     liblte_mme_pack_activate_default_eps_bearer_context_accept_msg(&act_def_eps_bearer_context_accept, &attach_complete.esm_msg);
     liblte_mme_pack_attach_complete_msg(&attach_complete,
                                         LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY_AND_CIPHERED,
-                                        k_nas_int,
                                         count_ul,
-                                        SECURITY_DIRECTION_UPLINK,
-                                        lcid-1,
                                         (LIBLTE_BYTE_MSG_STRUCT*)pdu);
     integrity_generate(&k_nas_int[16],
                        count_ul,
@@ -460,10 +457,7 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
 
     liblte_mme_pack_security_mode_complete_msg(&sec_mode_comp,
                                                LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY_AND_CIPHERED,
-                                               k_nas_int,
                                                count_ul,
-                                               SECURITY_DIRECTION_UPLINK,
-                                               lcid-1,
                                                (LIBLTE_BYTE_MSG_STRUCT*)pdu);
     integrity_generate(&k_nas_int[16],
                        count_ul,

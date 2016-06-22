@@ -97,13 +97,9 @@ void pdcp_entity::write_sdu(byte_buffer_t *sdu)
     break;
   case RB_ID_SRB1:  // Intentional fall-through
   case RB_ID_SRB2:
+    pdcp_pack_control_pdu(tx_count, sdu);
     if(do_security)
     {
-      pdcp_pack_control_pdu(tx_count,
-                            sdu,
-                            k_rrc_int,
-                            SECURITY_DIRECTION_UPLINK,
-                            lcid-1);
       integrity_generate(&k_rrc_int[16],
                          tx_count,
                          lcid-1,
@@ -111,8 +107,6 @@ void pdcp_entity::write_sdu(byte_buffer_t *sdu)
                          sdu->msg,
                          sdu->N_bytes-4,
                          &sdu->msg[sdu->N_bytes-4]);
-    }else{
-      pdcp_pack_control_pdu(tx_count, sdu);
     }
     tx_count++;
     rlc->write_sdu(lcid, sdu);
@@ -238,24 +232,6 @@ void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu)
   sdu->msg[sdu->N_bytes++] = (PDCP_CONTROL_MAC_I >>  8) & 0xFF;
   sdu->msg[sdu->N_bytes++] =  PDCP_CONTROL_MAC_I        & 0xFF;
 
-}
-
-void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu, uint8_t *key_256, uint8_t direction, uint8_t lcid)
-{
-  // Make room and add header
-  sdu->msg--;
-  sdu->N_bytes++;
-  *sdu->msg = sn & 0x1F;
-
-  // Add MAC
-  security_128_eia2(&key_256[16],
-                     sn,
-                     lcid,
-                     direction,
-                     sdu->msg,
-                     sdu->N_bytes,
-                     &sdu->msg[sdu->N_bytes]);
-  sdu->N_bytes += 4;
 }
 
 void pdcp_unpack_control_pdu(byte_buffer_t *pdu, uint32_t *sn)

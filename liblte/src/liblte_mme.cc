@@ -4976,10 +4976,7 @@ LIBLTE_ERROR_ENUM liblte_mme_parse_msg_header(LIBLTE_BYTE_MSG_STRUCT *msg,
 }
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_protected_nas_msg(LIBLTE_BYTE_MSG_STRUCT *msg,
                                                              uint8                   sec_hdr_type,
-                                                             uint8                  *key_256,
                                                              uint32                  count,
-                                                             uint8                   direction,
-                                                             uint8                   rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT *sec_msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
@@ -4987,7 +4984,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_security_protected_nas_msg(LIBLTE_BYTE_MSG_STR
     uint32             i;
 
     if(msg     != NULL &&
-       key_256 != NULL &&
        sec_msg != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -5014,18 +5010,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_security_protected_nas_msg(LIBLTE_BYTE_MSG_STR
         // Fill in the number of bytes used
         sec_msg->N_bytes = msg_ptr - sec_msg->msg;
 
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &sec_msg->msg[5],
-                                     sec_msg->N_bytes-5,
-                                     &sec_msg->msg[1]);
-        }
-
         err = LIBLTE_SUCCESS;
     }
 
@@ -5042,17 +5026,13 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_security_protected_nas_msg(LIBLTE_BYTE_MSG_STR
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_attach_accept_msg(LIBLTE_MME_ATTACH_ACCEPT_MSG_STRUCT *attach_accept,
                                                     uint8                                sec_hdr_type,
-                                                    uint8                               *key_256,
                                                     uint32                               count,
-                                                    uint8                                direction,
-                                                    uint8                                rb_id,
                                                     LIBLTE_BYTE_MSG_STRUCT              *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(attach_accept != NULL &&
-       key_256       != NULL &&
        msg           != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -5181,18 +5161,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_attach_accept_msg(LIBLTE_MME_ATTACH_ACCEPT_MSG
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -5360,17 +5328,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_attach_accept_msg(LIBLTE_BYTE_MSG_STRUCT    
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_attach_complete_msg(LIBLTE_MME_ATTACH_COMPLETE_MSG_STRUCT *attach_comp,
                                                       uint8                                  sec_hdr_type,
-                                                      uint8                                 *key_256,
                                                       uint32                                 count,
-                                                      uint8                                  direction,
-                                                      uint8                                  rb_id,
                                                       LIBLTE_BYTE_MSG_STRUCT                *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(attach_comp != NULL &&
-       key_256     != NULL &&
        msg         != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -5400,18 +5364,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_attach_complete_msg(LIBLTE_MME_ATTACH_COMPLETE
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6212,17 +6164,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_authentication_response_msg(LIBLTE_BYTE_MSG_
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_detach_accept_msg(LIBLTE_MME_DETACH_ACCEPT_MSG_STRUCT *detach_accept,
                                                     uint8                                sec_hdr_type,
-                                                    uint8                               *key_256,
                                                     uint32                               count,
-                                                    uint8                                direction,
-                                                    uint8                                rb_id,
                                                     LIBLTE_BYTE_MSG_STRUCT              *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(detach_accept != NULL &&
-       key_256       != NULL &&
        msg           != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -6249,18 +6197,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_detach_accept_msg(LIBLTE_MME_DETACH_ACCEPT_MSG
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6305,17 +6241,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_detach_accept_msg(LIBLTE_BYTE_MSG_STRUCT    
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_detach_request_msg(LIBLTE_MME_DETACH_REQUEST_MSG_STRUCT *detach_req,
                                                      uint8                                 sec_hdr_type,
-                                                     uint8                                *key_256,
                                                      uint32                                count,
-                                                     uint8                                 direction,
-                                                     uint8                                 rb_id,
                                                      LIBLTE_BYTE_MSG_STRUCT               *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(detach_req != NULL &&
-       key_256    != NULL &&
        msg        != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -6351,18 +6283,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_detach_request_msg(LIBLTE_MME_DETACH_REQUEST_M
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6415,17 +6335,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_detach_request_msg(LIBLTE_BYTE_MSG_STRUCT   
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_nas_transport_msg(LIBLTE_MME_DOWNLINK_NAS_TRANSPORT_MSG_STRUCT *dl_nas_transport,
                                                              uint8                                         sec_hdr_type,
-                                                             uint8                                        *key_256,
                                                              uint32                                        count,
-                                                             uint8                                         direction,
-                                                             uint8                                         rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT                       *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(dl_nas_transport != NULL &&
-       key_256          != NULL &&
        msg              != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -6455,18 +6371,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_nas_transport_msg(LIBLTE_MME_DOWNLINK
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6514,10 +6418,7 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_downlink_nas_transport_msg(LIBLTE_BYTE_MSG_S
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_emm_information_msg(LIBLTE_MME_EMM_INFORMATION_MSG_STRUCT *emm_info,
                                                       uint8                                  sec_hdr_type,
-                                                      uint8                                 *key_256,
                                                       uint32                                 count,
-                                                      uint8                                  direction,
-                                                      uint8                                  rb_id,
                                                       LIBLTE_BYTE_MSG_STRUCT                *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
@@ -6590,18 +6491,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_emm_information_msg(LIBLTE_MME_EMM_INFORMATION
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6696,17 +6585,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_emm_information_msg(LIBLTE_BYTE_MSG_STRUCT  
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_emm_status_msg(LIBLTE_MME_EMM_STATUS_MSG_STRUCT *emm_status,
                                                  uint8                             sec_hdr_type,
-                                                 uint8                            *key_256,
                                                  uint32                            count,
-                                                 uint8                             direction,
-                                                 uint8                             rb_id,
                                                  LIBLTE_BYTE_MSG_STRUCT           *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(emm_status != NULL &&
-       key_256    != NULL &&
        msg        != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -6736,18 +6621,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_emm_status_msg(LIBLTE_MME_EMM_STATUS_MSG_STRUC
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6801,17 +6674,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_emm_status_msg(LIBLTE_BYTE_MSG_STRUCT       
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_extended_service_request_msg(LIBLTE_MME_EXTENDED_SERVICE_REQUEST_MSG_STRUCT *ext_service_req,
                                                                uint8                                           sec_hdr_type,
-                                                               uint8                                          *key_256,
                                                                uint32                                          count,
-                                                               uint8                                           direction,
-                                                               uint8                                           rb_id,
                                                                LIBLTE_BYTE_MSG_STRUCT                         *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ext_service_req != NULL &&
-       key_256         != NULL &&
        msg             != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -6871,18 +6740,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_extended_service_request_msg(LIBLTE_MME_EXTEND
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -6965,17 +6822,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_extended_service_request_msg(LIBLTE_BYTE_MSG
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_command_msg(LIBLTE_MME_GUTI_REALLOCATION_COMMAND_MSG_STRUCT *guti_realloc_cmd,
                                                                 uint8                                            sec_hdr_type,
-                                                                uint8                                           *key_256,
                                                                 uint32                                           count,
-                                                                uint8                                            direction,
-                                                                uint8                                            rb_id,
                                                                 LIBLTE_BYTE_MSG_STRUCT                          *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(guti_realloc_cmd != NULL &&
-       key_256          != NULL &&
        msg              != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -7013,18 +6866,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_command_msg(LIBLTE_MME_GUTI_
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -7082,17 +6923,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_guti_reallocation_command_msg(LIBLTE_BYTE_MS
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_complete_msg(LIBLTE_MME_GUTI_REALLOCATION_COMPLETE_MSG_STRUCT *guti_realloc_complete,
                                                                  uint8                                             sec_hdr_type,
-                                                                 uint8                                            *key_256,
                                                                  uint32                                            count,
-                                                                 uint8                                             direction,
-                                                                 uint8                                             rb_id,
                                                                  LIBLTE_BYTE_MSG_STRUCT                           *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(guti_realloc_complete != NULL &&
-       key_256               != NULL &&
        msg                   != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -7119,18 +6956,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_complete_msg(LIBLTE_MME_GUTI
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -7313,17 +7138,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_identity_response_msg(LIBLTE_BYTE_MSG_STRUCT
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_command_msg(LIBLTE_MME_SECURITY_MODE_COMMAND_MSG_STRUCT *sec_mode_cmd,
                                                             uint8                                        sec_hdr_type,
-                                                            uint8                                       *key_256,
                                                             uint32                                       count,
-                                                            uint8                                        direction,
-                                                            uint8                                        rb_id,
                                                             LIBLTE_BYTE_MSG_STRUCT                      *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(sec_mode_cmd != NULL &&
-       key_256      != NULL &&
        msg          != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -7385,18 +7206,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_command_msg(LIBLTE_MME_SECURITY_
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -7481,17 +7290,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_security_mode_command_msg(LIBLTE_BYTE_MSG_ST
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_complete_msg(LIBLTE_MME_SECURITY_MODE_COMPLETE_MSG_STRUCT *sec_mode_comp,
                                                              uint8                                         sec_hdr_type,
-                                                             uint8                                        *key_256,
                                                              uint32                                        count,
-                                                             uint8                                         direction,
-                                                             uint8                                         rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT                       *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(sec_mode_comp != NULL &&
-       key_256       != NULL &&
        msg           != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -7526,18 +7331,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_complete_msg(LIBLTE_MME_SECURITY
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -7660,17 +7453,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_security_mode_reject_msg(LIBLTE_BYTE_MSG_STR
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_service_reject_msg(LIBLTE_MME_SERVICE_REJECT_MSG_STRUCT *service_rej,
                                                      uint8                                 sec_hdr_type,
-                                                     uint8                                *key_256,
                                                      uint32                                count,
-                                                     uint8                                 direction,
-                                                     uint8                                 rb_id,
                                                      LIBLTE_BYTE_MSG_STRUCT               *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(service_rej != NULL &&
-       key_256     != NULL &&
        msg         != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -7716,18 +7505,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_service_reject_msg(LIBLTE_MME_SERVICE_REJECT_M
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -7856,17 +7633,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_service_request_msg(LIBLTE_BYTE_MSG_STRUCT  
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_accept_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_ACCEPT_MSG_STRUCT *ta_update_accept,
                                                                   uint8                                              sec_hdr_type,
-                                                                  uint8                                             *key_256,
                                                                   uint32                                             count,
-                                                                  uint8                                              direction,
-                                                                  uint8                                              rb_id,
                                                                   LIBLTE_BYTE_MSG_STRUCT                            *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ta_update_accept != NULL &&
-       key_256          != NULL &&
        msg              != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8010,18 +7783,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_accept_msg(LIBLTE_MME_TRA
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -8211,17 +7972,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_accept_msg(LIBLTE_BYTE_
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_complete_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_COMPLETE_MSG_STRUCT *ta_update_complete,
                                                                     uint8                                                sec_hdr_type,
-                                                                    uint8                                               *key_256,
                                                                     uint32                                               count,
-                                                                    uint8                                                direction,
-                                                                    uint8                                                rb_id,
                                                                     LIBLTE_BYTE_MSG_STRUCT                              *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ta_update_complete != NULL &&
-       key_256            != NULL &&
        msg                != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8248,18 +8005,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_complete_msg(LIBLTE_MME_T
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -8304,17 +8049,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_complete_msg(LIBLTE_BYT
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_reject_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_REJECT_MSG_STRUCT *ta_update_rej,
                                                                   uint8                                              sec_hdr_type,
-                                                                  uint8                                             *key_256,
                                                                   uint32                                             count,
-                                                                  uint8                                              direction,
-                                                                  uint8                                              rb_id,
                                                                   LIBLTE_BYTE_MSG_STRUCT                            *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ta_update_rej != NULL &&
-       key_256       != NULL &&
        msg           != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8352,18 +8093,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_reject_msg(LIBLTE_MME_TRA
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -8431,17 +8160,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_reject_msg(LIBLTE_BYTE_
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_nas_transport_msg(LIBLTE_MME_UPLINK_NAS_TRANSPORT_MSG_STRUCT *ul_nas_transport,
                                                            uint8                                       sec_hdr_type,
-                                                           uint8                                      *key_256,
                                                            uint32                                      count,
-                                                           uint8                                       direction,
-                                                           uint8                                       rb_id,
                                                            LIBLTE_BYTE_MSG_STRUCT                     *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ul_nas_transport != NULL &&
-       key_256          != NULL &&
        msg              != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8471,18 +8196,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_nas_transport_msg(LIBLTE_MME_UPLINK_NAS
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -8530,17 +8243,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_uplink_nas_transport_msg(LIBLTE_BYTE_MSG_STR
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_generic_nas_transport_msg(LIBLTE_MME_DOWNLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *dl_generic_nas_transport,
                                                                      uint8                                                 sec_hdr_type,
-                                                                     uint8                                                *key_256,
                                                                      uint32                                                count,
-                                                                     uint8                                                 direction,
-                                                                     uint8                                                 rb_id,
                                                                      LIBLTE_BYTE_MSG_STRUCT                               *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(dl_generic_nas_transport != NULL &&
-       key_256                  != NULL &&
        msg                      != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8576,18 +8285,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_generic_nas_transport_msg(LIBLTE_MME_
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }
@@ -8641,17 +8338,13 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_downlink_generic_nas_transport_msg(LIBLTE_BY
 *********************************************************************/
 LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_generic_nas_transport_msg(LIBLTE_MME_UPLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *ul_generic_nas_transport,
                                                                    uint8                                               sec_hdr_type,
-                                                                   uint8                                              *key_256,
                                                                    uint32                                              count,
-                                                                   uint8                                               direction,
-                                                                   uint8                                               rb_id,
                                                                    LIBLTE_BYTE_MSG_STRUCT                             *msg)
 {
     LIBLTE_ERROR_ENUM  err     = LIBLTE_ERROR_INVALID_INPUTS;
     uint8             *msg_ptr = msg->msg;
 
     if(ul_generic_nas_transport != NULL &&
-       key_256                  != NULL &&
        msg                      != NULL)
     {
         if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
@@ -8687,18 +8380,6 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_generic_nas_transport_msg(LIBLTE_MME_UP
 
         // Fill in the number of bytes used
         msg->N_bytes = msg_ptr - msg->msg;
-
-        if(LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS != sec_hdr_type)
-        {
-            // Calculate MAC
-            liblte_security_128_eia2(&key_256[16],
-                                     count,
-                                     rb_id,
-                                     direction,
-                                     &msg->msg[5],
-                                     msg->N_bytes-5,
-                                     &msg->msg[1]);
-        }
 
         err = LIBLTE_SUCCESS;
     }

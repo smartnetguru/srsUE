@@ -120,7 +120,6 @@ private:
  ***************************************************************************/
 
 void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu);
-void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu, uint8_t *key_256, uint8_t direction, uint8_t lcid);
 void pdcp_unpack_control_pdu(byte_buffer_t *sdu, uint32_t *sn);
 
 void pdcp_pack_data_pdu_short_sn(uint32_t sn, byte_buffer_t *sdu);
