@@ -20,6 +20,8 @@
 #include "upper/rlc.h"
 #include "radio/radio.h"
 
+//#define START_TUNTAP
+//#define USE_RADIO
 
 /**********************************************************************
  *  Program arguments processing
@@ -109,9 +111,18 @@ public:
     log_h = log_h_; 
     rlc   = rlc_; 
     
+#ifdef START_TUNTAP
     if (init_tuntap((char*) ip_address.c_str())) {
       log_h->error("Initiating IP address\n");
     }
+#endif
+
+    pool = srsue::buffer_pool::get_instance();
+    
+    // Start reader thread
+    running=true; 
+    start();
+
   }
 
   void release_pucch_srs() {}
@@ -147,11 +158,6 @@ private:
       return -1;
     }
     
-    pool = srsue::buffer_pool::get_instance();
-    
-    // Start reader thread
-    running=true; 
-    start();
     return 0; 
   }
   
@@ -224,7 +230,12 @@ int main(int argc, char *argv[])
   }
 
   // Init Radio and PHY
+#ifdef USE_RADIO
   my_radio.init();
+#else
+  my_radio.init(NULL, "dummy");
+#endif
+  
   my_radio.set_tx_freq(prog_args.tx_freq);
   my_radio.set_tx_gain(prog_args.tx_gain);
   my_radio.set_rx_freq(prog_args.rx_freq);
