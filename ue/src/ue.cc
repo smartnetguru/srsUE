@@ -320,12 +320,15 @@ void ue::handle_rf_msg(srslte_rf_error_t error)
   if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OVERFLOW) {
     rf_metrics.rf_o++;
     rf_metrics.rf_error = true;
+    rf_log.warning("O");
   }else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_UNDERFLOW) {
     rf_metrics.rf_u++;
     rf_metrics.rf_error = true;
+    rf_log.warning("U");
   } else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_LATE) {
     rf_metrics.rf_l++;
     rf_metrics.rf_error = true;
+    rf_log.warning("L");
   } else if (error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OTHER) {
     std::string str(error.msg);
     str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
