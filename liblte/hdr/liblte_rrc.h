@@ -1360,6 +1360,7 @@ typedef struct{
     uint16                                   carrier_freq;
     uint16                                   cell_for_which_to_rep_cgi;
     uint8                                    neigh_cell_cnfg;
+    bool                                     offset_freq_not_default;
     bool                                     presence_ant_port_1;
     bool                                     cells_to_remove_list_present;
     bool                                     black_cells_to_remove_list_present;
@@ -1416,15 +1417,19 @@ typedef struct{
 typedef struct{
     LIBLTE_RRC_FILTER_COEFFICIENT_ENUM fc_rsrp;
     LIBLTE_RRC_FILTER_COEFFICIENT_ENUM fc_rsrq;
+    bool                               fc_rsrp_not_default;
+    bool                               fc_rsrq_not_default;
 }LIBLTE_RRC_QUANTITY_CONFIG_EUTRA_STRUCT;
 typedef struct{
     LIBLTE_RRC_MEAS_QUANTITY_UTRA_FDD_ENUM mq_fdd;
     LIBLTE_RRC_MEAS_QUANTITY_UTRA_TDD_ENUM mq_tdd;
     LIBLTE_RRC_FILTER_COEFFICIENT_ENUM     fc;
+    bool                                   fc_not_default;
 }LIBLTE_RRC_QUANTITY_CONFIG_UTRA_STRUCT;
 typedef struct{
     LIBLTE_RRC_MEAS_QUANTITY_GERAN_ENUM mq;
     LIBLTE_RRC_FILTER_COEFFICIENT_ENUM  fc;
+    bool                                fc_not_default;
 }LIBLTE_RRC_QUANTITY_CONFIG_GERAN_STRUCT;
 typedef struct{
     LIBLTE_RRC_MEAS_QUANTITY_CDMA2000_ENUM mq;
