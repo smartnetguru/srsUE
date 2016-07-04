@@ -194,7 +194,7 @@ void demux::process_sch_pdu(srslte::sch_pdu *pdu_msg)
   while(pdu_msg->next()) {
     if (pdu_msg->get()->is_sdu()) {
       // Route logical channel 
-      Debug("Delivering PDU for lcid=%d, %d bytes\n", pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_payload_size());
+      Info("Delivering PDU for lcid=%d, %d bytes\n", pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_payload_size());
       rlc->write_pdu(pdu_msg->get()->get_sdu_lcid(), pdu_msg->get()->get_sdu_ptr(), pdu_msg->get()->get_payload_size());      
     } else {
       // Process MAC Control Element

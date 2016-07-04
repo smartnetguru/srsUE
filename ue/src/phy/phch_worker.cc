@@ -511,6 +511,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
       if (srslte_ue_dl_find_ul_dci(&ue_dl, &dci_msg, cfi, tti%10, ul_rnti) != 1) {
         return false; 
       }
+      
       if (srslte_dci_msg_to_ul_grant(&dci_msg, cell.nof_prb, pusch_hopping.hopping_offset, 
         &dci_unpacked, &grant->phy_grant.ul, tti)) 
       {

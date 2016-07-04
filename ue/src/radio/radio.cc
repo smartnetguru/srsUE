@@ -116,7 +116,8 @@ bool radio::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_time
 
 bool radio::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
 {
-  if (srslte_rf_recv_with_time(&rf_device, buffer, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
+  if (srslte_rf_recv_with_time(&rf_device, buffer, nof_samples, true, 
+    rxd_time?&rxd_time->full_secs:NULL, rxd_time?&rxd_time->frac_secs:NULL) > 0) {
     return true; 
   } else {
     return false; 
