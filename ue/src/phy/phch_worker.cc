@@ -1090,6 +1090,10 @@ void *plot_thread_run(void *arg) {
   plot_scatter_setXAxisScale(&pconst, -4, 4);
   plot_scatter_setYAxisScale(&pconst, -4, 4);
 
+  plot_real_addToWindowGrid(&pce, (char*)"srsue", 0, 0);
+  plot_scatter_addToWindowGrid(&pconst, (char*)"srsue", 0, 1);
+
+  
   int n; 
   int readed_pdsch_re=0; 
   while(1) {
