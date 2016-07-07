@@ -103,7 +103,7 @@ private:
     int      delta_preamble_db; 
     uint32_t contentionResolutionTimer; 
     uint32_t maskIndex; 
-    int      preambleIndex;
+    int      preambleIndex;    
     
     // Internal variables
     uint32_t preambleTransmissionCounter; 
@@ -114,6 +114,7 @@ private:
     uint32_t backoff_inteval;
     int      received_target_power_dbm; 
     uint32_t ra_rnti; 
+    uint32_t current_ta; 
     
     srslte_softbuffer_rx_t softbuffer_rar; 
     
