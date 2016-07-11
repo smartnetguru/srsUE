@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
   my_radio.set_tx_freq(prog_args.tx_freq);
   my_radio.set_tx_gain(prog_args.tx_gain);
   my_radio.set_rx_freq(prog_args.rx_freq);
-  my_radio.set_rx_gain(prog_args.tx_gain);
+  my_radio.set_rx_gain(prog_args.rx_gain);
   my_radio.set_tx_adv(0);
       
   my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 1);
