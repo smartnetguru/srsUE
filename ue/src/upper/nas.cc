@@ -26,7 +26,6 @@
 
 
 #include "upper/nas.h"
-#include "liblte_security.h"
 
 using namespace srslte;
 
@@ -142,6 +141,61 @@ bool      nas::get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi)
   }
 }
 
+/*******************************************************************************
+  Security
+*******************************************************************************/
+
+void nas::integrity_generate(uint8_t  *key_128,
+                             uint32_t  count,
+                             uint8_t   rb_id,
+                             uint8_t   direction,
+                             uint8_t  *msg,
+                             uint32_t  msg_len,
+                             uint8_t  *mac)
+{
+  switch(integ_algo)
+  {
+  case INTEGRITY_ALGORITHM_ID_EIA0:
+    break;
+  case INTEGRITY_ALGORITHM_ID_128_EIA1:
+    security_128_eia1(key_128,
+                      count,
+                      rb_id,
+                      direction,
+                      msg,
+                      msg_len,
+                      mac);
+    break;
+  case INTEGRITY_ALGORITHM_ID_128_EIA2:
+    security_128_eia2(key_128,
+                      count,
+                      rb_id,
+                      direction,
+                      msg,
+                      msg_len,
+                      mac);
+    break;
+  default:
+    break;
+  }
+}
+
+void nas::integrity_check()
+{
+
+}
+
+void nas::cipher_encrypt()
+{
+
+}
+
+void nas::cipher_decrypt()
+{
+
+}
+
+
 
 /*******************************************************************************
   Parsers
@@ -256,11 +310,16 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
     liblte_mme_pack_activate_default_eps_bearer_context_accept_msg(&act_def_eps_bearer_context_accept, &attach_complete.esm_msg);
     liblte_mme_pack_attach_complete_msg(&attach_complete,
                                         LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY_AND_CIPHERED,
-                                        k_nas_int,
                                         count_ul,
-                                        LIBLTE_SECURITY_DIRECTION_UPLINK,
-                                        lcid-1,
                                         (LIBLTE_BYTE_MSG_STRUCT*)pdu);
+    integrity_generate(&k_nas_int[16],
+                       count_ul,
+                       lcid-1,
+                       SECURITY_DIRECTION_UPLINK,
+                       &pdu->msg[5],
+                       pdu->N_bytes-5,
+                       &pdu->msg[1]);
+
 
     nas_log->info("Sending Attach Complete\n");
     rrc->write_sdu(lcid, pdu);
@@ -353,15 +412,21 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
   liblte_mme_unpack_security_mode_command_msg((LIBLTE_BYTE_MSG_STRUCT*)pdu, &sec_mode_cmd);
 
   ksi = sec_mode_cmd.nas_ksi.nas_ksi;
+  cipher_algo = (CIPHERING_ALGORITHM_ID_ENUM)sec_mode_cmd.selected_nas_sec_algs.type_of_eea;
+  integ_algo  = (INTEGRITY_ALGORITHM_ID_ENUM)sec_mode_cmd.selected_nas_sec_algs.type_of_eia;
   // FIXME: Handle nonce_ue, nonce_mme
   // FIXME: Currently only handling ciphering EEA0 (null) and integrity EIA2
   // FIXME: Use selected_nas_sec_algs to choose correct algos
 
+  nas_log->debug("Security details: ksi=%d, eea=%s, eia=%s\n",
+                 ksi, ciphering_algorithm_id_text[cipher_algo], integrity_algorithm_id_text[integ_algo]);
+
   // Reuse pdu for response
   pdu->reset();
 
-  if(LIBLTE_MME_TYPE_OF_CIPHERING_ALGORITHM_EEA0 != sec_mode_cmd.selected_nas_sec_algs.type_of_eea ||
-     LIBLTE_MME_TYPE_OF_INTEGRITY_ALGORITHM_128_EIA2 != sec_mode_cmd.selected_nas_sec_algs.type_of_eia)
+  if(CIPHERING_ALGORITHM_ID_EEA0 != cipher_algo ||
+     (INTEGRITY_ALGORITHM_ID_128_EIA2 != integ_algo &&
+      INTEGRITY_ALGORITHM_ID_128_EIA1 != integ_algo))
   {
     // Send security mode reject
     sec_mode_rej.emm_cause = LIBLTE_MME_EMM_CAUSE_UE_SECURITY_CAPABILITIES_MISMATCH;
@@ -373,7 +438,9 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
     // Send security mode complete
 
     // Generate NAS encryption key and integrity protection key
-    usim->generate_nas_keys(k_nas_enc, k_nas_int);
+    usim->generate_nas_keys(k_nas_enc, k_nas_int, cipher_algo, integ_algo);
+    nas_log->debug_hex(k_nas_enc, 32, "NAS encryption key - k_nas_enc");
+    nas_log->debug_hex(k_nas_int, 32, "NAS integrity key - k_nas_int");
 
     if(sec_mode_cmd.imeisv_req_present && LIBLTE_MME_IMEISV_REQUESTED == sec_mode_cmd.imeisv_req)
     {
@@ -390,11 +457,15 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
 
     liblte_mme_pack_security_mode_complete_msg(&sec_mode_comp,
                                                LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY_AND_CIPHERED,
-                                               k_nas_int,
                                                count_ul,
-                                               LIBLTE_SECURITY_DIRECTION_UPLINK,
-                                               lcid-1,
                                                (LIBLTE_BYTE_MSG_STRUCT*)pdu);
+    integrity_generate(&k_nas_int[16],
+                       count_ul,
+                       lcid-1,
+                       SECURITY_DIRECTION_UPLINK,
+                       &pdu->msg[5],
+                       pdu->N_bytes-5,
+                       &pdu->msg[1]);
     nas_log->info("Sending Security Mode Complete nas_count_ul=%d, RB=%s\n",
                  count_ul,
                  rb_id_text[lcid]);
@@ -435,6 +506,7 @@ void nas::send_attach_request()
   }
   attach_req.ue_network_cap.eea[0] = true; // EEA0 supported
   attach_req.ue_network_cap.eia[0] = true; // EIA0 supported
+  attach_req.ue_network_cap.eia[1] = true; // EIA1 supported
   attach_req.ue_network_cap.eia[2] = true; // EIA2 supported
 
   attach_req.ue_network_cap.uea_present = false; // UMTS encryption algos
@@ -507,13 +579,13 @@ void nas::send_service_request()
   msg->N_bytes++;
 
   uint8_t mac[4];
-  liblte_security_128_eia2(&k_nas_int[16],
-                           count_ul,
-                           RB_ID_SRB1-1,
-                           LIBLTE_SECURITY_DIRECTION_UPLINK,
-                           &msg->msg[0],
-                           2,
-                           &mac[0]);
+  integrity_generate(&k_nas_int[16],
+                      count_ul,
+                      RB_ID_SRB1-1,
+                      SECURITY_DIRECTION_UPLINK,
+                      &msg->msg[0],
+                      2,
+                      &mac[0]);
   // Set the short MAC
   msg->msg[2] = mac[2];
   msg->N_bytes++;

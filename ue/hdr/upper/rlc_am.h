@@ -36,14 +36,20 @@
 #include "upper/rlc_common.h"
 #include <boost/thread/mutex.hpp>
 #include <map>
-#include <queue>
+#include <deque>
+#include <list>
 
 namespace srsue {
 
+
+
 struct rlc_amd_rx_pdu_t{
   rlc_amd_pdu_header_t  header;
-  byte_buffer_t        *buf;
-  bool                  pdu_complete;
+  byte_buffer_t         *buf;
+};
+
+struct rlc_amd_rx_pdu_segments_t{
+  std::list<rlc_amd_rx_pdu_t> segments;
 };
 
 struct rlc_amd_tx_pdu_t{
@@ -52,6 +58,14 @@ struct rlc_amd_tx_pdu_t{
   uint32_t              retx_count;
   bool                  is_acked;
 };
+
+struct rlc_amd_retx_t{
+  uint32_t  sn;
+  bool      is_segment;
+  uint32_t  so_start;
+  uint32_t  so_end;
+};
+
 
 class rlc_am
     :public rlc_common
@@ -90,10 +104,14 @@ private:
   msg_queue      tx_sdu_queue;
   byte_buffer_t *tx_sdu;
 
+  // PDU being resegmented
+  rlc_amd_tx_pdu_t tx_pdu_segments;
+
   // Tx and Rx windows
-  std::map<uint32_t, rlc_amd_tx_pdu_t>  tx_window;
-  std::deque<uint32_t>                  retx_queue;
-  std::map<uint32_t, rlc_amd_rx_pdu_t>  rx_window;
+  std::map<uint32_t, rlc_amd_tx_pdu_t>          tx_window;
+  std::deque<rlc_amd_retx_t>                    retx_queue;
+  std::map<uint32_t, rlc_amd_rx_pdu_t>          rx_window;
+  std::map<uint32_t, rlc_amd_rx_pdu_segments_t> rx_segments;
 
   // RX SDU buffers
   byte_buffer_t *rx_sdu;
@@ -163,9 +181,11 @@ private:
   int  prepare_status();
   int  build_status_pdu(uint8_t *payload, uint32_t nof_bytes);
   int  build_retx_pdu(uint8_t *payload, uint32_t nof_bytes);
+  int  build_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_retx_t retx);
   int  build_data_pdu(uint8_t *payload, uint32_t nof_bytes);
 
-  void handle_data_pdu(uint8_t *payload, uint32_t nof_bytes);
+  void handle_data_pdu(uint8_t *payload, uint32_t nof_bytes, rlc_amd_pdu_header_t header);
+  void handle_data_pdu_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_pdu_header_t header);
   void handle_control_pdu(uint8_t *payload, uint32_t nof_bytes);
 
   void reassemble_rx_sdus();
@@ -173,6 +193,10 @@ private:
   bool inside_tx_window(uint16_t sn);
   bool inside_rx_window(uint16_t sn);
   void debug_state();
+
+  bool add_segment_and_check(rlc_amd_rx_pdu_segments_t *pdu, rlc_amd_rx_pdu_t *segment);
+  int  required_buffer_size(rlc_amd_retx_t retx);
+  bool retx_queue_has_sn(uint32_t sn);
 };
 
 /****************************************************************************
@@ -180,8 +204,9 @@ private:
  * Ref: 3GPP TS 36.322 v10.0.0 Section 6.2.1
  ***************************************************************************/
 void        rlc_am_read_data_pdu_header(byte_buffer_t *pdu, rlc_amd_pdu_header_t *header);
-void        rlc_am_read_data_pdu_header(uint8_t *payload, uint32_t nof_bytes, rlc_amd_pdu_header_t *header);
+void        rlc_am_read_data_pdu_header(uint8_t **payload, uint32_t *nof_bytes, rlc_amd_pdu_header_t *header);
 void        rlc_am_write_data_pdu_header(rlc_amd_pdu_header_t *header, byte_buffer_t *pdu);
+void        rlc_am_write_data_pdu_header(rlc_amd_pdu_header_t *header, uint8_t **payload);
 void        rlc_am_read_status_pdu(byte_buffer_t *pdu, rlc_status_pdu_t *status);
 void        rlc_am_read_status_pdu(uint8_t *payload, uint32_t nof_bytes, rlc_status_pdu_t *status);
 void        rlc_am_write_status_pdu(rlc_status_pdu_t *status, byte_buffer_t *pdu );
@@ -189,9 +214,10 @@ int         rlc_am_write_status_pdu(rlc_status_pdu_t *status, uint8_t *payload);
 
 uint32_t    rlc_am_packed_length(rlc_amd_pdu_header_t *header);
 uint32_t    rlc_am_packed_length(rlc_status_pdu_t *status);
+uint32_t    rlc_am_packed_length(rlc_amd_retx_t retx);
 bool        rlc_am_is_control_pdu(byte_buffer_t *pdu);
 bool        rlc_am_is_control_pdu(uint8_t *payload);
-bool        rlc_am_status_has_nack(rlc_status_pdu_t *status, uint32_t sn);
+bool        rlc_am_is_pdu_segment(uint8_t *payload);
 std::string rlc_am_to_string(rlc_status_pdu_t *status);
 bool        rlc_am_start_aligned(uint8_t fi);
 bool        rlc_am_end_aligned(uint8_t fi);

@@ -58,7 +58,7 @@ public:
 private:
   const static int NOF_HARQ_PID    = 8; 
   const static int MAX_PDU_LEN     = 150*1024/8; // ~ 150 Mbps  
-  const static int NOF_BUFFER_PDUS = 8; // Number of PDU buffers per HARQ pid
+  const static int NOF_BUFFER_PDUS = 64; // Number of PDU buffers per HARQ pid
   uint8_t bcch_buffer[1024]; // BCCH PID has a dedicated buffer
   
   bool (*uecrid_callback) (void*, uint64_t);

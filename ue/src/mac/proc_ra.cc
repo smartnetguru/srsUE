@@ -290,6 +290,8 @@ void ra_proc::tb_decoded_ok() {
     backoff_param_ms = 0; 
   }
   
+  current_ta = 0; 
+  
   while(rar_pdu_msg.next()) {
     if (rar_pdu_msg.get()->get_rapid() == sel_preamble) {
 
@@ -305,6 +307,8 @@ void ra_proc::tb_decoded_ok() {
       phy_h->pdcch_dl_search_reset();
       
       phy_h->set_rar_grant(rar_grant_tti, grant);          
+      
+      current_ta = rar_pdu_msg.get()->get_ta_cmd();
       
       rInfo("RAPID=%d, TA=%d\n", sel_preamble, rar_pdu_msg.get()->get_ta_cmd()); 
       
@@ -454,10 +458,10 @@ void ra_proc::step_contention_resolution() {
 void ra_proc::step_completition() {
   log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", 
                    params_db->get_param(mac_interface_params::RNTI_C), 
-                   rar_pdu_msg.get()->get_ta_cmd());
+                   current_ta);
   rInfo("Random Access Complete.     c-rnti=%d, ta=%d\n", 
                    params_db->get_param(mac_interface_params::RNTI_C), 
-                   rar_pdu_msg.get()->get_ta_cmd());
+                   current_ta);
   params_db->set_param(mac_interface_params::RA_PREAMBLEINDEX, 0);
   params_db->set_param(mac_interface_params::RA_MASKINDEX, 0);
   if (!msg3_flushed) {

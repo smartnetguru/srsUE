@@ -33,6 +33,7 @@
 #include "common/log.h"
 #include "common/common.h"
 #include "common/interfaces.h"
+#include "common/security.h"
 
 #include <map>
 
@@ -109,15 +110,18 @@ private:
   uint8_t               k_up_enc[32];
   uint8_t               k_up_int[32];   // Not used: only for relay nodes (3GPP 33.401 Annex A.7)
 
-  LIBLTE_RRC_MIB_STRUCT                   mib;
-  LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_1_STRUCT sib1;
-  LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT sib2;
+  CIPHERING_ALGORITHM_ID_ENUM cipher_algo;
+  INTEGRITY_ALGORITHM_ID_ENUM integ_algo;
 
-  std::map<uint32_t, LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT> srbs;
-  std::map<uint32_t, LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT> drbs;
+  LIBLTE_RRC_MIB_STRUCT                                 mib;
+  LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_1_STRUCT               sib1;
+  LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT               sib2;
 
-  LIBLTE_RRC_DL_CCCH_MSG_STRUCT dl_ccch_msg;
-  LIBLTE_RRC_DL_DCCH_MSG_STRUCT dl_dcch_msg;
+  std::map<uint32_t, LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT>  srbs;
+  std::map<uint32_t, LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT>  drbs;
+
+  LIBLTE_RRC_DL_CCCH_MSG_STRUCT                         dl_ccch_msg;
+  LIBLTE_RRC_DL_DCCH_MSG_STRUCT                         dl_dcch_msg;
 
   pthread_t             sib_search_thread;
 

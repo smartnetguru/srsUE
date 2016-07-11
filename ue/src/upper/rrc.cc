@@ -30,7 +30,7 @@
 
 #include "upper/rrc.h"
 #include <srslte/utils/bit.h>
-#include "liblte_security.h"
+#include "common/security.h"
 
 #define TIMEOUT_RESYNC_REESTABLISH 100
 
@@ -394,13 +394,13 @@ void rrc::send_con_restablish_request()
   srslte_bit_pack_vector(varShortMAC, varShortMAC_packed, msg_ptr - varShortMAC);
   
   uint8_t mac_key[4];
-  liblte_security_128_eia2(&k_rrc_int[16],
-                           1,
-                           1,
-                           1,
-                           varShortMAC_packed,
-                           7,
-                           mac_key);
+  security_128_eia2(&k_rrc_int[16],
+                     1,
+                     1,
+                     1,
+                     varShortMAC_packed,
+                     7,
+                     mac_key);
   
   // Prepare ConnectionRestalishmentRequest packet
   ul_ccch_msg.msg_type = LIBLTE_RRC_UL_CCCH_MSG_TYPE_RRC_CON_REEST_REQ;
@@ -755,14 +755,12 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_SECURITY_MODE_COMMAND:
     transaction_id =  dl_dcch_msg.msg.security_mode_cmd.rrc_transaction_id;
 
-    // TODO: Set algorithms correctly in PDCP
-    // TODO: We currently only support EEA0 and EIA2 & they're hardcoded in PDCP
-    //LIBLTE_RRC_CIPHERING_ALGORITHM_ENUM ciph        = dl_dcch_msg.msg.security_mode_cmd.sec_algs.cipher_alg;
-    //LIBLTE_RRC_INTEGRITY_PROT_ALGORITHM_ENUM integ  = dl_dcch_msg.msg.security_mode_cmd.sec_algs.int_alg;
+    cipher_algo = (CIPHERING_ALGORITHM_ID_ENUM)dl_dcch_msg.msg.security_mode_cmd.sec_algs.cipher_alg;
+    integ_algo  = (INTEGRITY_ALGORITHM_ID_ENUM)dl_dcch_msg.msg.security_mode_cmd.sec_algs.int_alg;
 
     // Configure PDCP for security
-    usim->generate_as_keys(nas->get_ul_count(), k_rrc_enc, k_rrc_int, k_up_enc, k_up_int);
-    pdcp->config_security(lcid, k_rrc_enc, k_rrc_int);
+    usim->generate_as_keys(nas->get_ul_count(), k_rrc_enc, k_rrc_int, k_up_enc, k_up_int, cipher_algo, integ_algo);
+    pdcp->config_security(lcid, k_rrc_enc, k_rrc_int, cipher_algo, integ_algo);
     send_security_mode_complete(lcid, pdu);
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_RRC_CON_RECONFIG:
@@ -1291,7 +1289,7 @@ void rrc::add_srb(LIBLTE_RRC_SRB_TO_ADD_MOD_STRUCT *srb_cnfg)
   // Setup PDCP
   pdcp->add_bearer(srb_cnfg->srb_id);
   if(RB_ID_SRB2 == srb_cnfg->srb_id)
-    pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int);
+    pdcp->config_security(srb_cnfg->srb_id, k_rrc_enc, k_rrc_int, cipher_algo, integ_algo);
 
   // Setup RLC
   if(srb_cnfg->rlc_cnfg_present)

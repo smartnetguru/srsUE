@@ -2550,10 +2550,7 @@ LIBLTE_ERROR_ENUM liblte_mme_parse_msg_header(LIBLTE_BYTE_MSG_STRUCT *msg,
                                               uint8                  *msg_type);
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_protected_nas_msg(LIBLTE_BYTE_MSG_STRUCT *msg,
                                                              uint8                   sec_hdr_type,
-                                                             uint8                  *key_256,
                                                              uint32                  count,
-                                                             uint8                   direction,
-                                                             uint8                   rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT *sec_msg);
 
 /*********************************************************************
@@ -2609,10 +2606,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_attach_accept_msg(LIBLTE_MME_ATTACH_ACCEPT_MSG_STRUCT *attach_accept,
                                                     uint8                                sec_hdr_type,
-                                                    uint8                               *key_256,
                                                     uint32                               count,
-                                                    uint8                                direction,
-                                                    uint8                                rb_id,
                                                     LIBLTE_BYTE_MSG_STRUCT              *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_attach_accept_msg(LIBLTE_BYTE_MSG_STRUCT              *msg,
                                                       LIBLTE_MME_ATTACH_ACCEPT_MSG_STRUCT *attach_accept);
@@ -2634,10 +2628,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_attach_complete_msg(LIBLTE_MME_ATTACH_COMPLETE_MSG_STRUCT *attach_comp,
                                                       uint8                                  sec_hdr_type,
-                                                      uint8                                 *key_256,
                                                       uint32                                 count,
-                                                      uint8                                  direction,
-                                                      uint8                                  rb_id,
                                                       LIBLTE_BYTE_MSG_STRUCT                *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_attach_complete_msg(LIBLTE_BYTE_MSG_STRUCT                *msg,
                                                         LIBLTE_MME_ATTACH_COMPLETE_MSG_STRUCT *attach_comp);
@@ -2850,10 +2841,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_detach_accept_msg(LIBLTE_MME_DETACH_ACCEPT_MSG_STRUCT *detach_accept,
                                                     uint8                                sec_hdr_type,
-                                                    uint8                               *key_256,
                                                     uint32                               count,
-                                                    uint8                                direction,
-                                                    uint8                                rb_id,
                                                     LIBLTE_BYTE_MSG_STRUCT              *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_detach_accept_msg(LIBLTE_BYTE_MSG_STRUCT              *msg,
                                                       LIBLTE_MME_DETACH_ACCEPT_MSG_STRUCT *detach_accept);
@@ -2877,10 +2865,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_detach_request_msg(LIBLTE_MME_DETACH_REQUEST_MSG_STRUCT *detach_req,
                                                      uint8                                 sec_hdr_type,
-                                                     uint8                                *key_256,
                                                      uint32                                count,
-                                                     uint8                                 direction,
-                                                     uint8                                 rb_id,
                                                      LIBLTE_BYTE_MSG_STRUCT               *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_detach_request_msg(LIBLTE_BYTE_MSG_STRUCT               *msg,
                                                        LIBLTE_MME_DETACH_REQUEST_MSG_STRUCT *detach_req);
@@ -2902,10 +2887,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_nas_transport_msg(LIBLTE_MME_DOWNLINK_NAS_TRANSPORT_MSG_STRUCT *dl_nas_transport,
                                                              uint8                                         sec_hdr_type,
-                                                             uint8                                        *key_256,
                                                              uint32                                        count,
-                                                             uint8                                         direction,
-                                                             uint8                                         rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT                       *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_downlink_nas_transport_msg(LIBLTE_BYTE_MSG_STRUCT                       *msg,
                                                                LIBLTE_MME_DOWNLINK_NAS_TRANSPORT_MSG_STRUCT *dl_nas_transport);
@@ -2941,10 +2923,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_emm_information_msg(LIBLTE_MME_EMM_INFORMATION_MSG_STRUCT *emm_info,
                                                       uint8                                  sec_hdr_type,
-                                                      uint8                                 *key_256,
                                                       uint32                                 count,
-                                                      uint8                                  direction,
-                                                      uint8                                  rb_id,
                                                       LIBLTE_BYTE_MSG_STRUCT                *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_emm_information_msg(LIBLTE_BYTE_MSG_STRUCT                *msg,
                                                         LIBLTE_MME_EMM_INFORMATION_MSG_STRUCT *emm_info);
@@ -2966,10 +2945,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_emm_status_msg(LIBLTE_MME_EMM_STATUS_MSG_STRUCT *emm_status,
                                                  uint8                             sec_hdr_type,
-                                                 uint8                            *key_256,
                                                  uint32                            count,
-                                                 uint8                             direction,
-                                                 uint8                             rb_id,
                                                  LIBLTE_BYTE_MSG_STRUCT           *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_emm_status_msg(LIBLTE_BYTE_MSG_STRUCT           *msg,
                                                    LIBLTE_MME_EMM_STATUS_MSG_STRUCT *emm_status);
@@ -3008,10 +2984,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_extended_service_request_msg(LIBLTE_MME_EXTENDED_SERVICE_REQUEST_MSG_STRUCT *ext_service_req,
                                                                uint8                                           sec_hdr_type,
-                                                               uint8                                          *key_256,
                                                                uint32                                          count,
-                                                               uint8                                           direction,
-                                                               uint8                                           rb_id,
                                                                LIBLTE_BYTE_MSG_STRUCT                         *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_extended_service_request_msg(LIBLTE_BYTE_MSG_STRUCT                         *msg,
                                                                  LIBLTE_MME_EXTENDED_SERVICE_REQUEST_MSG_STRUCT *ext_service_req);
@@ -3036,10 +3009,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_command_msg(LIBLTE_MME_GUTI_REALLOCATION_COMMAND_MSG_STRUCT *guti_realloc_cmd,
                                                                 uint8                                            sec_hdr_type,
-                                                                uint8                                           *key_256,
                                                                 uint32                                           count,
-                                                                uint8                                            direction,
-                                                                uint8                                            rb_id,
                                                                 LIBLTE_BYTE_MSG_STRUCT                          *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_guti_reallocation_command_msg(LIBLTE_BYTE_MSG_STRUCT                          *msg,
                                                                   LIBLTE_MME_GUTI_REALLOCATION_COMMAND_MSG_STRUCT *guti_realloc_cmd);
@@ -3060,10 +3030,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_guti_reallocation_complete_msg(LIBLTE_MME_GUTI_REALLOCATION_COMPLETE_MSG_STRUCT *guti_realloc_complete,
                                                                  uint8                                             sec_hdr_type,
-                                                                 uint8                                            *key_256,
                                                                  uint32                                            count,
-                                                                 uint8                                             direction,
-                                                                 uint8                                             rb_id,
                                                                  LIBLTE_BYTE_MSG_STRUCT                           *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_guti_reallocation_complete_msg(LIBLTE_BYTE_MSG_STRUCT                           *msg,
                                                                    LIBLTE_MME_GUTI_REALLOCATION_COMPLETE_MSG_STRUCT *guti_realloc_complete);
@@ -3137,10 +3104,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_command_msg(LIBLTE_MME_SECURITY_MODE_COMMAND_MSG_STRUCT *sec_mode_cmd,
                                                             uint8                                        sec_hdr_type,
-                                                            uint8                                       *key_256,
                                                             uint32                                       count,
-                                                            uint8                                        direction,
-                                                            uint8                                        rb_id,
                                                             LIBLTE_BYTE_MSG_STRUCT                      *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_security_mode_command_msg(LIBLTE_BYTE_MSG_STRUCT                      *msg,
                                                               LIBLTE_MME_SECURITY_MODE_COMMAND_MSG_STRUCT *sec_mode_cmd);
@@ -3164,10 +3128,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_security_mode_complete_msg(LIBLTE_MME_SECURITY_MODE_COMPLETE_MSG_STRUCT *sec_mode_comp,
                                                              uint8                                         sec_hdr_type,
-                                                             uint8                                        *key_256,
                                                              uint32                                        count,
-                                                             uint8                                         direction,
-                                                             uint8                                         rb_id,
                                                              LIBLTE_BYTE_MSG_STRUCT                       *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_security_mode_complete_msg(LIBLTE_BYTE_MSG_STRUCT                       *msg,
                                                                LIBLTE_MME_SECURITY_MODE_COMPLETE_MSG_STRUCT *sec_mode_comp);
@@ -3215,10 +3176,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_service_reject_msg(LIBLTE_MME_SERVICE_REJECT_MSG_STRUCT *service_rej,
                                                      uint8                                 sec_hdr_type,
-                                                     uint8                                *key_256,
                                                      uint32                                count,
-                                                     uint8                                 direction,
-                                                     uint8                                 rb_id,
                                                      LIBLTE_BYTE_MSG_STRUCT               *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_service_reject_msg(LIBLTE_BYTE_MSG_STRUCT               *msg,
                                                        LIBLTE_MME_SERVICE_REJECT_MSG_STRUCT *service_rej);
@@ -3292,10 +3250,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_accept_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_ACCEPT_MSG_STRUCT *ta_update_accept,
                                                                   uint8                                              sec_hdr_type,
-                                                                  uint8                                             *key_256,
                                                                   uint32                                             count,
-                                                                  uint8                                              direction,
-                                                                  uint8                                              rb_id,
                                                                   LIBLTE_BYTE_MSG_STRUCT                            *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_accept_msg(LIBLTE_BYTE_MSG_STRUCT                            *msg,
                                                                     LIBLTE_MME_TRACKING_AREA_UPDATE_ACCEPT_MSG_STRUCT *ta_update_accept);
@@ -3317,10 +3272,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_complete_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_COMPLETE_MSG_STRUCT *ta_update_complete,
                                                                     uint8                                                sec_hdr_type,
-                                                                    uint8                                               *key_256,
                                                                     uint32                                               count,
-                                                                    uint8                                                direction,
-                                                                    uint8                                                rb_id,
                                                                     LIBLTE_BYTE_MSG_STRUCT                              *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_complete_msg(LIBLTE_BYTE_MSG_STRUCT                              *msg,
                                                                       LIBLTE_MME_TRACKING_AREA_UPDATE_COMPLETE_MSG_STRUCT *ta_update_complete);
@@ -3344,10 +3296,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_reject_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_REJECT_MSG_STRUCT *ta_update_rej,
                                                                   uint8                                              sec_hdr_type,
-                                                                  uint8                                             *key_256,
                                                                   uint32                                             count,
-                                                                  uint8                                              direction,
-                                                                  uint8                                              rb_id,
                                                                   LIBLTE_BYTE_MSG_STRUCT                            *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_tracking_area_update_reject_msg(LIBLTE_BYTE_MSG_STRUCT                            *msg,
                                                                     LIBLTE_MME_TRACKING_AREA_UPDATE_REJECT_MSG_STRUCT *ta_update_rej);
@@ -3383,10 +3332,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_nas_transport_msg(LIBLTE_MME_UPLINK_NAS_TRANSPORT_MSG_STRUCT *ul_nas_transport,
                                                            uint8                                       sec_hdr_type,
-                                                           uint8                                      *key_256,
                                                            uint32                                      count,
-                                                           uint8                                       direction,
-                                                           uint8                                       rb_id,
                                                            LIBLTE_BYTE_MSG_STRUCT                     *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_uplink_nas_transport_msg(LIBLTE_BYTE_MSG_STRUCT                     *msg,
                                                              LIBLTE_MME_UPLINK_NAS_TRANSPORT_MSG_STRUCT *ul_nas_transport);
@@ -3411,10 +3357,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_downlink_generic_nas_transport_msg(LIBLTE_MME_DOWNLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *dl_generic_nas_transport,
                                                                      uint8                                                 sec_hdr_type,
-                                                                     uint8                                                *key_256,
                                                                      uint32                                                count,
-                                                                     uint8                                                 direction,
-                                                                     uint8                                                 rb_id,
                                                                      LIBLTE_BYTE_MSG_STRUCT                               *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_downlink_generic_nas_transport_msg(LIBLTE_BYTE_MSG_STRUCT                               *msg,
                                                                        LIBLTE_MME_DOWNLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *dl_generic_nas_transport);
@@ -3439,10 +3382,7 @@ typedef struct{
 // Functions
 LIBLTE_ERROR_ENUM liblte_mme_pack_uplink_generic_nas_transport_msg(LIBLTE_MME_UPLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *ul_generic_nas_transport,
                                                                    uint8                                               sec_hdr_type,
-                                                                   uint8                                              *key_256,
                                                                    uint32                                              count,
-                                                                   uint8                                               direction,
-                                                                   uint8                                               rb_id,
                                                                    LIBLTE_BYTE_MSG_STRUCT                             *msg);
 LIBLTE_ERROR_ENUM liblte_mme_unpack_uplink_generic_nas_transport_msg(LIBLTE_BYTE_MSG_STRUCT                             *msg,
                                                                      LIBLTE_MME_UPLINK_GENERIC_NAS_TRANSPORT_MSG_STRUCT *ul_generic_nas_transport);

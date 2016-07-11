@@ -31,6 +31,7 @@
 #include "common/log.h"
 #include "common/common.h"
 #include "common/interfaces.h"
+#include "common/security.h"
 #include "liblte_mme.h"
 
 namespace srsue {
@@ -102,6 +103,20 @@ private:
   uint8_t  ksi;
   uint8_t  k_nas_enc[32];
   uint8_t  k_nas_int[32];
+
+  CIPHERING_ALGORITHM_ID_ENUM cipher_algo;
+  INTEGRITY_ALGORITHM_ID_ENUM integ_algo;
+
+  void integrity_generate(uint8_t  *key_128,
+                          uint32_t  count,
+                          uint8_t   rb_id,
+                          uint8_t   direction,
+                          uint8_t  *msg,
+                          uint32_t  msg_len,
+                          uint8_t  *mac);
+  void integrity_check();
+  void cipher_encrypt();
+  void cipher_decrypt();
 
   // Parsers
   void parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu);

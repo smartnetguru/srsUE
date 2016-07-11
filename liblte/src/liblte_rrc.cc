@@ -1993,6 +1993,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_meas_object_eutra_ie(uint8                  
         liblte_bits_2_value(ie_ptr, 1);
 
         // Optional indicators
+        meas_obj_eutra->offset_freq_not_default            = liblte_bits_2_value(ie_ptr, 1);
         meas_obj_eutra->cells_to_remove_list_present       = liblte_bits_2_value(ie_ptr, 1);
         cells_to_add_mod_list_present                      = liblte_bits_2_value(ie_ptr, 1);
         meas_obj_eutra->black_cells_to_remove_list_present = liblte_bits_2_value(ie_ptr, 1);
@@ -2012,7 +2013,10 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_meas_object_eutra_ie(uint8                  
         liblte_rrc_unpack_neigh_cell_config_ie(ie_ptr, &meas_obj_eutra->neigh_cell_cnfg);
 
         // Offset Freq
-        liblte_rrc_unpack_q_offset_range_ie(ie_ptr, &meas_obj_eutra->offset_freq);
+        if(meas_obj_eutra->offset_freq_not_default)
+        {
+          liblte_rrc_unpack_q_offset_range_ie(ie_ptr, &meas_obj_eutra->offset_freq);
+        }
 
         // Cells To Remove List
         if(meas_obj_eutra->cells_to_remove_list_present)
@@ -2249,6 +2253,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_meas_object_to_add_mod_list_ie(uint8        
         {
             // Meas Object ID
             liblte_rrc_unpack_meas_object_id_ie(ie_ptr, &list->meas_obj_list[i].meas_obj_id);
+
+            // Meas Object Choice Extension
+            liblte_bits_2_value(ie_ptr, 1);
 
             // Meas Object Choice
             list->meas_obj_list[i].meas_obj_type = (LIBLTE_RRC_MEAS_OBJECT_TYPE_ENUM)liblte_bits_2_value(ie_ptr, 2);
@@ -2519,26 +2526,38 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_quantity_config_ie(uint8                    
         qc->qc_geran_present    = liblte_bits_2_value(ie_ptr, 1);
         qc->qc_cdma2000_present = liblte_bits_2_value(ie_ptr, 1);
 
-        // Quality Config EUTRA
+        // Quantity Config EUTRA
         if(qc->qc_eutra_present)
         {
-            liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_eutra.fc_rsrp);
-            liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_eutra.fc_rsrq);
+            qc->qc_eutra.fc_rsrp_not_default = liblte_bits_2_value(ie_ptr, 1);
+            qc->qc_eutra.fc_rsrq_not_default = liblte_bits_2_value(ie_ptr, 1);
+            if(qc->qc_eutra.fc_rsrp_not_default) {
+              liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_eutra.fc_rsrp);
+            }
+            if(qc->qc_eutra.fc_rsrq_not_default) {
+              liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_eutra.fc_rsrq);
+            }
         }
 
-        // Quality Config UTRA
+        // Quantity Config UTRA
         if(qc->qc_utra_present)
         {
+            qc->qc_utra.fc_not_default = liblte_bits_2_value(ie_ptr, 1);
             qc->qc_utra.mq_fdd = (LIBLTE_RRC_MEAS_QUANTITY_UTRA_FDD_ENUM)liblte_bits_2_value(ie_ptr, 1);
-            qc->qc_utra.mq_tdd = (LIBLTE_RRC_MEAS_QUANTITY_UTRA_TDD_ENUM)liblte_bits_2_value(ie_ptr, 1);
-            liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_utra.fc);
+            qc->qc_utra.mq_tdd = LIBLTE_RRC_MEAS_QUANTITY_UTRA_TDD_PCCPCH_RSCP;
+            if(qc->qc_utra.fc_not_default) {
+              liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_utra.fc);
+            }
         }
 
-        // Quality Config GERAN
+        // Quantity Config GERAN
         if(qc->qc_geran_present)
         {
-            qc->qc_geran.mq = (LIBLTE_RRC_MEAS_QUANTITY_GERAN_ENUM)liblte_bits_2_value(ie_ptr, 1);
-            liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_geran.fc);
+            qc->qc_geran.fc_not_default = liblte_bits_2_value(ie_ptr, 1);
+            qc->qc_geran.mq = LIBLTE_RRC_MEAS_QUANTITY_GERAN_RSSI;
+            if(qc->qc_geran.fc_not_default) {
+              liblte_rrc_unpack_filter_coefficient_ie(ie_ptr, &qc->qc_geran.fc);
+            }
         }
 
         // Quality Config CDMA2000
@@ -2684,8 +2703,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_report_config_eutra_ie(uint8                
         rep_cnfg_eutra->trigger_type = (LIBLTE_RRC_TRIGGER_TYPE_EUTRA_ENUM)liblte_bits_2_value(ie_ptr, 1);
         if(LIBLTE_RRC_TRIGGER_TYPE_EUTRA_EVENT == rep_cnfg_eutra->trigger_type)
         {
+            // Event ID choice extension indicator
+            liblte_bits_2_value(ie_ptr, 1);
+
             // Event ID
-            // FIXME: Handle extension properly
+            rep_cnfg_eutra->event.event_id = (LIBLTE_RRC_EVENT_ID_EUTRA_ENUM)liblte_bits_2_value(ie_ptr, 3);
+
             if(LIBLTE_RRC_EVENT_ID_EUTRA_A1 == rep_cnfg_eutra->event.event_id)
             {
                 // Threshold Type
@@ -2763,7 +2786,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_report_config_eutra_ie(uint8                
         rep_cnfg_eutra->report_quantity = (LIBLTE_RRC_REPORT_QUANTITY_ENUM)liblte_bits_2_value(ie_ptr, 1);
 
         // Max Report Cells
-        rep_cnfg_eutra->max_report_cells = liblte_bits_2_value(ie_ptr, 3) - 1;
+        rep_cnfg_eutra->max_report_cells = liblte_bits_2_value(ie_ptr, 3) + 1;
 
         // Report Interval
         liblte_rrc_unpack_report_interval_ie(ie_ptr, &rep_cnfg_eutra->report_interval);

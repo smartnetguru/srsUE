@@ -26,7 +26,7 @@
 
 
 #include "upper/pdcp_entity.h"
-#include "liblte/hdr/liblte_security.h"
+#include "common/security.h"
 
 using namespace srslte;
 
@@ -97,15 +97,16 @@ void pdcp_entity::write_sdu(byte_buffer_t *sdu)
     break;
   case RB_ID_SRB1:  // Intentional fall-through
   case RB_ID_SRB2:
+    pdcp_pack_control_pdu(tx_count, sdu);
     if(do_security)
     {
-      pdcp_pack_control_pdu(tx_count,
-                            sdu,
-                            k_rrc_int,
-                            LIBLTE_SECURITY_DIRECTION_UPLINK,
-                            lcid-1);
-    }else{
-      pdcp_pack_control_pdu(tx_count, sdu);
+      integrity_generate(&k_rrc_int[16],
+                         tx_count,
+                         lcid-1,
+                         SECURITY_DIRECTION_UPLINK,
+                         sdu->msg,
+                         sdu->N_bytes-4,
+                         &sdu->msg[sdu->N_bytes-4]);
     }
     tx_count++;
     rlc->write_sdu(lcid, sdu);
@@ -126,7 +127,10 @@ void pdcp_entity::write_sdu(byte_buffer_t *sdu)
   }
 }
 
-void pdcp_entity::config_security(uint8_t *k_rrc_enc_, uint8_t *k_rrc_int_)
+void pdcp_entity::config_security(uint8_t *k_rrc_enc_,
+                                  uint8_t *k_rrc_int_,
+                                  CIPHERING_ALGORITHM_ID_ENUM cipher_algo_,
+                                  INTEGRITY_ALGORITHM_ID_ENUM integ_algo_)
 {
   do_security = true;
   for(int i=0; i<32; i++)
@@ -134,6 +138,8 @@ void pdcp_entity::config_security(uint8_t *k_rrc_enc_, uint8_t *k_rrc_int_)
     k_rrc_enc[i] = k_rrc_enc_[i];
     k_rrc_int[i] = k_rrc_int_[i];
   }
+  cipher_algo = cipher_algo_;
+  integ_algo  = integ_algo_;
 }
 
 // RLC interface
@@ -173,6 +179,41 @@ void pdcp_entity::write_pdu(byte_buffer_t *pdu)
   }
 }
 
+void pdcp_entity::integrity_generate( uint8_t  *key_128,
+                                      uint32_t  count,
+                                      uint8_t   rb_id,
+                                      uint8_t   direction,
+                                      uint8_t  *msg,
+                                      uint32_t  msg_len,
+                                      uint8_t  *mac)
+{
+  switch(integ_algo)
+  {
+  case INTEGRITY_ALGORITHM_ID_EIA0:
+    break;
+  case INTEGRITY_ALGORITHM_ID_128_EIA1:
+    security_128_eia1(key_128,
+                      count,
+                      rb_id,
+                      direction,
+                      msg,
+                      msg_len,
+                      mac);
+    break;
+  case INTEGRITY_ALGORITHM_ID_128_EIA2:
+    security_128_eia2(key_128,
+                      count,
+                      rb_id,
+                      direction,
+                      msg,
+                      msg_len,
+                      mac);
+    break;
+  default:
+    break;
+  }
+}
+
 /****************************************************************************
  * Pack/Unpack helper functions
  * Ref: 3GPP TS 36.323 v10.1.0
@@ -191,24 +232,6 @@ void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu)
   sdu->msg[sdu->N_bytes++] = (PDCP_CONTROL_MAC_I >>  8) & 0xFF;
   sdu->msg[sdu->N_bytes++] =  PDCP_CONTROL_MAC_I        & 0xFF;
 
-}
-
-void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu, uint8_t *key_256, uint8_t direction, uint8_t lcid)
-{
-  // Make room and add header
-  sdu->msg--;
-  sdu->N_bytes++;
-  *sdu->msg = sn & 0x1F;
-
-  // Add MAC
-  liblte_security_128_eia2(&key_256[16],
-                           sn,
-                           lcid,
-                           direction,
-                           sdu->msg,
-                           sdu->N_bytes,
-                           &sdu->msg[sdu->N_bytes]);
-  sdu->N_bytes += 4;
 }
 
 void pdcp_unpack_control_pdu(byte_buffer_t *pdu, uint32_t *sn)

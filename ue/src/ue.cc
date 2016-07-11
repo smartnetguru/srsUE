@@ -210,6 +210,10 @@ void ue::set_expert_parameters() {
   phy.set_param(phy_interface_params::CQI_MAX, args->expert.cqi_max);      
   phy.set_param(phy_interface_params::CQI_OFFSET, args->expert.cqi_offset);      
   phy.set_param(phy_interface_params::CQI_FIXED, args->expert.cqi_fixed);
+  phy.set_param(phy_interface_params::CQI_RANDOM_MS, args->expert.cqi_random_ms);
+  phy.set_param(phy_interface_params::CQI_PERIOD_MS, args->expert.cqi_period_ms);
+  phy.set_param(phy_interface_params::CQI_PERIOD_DUTY_100, args->expert.cqi_period_duty*100);
+
   
   if (!args->expert.snr_estim_alg.compare("refs")) {
     phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 1);
@@ -316,12 +320,15 @@ void ue::handle_rf_msg(srslte_rf_error_t error)
   if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OVERFLOW) {
     rf_metrics.rf_o++;
     rf_metrics.rf_error = true;
+    rf_log.warning("Overflow\n");
   }else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_UNDERFLOW) {
     rf_metrics.rf_u++;
     rf_metrics.rf_error = true;
+    rf_log.warning("Underflow\n");
   } else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_LATE) {
     rf_metrics.rf_l++;
     rf_metrics.rf_error = true;
+    rf_log.warning("Late\n");
   } else if (error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OTHER) {
     std::string str(error.msg);
     str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());

@@ -95,7 +95,11 @@ struct rlc_amd_pdu_header_t{
   uint32_t       N_li;                    // Number of length indicators
   uint16_t       li[RLC_AM_WINDOW_SIZE];  // Array of length indicators
 
-  rlc_amd_pdu_header_t(){N_li=0;}
+  rlc_amd_pdu_header_t(){
+    N_li=0;
+    for(int i=0;i<RLC_AM_WINDOW_SIZE;i++)
+      li[i] = 0;
+  }
   rlc_amd_pdu_header_t(const rlc_amd_pdu_header_t& h){copy(h);}
   rlc_amd_pdu_header_t& operator= (const rlc_amd_pdu_header_t& h){copy(h);}
   void copy(const rlc_amd_pdu_header_t& h)

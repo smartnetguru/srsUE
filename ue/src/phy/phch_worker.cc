@@ -62,6 +62,8 @@ phch_worker::phch_worker() : tr_exec(10240)
   pregen_enabled  = false; 
   trace_enabled   = false; 
   
+  ul_dl_factor = 1; 
+  
   reset();  
 }
 
@@ -110,6 +112,9 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
     
+  
+  ul_dl_factor = phy->get_radio()->get_tx_freq()/phy->get_radio()->get_rx_freq();
+  
   cell_initiated = true; 
   
   return true; 
@@ -139,7 +144,7 @@ void phch_worker::set_tti(uint32_t tti_, uint32_t tx_tti_)
 
 void phch_worker::set_cfo(float cfo_)
 {
-  cfo = cfo_;
+  cfo = cfo_*ul_dl_factor;
 }
 
 void phch_worker::set_sample_offset(float sample_offset)
@@ -595,6 +600,42 @@ void phch_worker::set_uci_sr()
 
 void phch_worker::set_uci_periodic_cqi()
 {
+  int cqi_period_ms = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_MS);
+  int cqi_random_ms = phy->params_db->get_param(phy_interface_params::CQI_RANDOM_MS);
+  int cqi_fixed     = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
+  int cqi_max       = phy->params_db->get_param(phy_interface_params::CQI_MAX);
+  int cqi_offset    = phy->params_db->get_param(phy_interface_params::CQI_OFFSET); 
+  int duty_cycle    = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_DUTY_100); 
+  int cqi_value; 
+  if (cqi_period_ms) {
+    phy->cqi_period_cnt++; 
+    if (phy->cqi_period_cnt >= (cqi_period_ms*duty_cycle)/100) {
+      if (cqi_fixed < 0) {
+        phy->cqi_period_value = 0; 
+      } else {
+        phy->cqi_period_value = cqi_fixed;
+      }
+    } 
+    if (phy->cqi_period_cnt >= cqi_period_ms) {
+      phy->cqi_period_cnt = 0; 
+      if (cqi_fixed < 0) {
+        phy->cqi_period_value = 15; 
+      } else {
+        phy->cqi_period_value = cqi_fixed+cqi_offset;
+      }
+    }
+  } else if (cqi_random_ms) {
+    phy->cqi_period_cnt++; 
+    if (phy->cqi_period_cnt == cqi_random_ms) {
+      phy->cqi_period_cnt = 0; 
+      if (cqi_fixed < 0) {
+        phy->cqi_random_value = rand()%15;
+      } else {
+        phy->cqi_random_value = cqi_fixed + (rand()%cqi_offset);              
+      }
+    }
+  }
+
   if ((period_cqi.configured || rar_cqi_request) && rnti_is_set) {
     if (srslte_cqi_send(period_cqi.pmi_idx, (tti+4)%10240)) {
       srslte_cqi_value_t cqi_report;
@@ -607,16 +648,20 @@ void phch_worker::set_uci_periodic_cqi()
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        int cqi_fixed = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
-        if (cqi_fixed < 0) {
-          cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
-          cqi_report.wideband.wideband_cqi -= phy->params_db->get_param(phy_interface_params::CQI_OFFSET);          
-          int cqi_max = phy->params_db->get_param(phy_interface_params::CQI_MAX);
-          if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
-            cqi_report.wideband.wideband_cqi = cqi_max;
-          }
+        if (cqi_period_ms) {
+          cqi_report.wideband.wideband_cqi = phy->cqi_period_value;
+        } else if (cqi_random_ms) {
+          cqi_report.wideband.wideband_cqi = phy->cqi_random_value;          
         } else {
-          cqi_report.wideband.wideband_cqi = cqi_fixed; 
+          if (cqi_fixed < 0) {
+            cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
+            cqi_report.wideband.wideband_cqi -= cqi_offset;          
+            if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
+              cqi_report.wideband.wideband_cqi = cqi_max;
+            }
+          } else {
+            cqi_report.wideband.wideband_cqi = cqi_fixed; 
+          }
         }
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db);
       }
@@ -1047,6 +1092,10 @@ void *plot_thread_run(void *arg) {
   plot_scatter_setXAxisScale(&pconst, -4, 4);
   plot_scatter_setYAxisScale(&pconst, -4, 4);
 
+  plot_real_addToWindowGrid(&pce, (char*)"srsue", 0, 0);
+  plot_scatter_addToWindowGrid(&pconst, (char*)"srsue", 0, 1);
+
+  
   int n; 
   int readed_pdsch_re=0; 
   while(1) {

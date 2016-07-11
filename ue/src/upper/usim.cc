@@ -26,7 +26,6 @@
 
 
 #include "upper/usim.h"
-#include "liblte_security.h"
 
 using namespace srslte;
 
@@ -147,40 +146,49 @@ void usim::generate_authentication_response(uint8_t  *rand,
   }
 }
 
-void usim::generate_nas_keys(uint8_t *k_nas_enc, uint8_t *k_nas_int)
+void usim::generate_nas_keys(uint8_t *k_nas_enc,
+                             uint8_t *k_nas_int,
+                             CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                             INTEGRITY_ALGORITHM_ID_ENUM integ_algo)
 {
   // Generate K_nas_enc and K_nas_int
-  liblte_security_generate_k_nas(k_asme,
-                                 LIBLTE_SECURITY_CIPHERING_ALGORITHM_ID_EEA0,
-                                 LIBLTE_SECURITY_INTEGRITY_ALGORITHM_ID_128_EIA2,
-                                 k_nas_enc,
-                                 k_nas_int);
+  security_generate_k_nas( k_asme,
+                           cipher_algo,
+                           integ_algo,
+                           k_nas_enc,
+                           k_nas_int);
 }
 
 /*******************************************************************************
   RRC interface
 *******************************************************************************/
 
-void usim::generate_as_keys(uint32_t count_ul, uint8_t *k_rrc_enc, uint8_t *k_rrc_int, uint8_t *k_up_enc, uint8_t *k_up_int)
+void usim::generate_as_keys(uint32_t count_ul,
+                            uint8_t *k_rrc_enc,
+                            uint8_t *k_rrc_int,
+                            uint8_t *k_up_enc,
+                            uint8_t *k_up_int,
+                            CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                            INTEGRITY_ALGORITHM_ID_ENUM integ_algo)
 {
   // Generate K_enb
-  liblte_security_generate_k_enb(k_asme,
-                                 count_ul,
-                                 k_enb);
+  security_generate_k_enb( k_asme,
+                           count_ul,
+                           k_enb);
 
   // Generate K_rrc_enc and K_rrc_int
-  liblte_security_generate_k_rrc(k_enb,
-                                 LIBLTE_SECURITY_CIPHERING_ALGORITHM_ID_EEA0,
-                                 LIBLTE_SECURITY_INTEGRITY_ALGORITHM_ID_128_EIA2,
-                                 k_rrc_enc,
-                                 k_rrc_int);
+  security_generate_k_rrc( k_enb,
+                           cipher_algo,
+                           integ_algo,
+                           k_rrc_enc,
+                           k_rrc_int);
 
   // Generate K_up_enc and K_up_int
-  liblte_security_generate_k_up(k_enb,
-                                LIBLTE_SECURITY_CIPHERING_ALGORITHM_ID_EEA0,
-                                LIBLTE_SECURITY_INTEGRITY_ALGORITHM_ID_128_EIA2,
-                                k_up_enc,
-                                k_up_int);
+  security_generate_k_up( k_enb,
+                          cipher_algo,
+                          integ_algo,
+                          k_up_enc,
+                          k_up_int);
 }
 
 /*******************************************************************************
@@ -200,13 +208,13 @@ void usim::gen_auth_res_milenage( uint8_t  *rand,
   *net_valid = true;
 
   // Use RAND and K to compute RES, CK, IK and AK
-  liblte_security_milenage_f2345(k,
-                                 op,
-                                 rand,
-                                 res,
-                                 ck,
-                                 ik,
-                                 ak);
+  security_milenage_f2345( k,
+                           op,
+                           rand,
+                           res,
+                           ck,
+                           ik,
+                           ak);
 
   // Extract sqn from autn
   for(i=0;i<6;i++)
@@ -215,12 +223,12 @@ void usim::gen_auth_res_milenage( uint8_t  *rand,
   }
 
   // Generate MAC
-  liblte_security_milenage_f1(k,
-                              op,
-                              rand,
-                              sqn,
-                              amf,
-                              mac);
+  security_milenage_f1( k,
+                        op,
+                        rand,
+                        sqn,
+                        amf,
+                        mac);
 
   // Construct AUTN
   for(i=0; i<6; i++)
@@ -246,13 +254,13 @@ void usim::gen_auth_res_milenage( uint8_t  *rand,
   }
 
   // Generate K_asme
-  liblte_security_generate_k_asme(ck,
-                                  ik,
-                                  ak,
-                                  sqn,
-                                  mcc,
-                                  mnc,
-                                  k_asme);
+  security_generate_k_asme( ck,
+                            ik,
+                            ak,
+                            sqn,
+                            mcc,
+                            mnc,
+                            k_asme);
 }
 
 // 3GPP TS 34.108 version 10.0.0 Section 8
@@ -325,13 +333,13 @@ void usim::gen_auth_res_xor(uint8_t  *rand,
   }
 
   // Generate K_asme
-  liblte_security_generate_k_asme(ck,
-                                  ik,
-                                  ak,
-                                  sqn,
-                                  mcc,
-                                  mnc,
-                                  k_asme);
+  security_generate_k_asme( ck,
+                            ik,
+                            ak,
+                            sqn,
+                            mcc,
+                            mnc,
+                            k_asme);
 }
 
 void usim::str_to_hex(std::string str, uint8_t *hex)

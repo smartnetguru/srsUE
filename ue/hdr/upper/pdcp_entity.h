@@ -31,6 +31,7 @@
 #include "common/log.h"
 #include "common/common.h"
 #include "common/interfaces.h"
+#include "common/security.h"
 
 namespace srsue {
 
@@ -72,7 +73,10 @@ public:
 
   // RRC interface
   void write_sdu(byte_buffer_t *sdu);
-  void config_security(uint8_t *k_rrc_enc_, uint8_t *k_rrc_int_);
+  void config_security(uint8_t *k_rrc_enc_,
+                       uint8_t *k_rrc_int_,
+                       CIPHERING_ALGORITHM_ID_ENUM cipher_algo_,
+                       INTEGRITY_ALGORITHM_ID_ENUM integ_algo_);
 
   // RLC interface
   void write_pdu(byte_buffer_t *pdu);
@@ -90,14 +94,23 @@ private:
 
   uint8_t             sn_len;
   // TODO: Support the following configurations
-  // LIBLTE_SECURITY_CIPHERING_ALGORITHM_ID_ENUM cipher_alg;
-  // LIBLTE_SECURITY_INTEGRITY_ALGORITHM_ID_ENUM integrity_alg;
   // bool do_rohc;
 
   uint32_t            rx_count;
   uint32_t            tx_count;
   uint8_t             k_rrc_enc[32];
   uint8_t             k_rrc_int[32];
+
+  CIPHERING_ALGORITHM_ID_ENUM cipher_algo;
+  INTEGRITY_ALGORITHM_ID_ENUM integ_algo;
+
+  void integrity_generate(uint8_t  *key_128,
+                          uint32_t  count,
+                          uint8_t   rb_id,
+                          uint8_t   direction,
+                          uint8_t  *msg,
+                          uint32_t  msg_len,
+                          uint8_t  *mac);
 
 };
 
@@ -107,7 +120,6 @@ private:
  ***************************************************************************/
 
 void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu);
-void pdcp_pack_control_pdu(uint32_t sn, byte_buffer_t *sdu, uint8_t *key_256, uint8_t direction, uint8_t lcid);
 void pdcp_unpack_control_pdu(byte_buffer_t *sdu, uint32_t *sn);
 
 void pdcp_pack_data_pdu_short_sn(uint32_t sn, byte_buffer_t *sdu);

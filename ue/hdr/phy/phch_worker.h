@@ -136,7 +136,7 @@ private:
   uint32_t                          I_sr; 
   float                             cfo;
   bool                              rar_cqi_request;
-  
+    
   // Metrics
   dl_metrics_t dl_metrics;
   ul_metrics_t ul_metrics;
@@ -144,6 +144,7 @@ private:
 #ifdef LOG_EXECTIME
   struct timeval logtime_start[3]; 
   bool chest_done;
+  float ul_dl_factor;
 #endif
   
 };

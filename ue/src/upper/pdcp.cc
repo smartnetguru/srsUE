@@ -79,10 +79,14 @@ void pdcp::add_bearer(uint32_t lcid, LIBLTE_RRC_PDCP_CONFIG_STRUCT *cnfg)
   }
 }
 
-void pdcp::config_security(uint32_t lcid, uint8_t *k_rrc_enc, uint8_t *k_rrc_int)
+void pdcp::config_security(uint32_t lcid,
+                           uint8_t *k_rrc_enc,
+                           uint8_t *k_rrc_int,
+                           CIPHERING_ALGORITHM_ID_ENUM cipher_algo,
+                           INTEGRITY_ALGORITHM_ID_ENUM integ_algo)
 {
   if(valid_lcid(lcid))
-    pdcp_array[lcid].config_security(k_rrc_enc, k_rrc_int);
+    pdcp_array[lcid].config_security(k_rrc_enc, k_rrc_int, cipher_algo, integ_algo);
 }
 
 /*******************************************************************************
