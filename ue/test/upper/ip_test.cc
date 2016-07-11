@@ -36,6 +36,7 @@ typedef struct {
   float tx_freq; 
   float rx_gain;
   float tx_gain;
+  uint32_t time_adv;
   std::string ip_address;
 }prog_args_t;
 
@@ -48,25 +49,27 @@ void args_default(prog_args_t *args) {
   args->tx_freq = 2.505e9;
   args->rx_freq = 2.625e9;
   args->rx_gain = 50.0; 
-  args->tx_gain = 80.0; 
+  args->tx_gain = 70.0; 
+  args->time_adv = 30; // calibrated for b210
   args->ip_address = "192.168.3.2";
 }
 
 void usage(prog_args_t *args, char *prog) {
-  printf("Usage: %s [gGIrfFv]\n", prog);
+  printf("Usage: %s [gGIrfFtv]\n", prog);
   printf("\t-f RX frequency [Default %.1f MHz]\n", args->rx_freq/1e6);
   printf("\t-F TX frequency [Default %.1f MHz]\n", args->tx_freq/1e6);
   printf("\t-g RX gain [Default %.1f]\n", args->rx_gain);
   printf("\t-G TX gain [Default %.1f]\n", args->tx_gain);
   printf("\t-I IP address [Default %s]\n", args->ip_address.c_str());
   printf("\t-r C-RNTI [Default %d]\n", args->rnti);
+  printf("\t-t time advance (in samples) [Default %d]\n", args->time_adv);
   printf("\t-v [increase verbosity, default none]\n");
 }
 
 void parse_args(prog_args_t *args, int argc, char **argv) {
   int opt;
   args_default(args);
-  while ((opt = getopt(argc, argv, "gGfFIrv")) != -1) {
+  while ((opt = getopt(argc, argv, "gGfFItrv")) != -1) {
     switch (opt) {
     case 'g':
       args->rx_gain = atof(argv[optind]);
@@ -85,6 +88,9 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       break;
     case 'r':
       args->rnti = atoi(argv[optind]);
+      break;
+    case 't':
+      args->time_adv = atoi(argv[optind]);
       break;
     case 'v':
       srsapps_verbose++;
@@ -500,9 +506,9 @@ int main(int argc, char *argv[])
   my_radio.set_tx_gain(prog_args.tx_gain);
   my_radio.set_rx_freq(prog_args.rx_freq);
   my_radio.set_rx_gain(prog_args.rx_gain);
-  my_radio.set_tx_adv(0);
+  my_radio.set_tx_adv(prog_args.time_adv);
       
-  my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 1);
+  my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 2);
   my_phy.set_crnti(prog_args.rnti);
   my_mac.init(&my_phy, &rlc, &my_tester, &log_out);
   rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);
