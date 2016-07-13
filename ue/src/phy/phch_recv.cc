@@ -303,7 +303,7 @@ int phch_recv::sync_sfn(void) {
       }
     }    
   } else {
-    Info("SYNC:  PSS/SSS not found...\n");
+    Debug("SYNC:  PSS/SSS not found...\n");
   }
   return 0;
 }

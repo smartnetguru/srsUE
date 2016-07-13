@@ -242,6 +242,14 @@ public:
         state = srsue::RRC_STATE_WAIT_FOR_CON_SETUP;
         mac->bcch_stop_rx();
         apply_sib2_configs();
+        
+        // Send Msg3 
+        srsue::byte_buffer_t *sdu = pool->allocate(); 
+        sprintf((char*) sdu->msg, "Hello world\n");
+        sdu->N_bytes = strlen((const char*) sdu->msg);
+        
+        rlc->write_sdu(0, sdu);
+
       }
     }
   }
@@ -252,14 +260,34 @@ public:
 
   void write_pdu(uint32_t lcid, srsue::byte_buffer_t *sdu)
   {
-    srslte_vec_fprint_byte(stdout, sdu->msg, sdu->N_bytes);
-    int n = write(tun_fd, sdu->msg, sdu->N_bytes);
-    if (n != sdu->N_bytes) {
-      log_h->error("TUN/TAP write failure n=%d, nof_bytes=%d\n", n, sdu->N_bytes);
-      return; 
+    int n=0;
+    switch(lcid) {
+      case LCID:
+        srslte_vec_fprint_byte(stdout, sdu->msg, sdu->N_bytes);
+        n = write(tun_fd, sdu->msg, sdu->N_bytes);
+        if (n != sdu->N_bytes) {
+          log_h->error("TUN/TAP write failure n=%d, nof_bytes=%d\n", n, sdu->N_bytes);
+          return; 
+        }
+        log_h->info("Wrote %d bytes to TUN fd=%d\n", sdu->N_bytes, tun_fd);      
+        pool->deallocate(sdu);
+      break;
+      case 0:
+        log_h->info("Received ConnectionSetupComplete\n");
+        
+        // Setup a single UM bearer 
+        LIBLTE_RRC_RLC_CONFIG_STRUCT cfg; 
+        bzero(&cfg, sizeof(LIBLTE_RRC_RLC_CONFIG_STRUCT));
+        cfg.rlc_mode = LIBLTE_RRC_RLC_MODE_UM_BI;
+        cfg.dl_um_bi_rlc.t_reordering = LIBLTE_RRC_T_REORDERING_MS100; 
+        cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE5;   
+        rlc->add_bearer(LCID, &cfg);
+
+      break;
+      default:
+        log_h->error("Received message for lcid=%d\n", lcid);
+      break;
     }
-    log_h->info("Wrote %d bytes to TUN fd=%d\n", sdu->N_bytes, tun_fd);      
-    pool->deallocate(sdu);
   }
   
 private:
@@ -362,7 +390,8 @@ private:
     mac->set_param(srsue::mac_interface_params::HARQ_MAXMSG3TX,
                   sib2.rr_config_common_sib.rach_cnfg.max_harq_msg3_tx);
 
-    log_h->info("Set RACH ConfigCommon: NofPreambles=%d, ResponseWindow=%d, ContentionResolutionTimer=%d ms\n",
+    log_h->info("Set RACH ConfigCommon: MaxTx=%d, NofPreambles=%d, ResponseWindow=%d, ContentionResolutionTimer=%d ms\n",
+          liblte_rrc_preamble_trans_max_num[sib2.rr_config_common_sib.rach_cnfg.preamble_trans_max], 
           liblte_rrc_number_of_ra_preambles_num[sib2.rr_config_common_sib.rach_cnfg.num_ra_preambles],
           liblte_rrc_ra_response_window_size_num[sib2.rr_config_common_sib.rach_cnfg.ra_resp_win_size],
           liblte_rrc_mac_contention_resolution_timer_num[sib2.rr_config_common_sib.rach_cnfg.mac_con_res_timer]);
@@ -511,26 +540,12 @@ int main(int argc, char *argv[])
   my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 2);
   my_phy.set_crnti(prog_args.rnti);
   my_mac.init(&my_phy, &rlc, &my_tester, &log_out);
-  rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);
-  
+  rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);  
   my_tester.init(&my_phy, &my_mac, &rlc, &log_out, prog_args.ip_address);
-  
-  // Setup a single UM bearer 
-  LIBLTE_RRC_RLC_CONFIG_STRUCT cfg; 
-  bzero(&cfg, sizeof(LIBLTE_RRC_RLC_CONFIG_STRUCT));
-  cfg.rlc_mode = LIBLTE_RRC_RLC_MODE_UM_BI;
-  cfg.dl_um_bi_rlc.t_reordering = LIBLTE_RRC_T_REORDERING_MS100; 
-  cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE5;   
-  rlc.add_bearer(LCID, &cfg);
-  
+      
   bool running = true; 
-  
-     
   while(running) {
     if (my_tester.is_sib_received()) {
-      my_phy.pdcch_ul_search(SRSLTE_RNTI_USER, prog_args.rnti);
-      my_phy.pdcch_dl_search(SRSLTE_RNTI_USER, prog_args.rnti);
-
       log_out.console("Main running\n");
       sleep(1);
     } else {
