@@ -29,6 +29,7 @@
 
 #include "phy/phy.h"
 #include "common/mac_interface.h"
+#include "common/pdu_queue.h"
 #include "common/log.h"
 #include "common/qbuff.h"
 #include "common/timers.h"
@@ -40,7 +41,7 @@
 
 namespace srsue {
 
-class demux
+class demux : public srslte::pdu_queue::process_callback
 {
 public:
   demux();
@@ -55,6 +56,8 @@ public:
   void     set_uecrid_callback(bool (*callback)(void*, uint64_t), void *arg);
   bool     get_uecrid_successful();
   
+  void     process_pdu(uint8_t *pdu, uint32_t nof_bytes);
+  
 private:
   const static int NOF_HARQ_PID    = 8; 
   const static int MAX_PDU_LEN     = 150*1024/8; // ~ 150 Mbps  
@@ -67,18 +70,18 @@ private:
   srslte::sch_pdu mac_msg;
   srslte::sch_pdu pending_mac_msg;
   
-  void process_pdu(uint8_t *pdu, uint32_t nof_bytes);
   void process_sch_pdu(srslte::sch_pdu *pdu);
   bool process_ce(srslte::sch_subh *subheader);
   
   bool       is_uecrid_successful; 
-  
-  srslte::qbuff pdu_q[NOF_HARQ_PID];
-  
+    
   phy_interface     *phy_h; 
   srslte::log       *log_h;
   srslte::timers    *timers_db;
   rlc_interface_mac *rlc;
+  
+  // Buffer of PDUs
+  srslte::pdu_queue pdus; 
 };
 
 } // namespace srsue

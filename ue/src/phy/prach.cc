@@ -87,7 +87,7 @@ bool prach::init_cell(srslte_cell_t cell_)
     }
     
     if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
-                          srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
+                          params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX), 
                           params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
                           params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
                           params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
