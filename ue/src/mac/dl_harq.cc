@@ -299,8 +299,7 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
       }
       Debug("Delivering PDU=%d bytes to Dissassemble and Demux unit (BCCH)\n", cur_grant.n_bytes);
       harq_entity->demux_unit->push_pdu(pid, payload_buffer_ptr, cur_grant.n_bytes);
-    } else {
-      
+    } else {      
       if (harq_entity->pcap) {
         harq_entity->pcap->write_dl_crnti(payload_buffer_ptr, cur_grant.n_bytes, cur_grant.rnti, ack, cur_grant.tti);            
       }

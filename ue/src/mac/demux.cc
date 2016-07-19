@@ -101,7 +101,7 @@ void demux::push_pdu_temp_crnti(uint32_t pid, uint8_t *buff, uint32_t nof_bytes)
       
       Debug("Saved MAC PDU with Temporal C-RNTI in buffer\n");
       
-      pdus.push_pdu(pid, buff, nof_bytes);
+      pdus.push_pdu(pid, nof_bytes);
     } else {
       Warning("Trying to push PDU with payload size zero\n");
     }
@@ -117,7 +117,7 @@ void demux::push_pdu_temp_crnti(uint32_t pid, uint8_t *buff, uint32_t nof_bytes)
 void demux::push_pdu(uint32_t pid, uint8_t *buff, uint32_t nof_bytes)
 {
   if (pid < NOF_HARQ_PID) {    
-    return pdus.push_pdu(pid, buff, nof_bytes);
+    return pdus.push_pdu(pid, nof_bytes);
   } else if (pid == NOF_HARQ_PID) {
     /* Demultiplexing of MAC PDU associated with SI-RNTI. The PDU passes through 
     * the MAC in transparent mode. 
