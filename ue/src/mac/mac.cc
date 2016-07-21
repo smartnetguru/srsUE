@@ -412,9 +412,9 @@ srslte::timers::timer* mac::get(uint32_t timer_id)
 void mac::get_metrics(mac_metrics_t &m)
 {
   Info("DL retx: %.2f \%%, perpkt: %.2f, UL retx: %.2f \%% perpkt: %.2f\n", 
-       metrics.rx_pkts?((float) metrics.rx_errors/metrics.rx_pkts):0.0, 
+       metrics.rx_pkts?((float) 100*metrics.rx_errors/metrics.rx_pkts):0.0, 
        dl_harq.get_average_retx(),
-       metrics.tx_pkts?((float) metrics.tx_errors/metrics.tx_pkts):0.0, 
+       metrics.tx_pkts?((float) 100*metrics.tx_errors/metrics.tx_pkts):0.0, 
        dl_harq.get_average_retx());
   
   metrics.ul_buffer = (int) bsr_procedure.get_buffer_state();
