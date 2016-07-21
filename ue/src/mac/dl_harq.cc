@@ -153,7 +153,10 @@ void dl_harq_entity::set_si_window_start(int si_window_start_)
   si_window_start = si_window_start_;
 }
 
-
+float dl_harq_entity::get_average_retx()
+{
+  return average_retx; 
+}
 
   /***********************************************************
   * 
@@ -233,6 +236,7 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
   if (is_new_transmission) {
     ack = false; 
     srslte_softbuffer_rx_reset_tbs(&softbuffer, cur_grant.n_bytes*8);
+    n_retx = 0; 
   }
   
   // Save grant 
@@ -262,6 +266,7 @@ void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_
     action->rnti = cur_grant.rnti; 
     action->softbuffer = &softbuffer;     
     memcpy(&action->phy_grant, &cur_grant.phy_grant, sizeof(srslte_phy_grant_t));
+    n_retx++; 
     
   } else {
     Warning("DL PID %d: Received duplicate TB. Discarting and retransmitting ACK\n", pid);
@@ -310,6 +315,9 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
         } else {
           Debug("Delivering PDU=%d bytes to Dissassemble and Demux unit\n", cur_grant.n_bytes);
           harq_entity->demux_unit->push_pdu(pid, payload_buffer_ptr, cur_grant.n_bytes);
+	  	  
+	  // Compute average number of retransmissions per packet 
+	  harq_entity->average_retx = SRSLTE_VEC_CMA((float) n_retx, harq_entity->average_retx, harq_entity->nof_pkts++); 
         }
       }
     }
