@@ -56,7 +56,8 @@ public:
     int         rv; 
     uint16_t    rnti; 
     bool        is_from_rar;
-    bool        is_sps_release; 
+    bool        is_sps_release;
+    bool        has_cqi_request;
     srslte_rnti_type_t rnti_type; 
     srslte_phy_grant_t phy_grant; 
   } mac_grant_t; 
