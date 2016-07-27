@@ -47,11 +47,17 @@ void pdu_queue::init(process_callback *callback_, log* log_h_)
   for (int i=0;i<NOF_HARQ_PID;i++) {
     pdu_q[i].init(NOF_BUFFER_PDUS, MAX_PDU_LEN);
   }
+  initiated = true; 
 }
 
 uint8_t* pdu_queue::request_buffer(uint32_t pid, uint32_t len)
 {  
+  if (!initiated) {
+    return NULL; 
+  }
+
   uint8_t *buff = NULL; 
+
   if (pid < NOF_HARQ_PID) {
     if (len < MAX_PDU_LEN) {
       if (pdu_q[pid].pending_msgs() > 0.75*pdu_q[pid].max_msgs()) {
@@ -80,6 +86,10 @@ uint8_t* pdu_queue::request_buffer(uint32_t pid, uint32_t len)
  */ 
 void pdu_queue::push_pdu(uint32_t pid, uint32_t nof_bytes)
 {
+  if (!initiated) {
+    return; 
+  }
+  
   if (pid < NOF_HARQ_PID) {    
     if (nof_bytes > 0) {
       if (!pdu_q[pid].push(nof_bytes)) {
@@ -95,6 +105,10 @@ void pdu_queue::push_pdu(uint32_t pid, uint32_t nof_bytes)
 
 bool pdu_queue::process_pdus()
 {
+  if (!initiated) {
+    return false; 
+  }
+
   bool have_data = false; 
   for (int i=0;i<NOF_HARQ_PID;i++) {
     uint8_t *buff = NULL;

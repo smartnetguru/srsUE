@@ -55,7 +55,7 @@ namespace srslte {
       bool start_agc(bool tx_gain_same_rx);
       
       void set_burst_preamble(double preamble_us);
-      void set_tx_adv(uint32_t nsamples);
+      void set_tx_adv(int nsamples);
       void set_tx_adv_neg(bool tx_adv_is_neg); 
       
       void set_manual_calibration(rf_cal_t *calibration);
@@ -118,7 +118,7 @@ namespace srslte {
       double cur_tx_srate;
 
       double   tx_adv_sec; // Transmission time advance to compensate for antenna->timestamp delay
-      uint32_t tx_adv_nsamples; // Transmision time advance in number of samples
+      int      tx_adv_nsamples; // Transmision time advance in number of samples
       
       // Define default values for known radios
       bool tx_adv_auto;

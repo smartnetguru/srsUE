@@ -704,10 +704,13 @@ bool rar_pdu::write_packet(uint8_t* ptr)
 {
   // Write Backoff Indicator, if any 
   if (has_backoff_indicator) {
+    *(ptr) = backoff_indicator&0xf;
     if (nof_subheaders > 0) {
-      *(ptr) = 1<<7 | backoff_indicator&0xf;
+      *(ptr) = 1<<7;
     }
+    ptr++;
   }
+
   // Write RAR subheaders
   for (int i=0;i<nof_subheaders;i++) {
     subheaders[i].write_subheader(&ptr, i==nof_subheaders-1);
@@ -765,14 +768,14 @@ void rar_subh::set_temp_crnti(uint16_t temp_rnti_)
 // Section 6.2.2
 void rar_subh::write_subheader(uint8_t** ptr, bool is_last)
 {
-  *(*ptr + 0) = (uint8_t) (is_last<<7 | 1<<6 | preamble & 0x3f);
+  *(*ptr) = (uint8_t) (!is_last<<7 | 1<<6 | preamble & 0x3f);
   *ptr += 1;
 }
 // Section 6.2.3
 void rar_subh::write_payload(uint8_t** ptr)
 {
   *(*ptr + 0) = (uint8_t)  (ta&0x7f0)>>4;
-  *(*ptr + 1) = (uint8_t)  (ta&0xf)  <<4 | grant[0]<<3 | grant[1] << 2 | grant[2] << 1 | grant[3];
+  *(*ptr + 1) = (uint8_t)  ((ta&0xf)  <<4) | (grant[0]<<3) | (grant[1]<<2) | (grant[2]<<1) | grant[3];
   uint8_t *x = &grant[4];
   *(*ptr + 2) = (uint8_t) srslte_bit_pack(&x, 8);
   *(*ptr + 3) = (uint8_t) srslte_bit_pack(&x, 8);

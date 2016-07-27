@@ -63,6 +63,7 @@ private:
   process_callback *callback; 
   
   log       *log_h;
+  bool initiated; 
 };
 
 } // namespace srslte

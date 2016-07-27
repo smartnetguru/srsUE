@@ -24,6 +24,7 @@
 #define START_TUNTAP
 #define USE_RADIO
 
+
 /**********************************************************************
  *  Program arguments processing
  ***********************************************************************/
@@ -31,12 +32,11 @@
 #define LCID 3
 
 typedef struct {
-  uint32_t rnti; 
   float rx_freq; 
   float tx_freq; 
   float rx_gain;
   float tx_gain;
-  uint32_t time_adv;
+  int time_adv;
   std::string ip_address;
 }prog_args_t;
 
@@ -45,12 +45,11 @@ uint32_t srsapps_verbose = 0;
 prog_args_t prog_args; 
 
 void args_default(prog_args_t *args) {
-  args->rnti    = 30; 
   args->tx_freq = 2.505e9;
   args->rx_freq = 2.625e9;
   args->rx_gain = 50.0; 
   args->tx_gain = 70.0; 
-  args->time_adv = 30; // calibrated for b210
+  args->time_adv = -1; // calibrated for b210
   args->ip_address = "192.168.3.2";
 }
 
@@ -61,7 +60,6 @@ void usage(prog_args_t *args, char *prog) {
   printf("\t-g RX gain [Default %.1f]\n", args->rx_gain);
   printf("\t-G TX gain [Default %.1f]\n", args->tx_gain);
   printf("\t-I IP address [Default %s]\n", args->ip_address.c_str());
-  printf("\t-r C-RNTI [Default %d]\n", args->rnti);
   printf("\t-t time advance (in samples) [Default %d]\n", args->time_adv);
   printf("\t-v [increase verbosity, default none]\n");
 }
@@ -69,7 +67,7 @@ void usage(prog_args_t *args, char *prog) {
 void parse_args(prog_args_t *args, int argc, char **argv) {
   int opt;
   args_default(args);
-  while ((opt = getopt(argc, argv, "gGfFItrv")) != -1) {
+  while ((opt = getopt(argc, argv, "gGfFItv")) != -1) {
     switch (opt) {
     case 'g':
       args->rx_gain = atof(argv[optind]);
@@ -85,9 +83,6 @@ void parse_args(prog_args_t *args, int argc, char **argv) {
       break;
     case 'I':
       args->ip_address = argv[optind];
-      break;
-    case 'r':
-      args->rnti = atoi(argv[optind]);
       break;
     case 't':
       args->time_adv = atoi(argv[optind]);
@@ -535,10 +530,12 @@ int main(int argc, char *argv[])
   my_radio.set_tx_gain(prog_args.tx_gain);
   my_radio.set_rx_freq(prog_args.rx_freq);
   my_radio.set_rx_gain(prog_args.rx_gain);
-  my_radio.set_tx_adv(prog_args.time_adv);
-      
+  if (prog_args.time_adv >= 0) {
+    printf("Setting TA=%d samples\n",prog_args.time_adv); 
+    my_radio.set_tx_adv(prog_args.time_adv);
+  }
+  
   my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 2);
-  my_phy.set_crnti(prog_args.rnti);
   my_mac.init(&my_phy, &rlc, &my_tester, &log_out);
   rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);  
   my_tester.init(&my_phy, &my_mac, &rlc, &log_out, prog_args.ip_address);

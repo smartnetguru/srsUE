@@ -108,6 +108,7 @@ bool prach::init_cell(srslte_cell_t cell_)
       }
     }
     srslte_cfo_init(&cfo_h, len);
+    srslte_cfo_set_tol(&cfo_h, 0);
     signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
     initiated = signal_buffer?true:false; 
     transmitted_tti = -1; 
@@ -165,7 +166,7 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
   float old_gain = radio_handler->get_tx_gain(); 
   
   // Correct CFO before transmission
-  srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo /srslte_symbol_sz(cell.nof_prb));            
+  srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo / srslte_symbol_sz(cell.nof_prb));            
 
   // If power control is enabled, choose amplitude and power 
   if (params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {
