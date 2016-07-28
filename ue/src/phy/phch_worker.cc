@@ -393,8 +393,13 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
   snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s\n", srslte_ra_dl_dci_string(&dci_unpacked), 
-         ue_dl.last_n_cce, dci_msg.nof_bits, timestr);
+    char hexstr[16];
+    hexstr[0]='\0';
+    if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
+      srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
+    }
+    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_ra_dl_dci_string(&dci_unpacked), 
+         ue_dl.last_n_cce, dci_msg.nof_bits, timestr, hexstr);
     
     return true; 
   } else {
@@ -533,8 +538,13 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-      Info("PDCCH: UL DCI Format0 cce_index=%d, L=%d, n_data_bits=%d, TBS=%d%s\n", 
-           ue_dl.last_location.ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, grant->phy_grant.ul.mcs.tbs, timestr);
+      char hexstr[16];
+      hexstr[0]='\0';
+      if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
+        srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
+      }
+      Info("PDCCH: UL DCI Format0 cce_index=%d, L=%d, n_data_bits=%d, TBS=%d%s, hex=%s\n", 
+           ue_dl.last_location.ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, grant->phy_grant.ul.mcs.tbs, timestr, hexstr);
       
       if (grant->phy_grant.ul.mcs.tbs==0) {
         srslte_vec_fprint_hex(stdout, dci_msg.data, dci_msg.nof_bits);
