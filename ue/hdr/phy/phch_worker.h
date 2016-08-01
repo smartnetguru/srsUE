@@ -88,6 +88,7 @@ private:
   void reset_uci();
   void set_uci_sr();
   void set_uci_periodic_cqi();
+  void set_uci_aperiodic_cqi();
   void set_uci_ack(bool ack);
   bool srs_is_ready_to_send();
   float set_power(float tx_power);
