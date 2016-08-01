@@ -507,7 +507,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
     grant->rnti_type = SRSLTE_RNTI_TEMP;
     grant->is_from_rar = true; 
     Debug("RAR grant found for TTI=%d\n", tti);
-    rar_cqi_request = rar_grant.cqi_request;    
+    rar_cqi_request = (rar_grant.ul_delay) ? false : rar_grant.cqi_request; // delay reporting if delay flag is set
     ret = true;  
   } else {
     ul_rnti = phy->get_ul_rnti(tti);
