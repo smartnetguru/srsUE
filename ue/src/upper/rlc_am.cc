@@ -427,7 +427,7 @@ int rlc_am::build_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_retx_t r
     retx.so_end = retx.so_start+pdu_space;
 
   // Need to rebuild the li table & update fi based on so_start and so_end
-  if(retx.so_start != 0 && rlc_am_start_aligned(old_header.fi))
+  if(retx.so_start == 0 && rlc_am_start_aligned(old_header.fi))
     new_header.fi &= RLC_FI_FIELD_NOT_END_ALIGNED;   // segment is start aligned
 
   uint32_t lower     = 0;
