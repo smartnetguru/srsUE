@@ -415,7 +415,7 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
   cipher_algo = (CIPHERING_ALGORITHM_ID_ENUM)sec_mode_cmd.selected_nas_sec_algs.type_of_eea;
   integ_algo  = (INTEGRITY_ALGORITHM_ID_ENUM)sec_mode_cmd.selected_nas_sec_algs.type_of_eia;
   // FIXME: Handle nonce_ue, nonce_mme
-  // FIXME: Currently only handling ciphering EEA0 (null) and integrity EIA2
+  // FIXME: Currently only handling ciphering EEA0 (null) and integrity EIA1,EIA2
   // FIXME: Use selected_nas_sec_algs to choose correct algos
 
   nas_log->debug("Security details: ksi=%d, eea=%s, eia=%s\n",
