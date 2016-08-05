@@ -62,6 +62,8 @@ public:
 
   void set_si_window_start(int si_window_start);
   
+  float get_average_retx(); 
+  
 private:  
   
   
@@ -88,6 +90,8 @@ private:
     uint8_t        *payload_buffer_ptr; 
     bool            ack;
     
+    uint32_t 	    n_retx; 
+    
     mac_interface_phy::mac_grant_t cur_grant;    
     srslte_softbuffer_rx_t         softbuffer; 
     
@@ -105,7 +109,10 @@ private:
   srslte::log     *log_h;
   srslte::mac_pcap *pcap; 
   uint16_t         last_temporal_crnti;
-  int si_window_start;
+  int 	           si_window_start;
+
+  float 	   average_retx;   
+  uint64_t         nof_pkts; 
 };
 
 } // namespace srsue

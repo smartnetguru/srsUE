@@ -989,7 +989,7 @@ void rrc::apply_sib2_configs()
          sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
 
   // UL Power control config ConfigCommon
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_NOMINAL_PUSCH, sib2.rr_config_common_sib.ul_pwr_ctrl.p0_nominal_pusch);
+  phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_NOMINAL_PUSCH, sib2.rr_config_common_sib.ul_pwr_ctrl.p0_nominal_pusch);
   phy->set_param(srsue::phy_interface_params::PWRCTRL_ALPHA, 
                 round(10*liblte_rrc_ul_power_control_alpha_num[sib2.rr_config_common_sib.ul_pwr_ctrl.alpha]));
   phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_NOMINAL_PUCCH, sib2.rr_config_common_sib.ul_pwr_ctrl.p0_nominal_pucch);

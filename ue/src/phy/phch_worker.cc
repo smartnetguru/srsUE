@@ -326,14 +326,14 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   } else {
     chest_done = false; 
   }
-  if (decode_pdcch) { /* and not in DRX mode */
+  if (chest_done && decode_pdcch) { /* and not in DRX mode */
     
     float noise_estimate = phy->avg_noise;
     
     if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
       noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
     }
-    
+
     if (srslte_pdcch_extract_llr(&ue_dl.pdcch, ue_dl.sf_symbols, ue_dl.ce, noise_estimate, tti%10, cfi)) {
       Error("Extracting PDCCH LLR\n");
       return false; 
@@ -371,7 +371,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
       return false; 
     }
     
-    if (srslte_dci_msg_to_dl_grant(&dci_msg, dl_rnti, cell.nof_prb, &dci_unpacked, &grant->phy_grant.dl)) {
+    if (srslte_dci_msg_to_dl_grant(&dci_msg, dl_rnti, cell.nof_prb, cell.nof_ports, &dci_unpacked, &grant->phy_grant.dl)) {
       Error("Converting DCI message to DL grant\n");
       return false;   
     }
@@ -398,7 +398,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
     if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
       srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
     }
-    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_ra_dl_dci_string(&dci_unpacked), 
+    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_dci_format_string(dci_msg.format), 
          ue_dl.last_n_cce, dci_msg.nof_bits, timestr, hexstr);
     
     return true; 

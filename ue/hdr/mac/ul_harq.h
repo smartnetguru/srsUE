@@ -61,6 +61,8 @@ public:
   void harq_recv(uint32_t tti, bool ack, mac_interface_phy::tb_action_ul_t *action);
 
   int get_current_tbs(uint32_t tti);
+  
+  float get_average_retx(); 
     
 private:  
 
@@ -99,6 +101,7 @@ private:
     bool                        is_initiated;    
     uint32_t                    tti_last_tx;
     
+    
     const static int payload_buffer_len = 128*1024; 
     uint8_t *payload_buffer;
     uint8_t *pdu_ptr; 
@@ -123,6 +126,9 @@ private:
   srslte::log     *log_h;
   mac_params      *params_db; 
   srslte::mac_pcap *pcap; 
+  
+  float            average_retx;   
+  uint64_t         nof_pkts; 
 };
 
 } // namespace srsue

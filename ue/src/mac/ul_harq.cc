@@ -139,6 +139,12 @@ void ul_harq_entity::run_tti(uint32_t tti, mac_interface_phy::mac_grant_t *grant
 }
 
 
+float ul_harq_entity::get_average_retx()
+{
+  return average_retx; 
+}
+
+
 /***********************************************************
   * 
   * HARQ PROCESS
@@ -305,6 +311,11 @@ void ul_harq_entity::ul_harq_process::generate_new_tx(uint32_t tti_tx, bool is_m
                                                       mac_interface_phy::tb_action_ul_t *action)
 {
   if (grant) {
+    
+  // Compute average number of retransmissions per packet considering previous packet
+  harq_entity->average_retx = SRSLTE_VEC_CMA((float) current_tx_nb, harq_entity->average_retx, harq_entity->nof_pkts++); 
+
+    
     memcpy(&cur_grant, grant, sizeof(mac_interface_phy::mac_grant_t));
     harq_feedback = false; 
     is_grant_configured = true; 
