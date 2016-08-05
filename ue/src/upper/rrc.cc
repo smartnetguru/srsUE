@@ -1103,6 +1103,12 @@ void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg)
 
           phy->set_param(srsue::phy_interface_params::CQI_PERIODIC_CONFIGURED, 1);
         }
+        if (phy_cnfg->cqi_report_cnfg.report_mode_aperiodic_present) {
+            phy->set_param(srsue::phy_interface_params::CQI_APERIODIC_MODE,
+                        phy_cnfg->cqi_report_cnfg.report_mode_aperiodic);
+            phy->set_param(srsue::phy_interface_params::CQI_NOM_PDSCH_RS_EPRE_OFFSET,
+                        phy_cnfg->cqi_report_cnfg.nom_pdsch_rs_epre_offset);
+        }
       }
       if(phy_cnfg->srs_ul_cnfg_ded_present && phy_cnfg->srs_ul_cnfg_ded.setup_present)
       {

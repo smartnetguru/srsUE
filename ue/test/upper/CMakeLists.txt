@@ -48,3 +48,6 @@ add_executable(rlc_um_test rlc_um_test.cc)
 target_link_libraries(rlc_um_test srsue_upper)
 add_test(rlc_um_test rlc_um_test)
   
+add_executable(usim_test usim_test.cc)
+target_link_libraries(usim_test srsue_upper)
+add_test(usim_test usim_test)

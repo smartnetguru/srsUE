@@ -29,6 +29,7 @@
 #include "phy/phch_worker.h"
 #include "common/mac_interface.h"
 #include "common/phy_interface.h"
+#include "liblte_rrc.h"
 
 #define Error(fmt, ...)   if (SRSLTE_DEBUG_ENABLED) phy->log_h->error_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
 #define Warning(fmt, ...) if (SRSLTE_DEBUG_ENABLED) phy->log_h->warning_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
@@ -180,8 +181,8 @@ void phch_worker::work_imp()
 
   bool dl_grant_available = false; 
   bool ul_grant_available = false; 
-  bool dl_ack = false; 
-  
+  bool dl_ack = false;
+
   mac_interface_phy::mac_grant_t    dl_mac_grant;
   mac_interface_phy::tb_action_dl_t dl_action; 
   bzero(&dl_action, sizeof(mac_interface_phy::tb_action_dl_t));
@@ -226,15 +227,19 @@ void phch_worker::work_imp()
     /***** Uplink Processing + Transmission *******/
     
     /* Generate SR if required*/
-    set_uci_sr();    
-    
-    /* Generate periodic CQI reports if required */
-    set_uci_periodic_cqi();
-    
-    
+    set_uci_sr();
+
     /* Check if we have UL grant. ul_phy_grant will be overwritten by new grant */
-    ul_grant_available = decode_pdcch_ul(&ul_mac_grant);   
-    
+    ul_grant_available = decode_pdcch_ul(&ul_mac_grant);
+
+    /* Generate CQI reports if required, note that in case both aperiodic
+       and periodic ones present, only aperiodic is sent (36.213 section 7.2) */
+    if (ul_grant_available && ul_mac_grant.has_cqi_request) {
+      set_uci_aperiodic_cqi();
+    } else {
+      set_uci_periodic_cqi();
+    }
+
     /* Send UL grant or HARQ information (from PHICH) to MAC */
     if (ul_grant_available         && ul_ack_available)  {    
       phy->mac->new_grant_ul_ack(ul_mac_grant, ul_ack, &ul_action);      
@@ -513,7 +518,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
     grant->rnti_type = SRSLTE_RNTI_TEMP;
     grant->is_from_rar = true; 
     Debug("RAR grant found for TTI=%d\n", tti);
-    rar_cqi_request = rar_grant.cqi_request;    
+    rar_cqi_request = (rar_grant.ul_delay) ? false : rar_grant.cqi_request; // delay reporting if delay flag is set
     ret = true;  
   } else {
     ul_rnti = phy->get_ul_rnti(tti);
@@ -529,7 +534,8 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
         return false;   
       }
       grant->rnti_type = type; 
-      grant->is_from_rar = false; 
+      grant->is_from_rar = false;
+      grant->has_cqi_request = dci_unpacked.cqi_request;
       ret = true; 
       
 #ifdef LOG_EXECTIME
@@ -678,6 +684,37 @@ void phch_worker::set_uci_periodic_cqi()
       uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
       rar_cqi_request = false;       
     }
+  }
+}
+
+void phch_worker::set_uci_aperiodic_cqi()
+{
+  int mode = phy->params_db->get_param(phy_interface_params::CQI_APERIODIC_MODE);
+
+  if (mode == LIBLTE_RRC_CQI_REPORT_MODE_APERIODIC_RM30) {
+      /* only Higher Layer-configured subband feedback support right now, according to TS36.213 section 7.2.1
+         - A UE shall report a wideband CQI value which is calculated assuming transmission on set S subbands
+         - The UE shall also report one subband CQI value for each set S subband. The subband CQI
+           value is calculated assuming transmission only in the subband
+         - Both the wideband and subband CQI represent channel quality for the first codeword,
+           even when RI>1
+         - For transmission mode 3 the reported CQI values are calculated conditioned on the
+           reported RI. For other transmission modes they are reported conditioned on rank 1.
+      */
+      if (rnti_is_set) {
+        srslte_cqi_value_t cqi_report;
+        cqi_report.type = SRSLTE_CQI_TYPE_SUBBAND_HL;
+        cqi_report.subband_hl.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);
+
+        // TODO: implement subband CQI properly
+        cqi_report.subband_hl.subband_diff_cqi = 0; // Always report zero offset on all subbands
+        cqi_report.subband_hl.N = (cell.nof_prb > 7) ? srslte_cqi_hl_get_no_subbands(cell.nof_prb) : 0;
+
+        Info("PUSCH: Aperiodic CQI=%d, SNR=%.1f dB, for %d subbands\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db, cqi_report.subband_hl.N);
+        uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
+      }
+  } else {
+    Warning("Aperiodic CQI mode %s not supported\n", liblte_rrc_cqi_report_mode_aperiodic_text[mode]);
   }
 }
 
