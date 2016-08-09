@@ -213,7 +213,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
 
   liblte_mme_unpack_attach_accept_msg((LIBLTE_BYTE_MSG_STRUCT*)pdu, &attach_accept);
 
-  if(1 == attach_accept.eps_attach_result) // EPS Attach
+  if(attach_accept.eps_attach_result == LIBLTE_MME_EPS_ATTACH_RESULT_EPS_ONLY)
   {
     //FIXME: Handle t3412.unit
     //FIXME: Handle tai_list
@@ -426,7 +426,8 @@ void nas::parse_security_mode_command(uint32_t lcid, byte_buffer_t *pdu)
 
   if(CIPHERING_ALGORITHM_ID_EEA0 != cipher_algo ||
      (INTEGRITY_ALGORITHM_ID_128_EIA2 != integ_algo &&
-      INTEGRITY_ALGORITHM_ID_128_EIA1 != integ_algo))
+      INTEGRITY_ALGORITHM_ID_128_EIA1 != integ_algo) ||
+     sec_mode_cmd.nas_ksi.tsc_flag != LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE)
   {
     // Send security mode reject
     sec_mode_rej.emm_cause = LIBLTE_MME_EMM_CAUSE_UE_SECURITY_CAPABILITIES_MISMATCH;
@@ -497,7 +498,7 @@ void nas::send_attach_request()
   byte_buffer_t                  *msg = pool->allocate();
   u_int32_t                             i;
 
-  attach_req.eps_attach_type = 1; // EPS Attach
+  attach_req.eps_attach_type = LIBLTE_MME_EPS_ATTACH_TYPE_EPS_ATTACH;
 
   for(i=0; i<8; i++)
   {
@@ -517,7 +518,7 @@ void nas::send_attach_request()
   attach_req.eps_mobile_id.type_of_id = LIBLTE_MME_EPS_MOBILE_ID_TYPE_IMSI;
   usim->get_imsi_vec(attach_req.eps_mobile_id.imsi, 15);
 
-  // ESM message (PDN connectivity request)
+  // ESM message (PDN connectivity request) for first default bearer
   gen_pdn_connectivity_request(&attach_req.esm_msg);
 
   attach_req.old_p_tmsi_signature_present = false;
@@ -549,10 +550,10 @@ void nas::gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT *msg)
     nas_log->info("Generating PDN Connectivity Request\n");
 
     // Set the PDN con req parameters
-    pdn_con_req.eps_bearer_id       = 0x05;     // First Bearer ID
-    pdn_con_req.proc_transaction_id = 0x01;     // First transaction ID
-    pdn_con_req.pdn_type            = 0x01;     // Indicate IPv4 capability
-    pdn_con_req.request_type        = 0x01;     // Initial Request
+    pdn_con_req.eps_bearer_id       = 0x00; // Unassigned bearer ID
+    pdn_con_req.proc_transaction_id = 0x01; // First transaction ID
+    pdn_con_req.pdn_type            = LIBLTE_MME_PDN_TYPE_IPV4;
+    pdn_con_req.request_type        = LIBLTE_MME_REQUEST_TYPE_INITIAL_REQUEST;
 
     // Set the optional flags
     pdn_con_req.esm_info_transfer_flag_present  = false; //FIXME: Check if this is needed
