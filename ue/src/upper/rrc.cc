@@ -764,7 +764,7 @@ void rrc::parse_dl_dcch(uint32_t lcid, byte_buffer_t *pdu)
     send_security_mode_complete(lcid, pdu);
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_RRC_CON_RECONFIG:
-    transaction_id = dl_dcch_msg.msg.security_mode_cmd.rrc_transaction_id;
+    transaction_id = dl_dcch_msg.msg.rrc_con_reconfig.rrc_transaction_id;
     handle_rrc_con_reconfig(lcid, &dl_dcch_msg.msg.rrc_con_reconfig, pdu);
     break;
   case LIBLTE_RRC_DL_DCCH_MSG_TYPE_UE_CAPABILITY_ENQUIRY:
