@@ -260,7 +260,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
                     act_def_eps_bearer_context_req.pdn_addr.addr[2],
                     act_def_eps_bearer_context_req.pdn_addr.addr[3]);
 
-      nas_log->console("Network attach succesful.   IP: %u.%u.%u.%u\n",
+      nas_log->console("Network attach successful.   IP: %u.%u.%u.%u\n",
                     act_def_eps_bearer_context_req.pdn_addr.addr[0],
                     act_def_eps_bearer_context_req.pdn_addr.addr[1],
                     act_def_eps_bearer_context_req.pdn_addr.addr[2],
@@ -371,7 +371,7 @@ void nas::parse_authentication_request(uint32_t lcid, byte_buffer_t *pdu)
 
   if(net_valid)
   {
-    nas_log->info("Network authentication succesful\n");
+    nas_log->info("Network authentication successful\n");
     for(int i=0; i<8; i++)
     {
       auth_res.res[i] = res[i];
