@@ -34,7 +34,7 @@
 #include "common/mac_interface.h"
 #include "common/log_stdout.h"
 #include "mac/mac.h"
-#include "mac/mac_pcap.h"
+#include "common/mac_pcap.h"
 
 
 
@@ -323,7 +323,7 @@ uint8_t reply[2] = {0x00, 0x04};
 srslte::radio radio; 
 srsue::phy phy; 
 srsue::mac mac; 
-srsue::mac_pcap mac_pcap; 
+srslte::mac_pcap mac_pcap; 
 
 prog_args_t prog_args; 
   

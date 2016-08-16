@@ -40,7 +40,9 @@ bsr_proc::bsr_proc()
 {
   initiated = false; 
   last_print = 0; 
+  next_tx_tti = 0; 
   triggered_bsr_type=NONE; 
+  
 }
 
 void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_)
@@ -72,6 +74,7 @@ void bsr_proc::reset()
   }        
   lcg[0] = 0; 
   priorities[0] = 99;   
+  next_tx_tti = 0; 
 }
 
 /* Process Periodic BSR */
@@ -288,7 +291,7 @@ bool bsr_proc::need_to_send_bsr_on_ul_grant(uint32_t grant_size, bsr_t *bsr)
     /* Check if grant + MAC SDU headers is enough to accomodate all pending data */
     int total_data = 0; 
     for (int i=0;i<MAX_LCID && total_data < grant_size;i++) {
-      total_data += sch_pdu::size_header_sdu(rlc->get_buffer_state(i))+rlc->get_buffer_state(i);      
+      total_data += srslte::sch_pdu::size_header_sdu(rlc->get_buffer_state(i))+rlc->get_buffer_state(i);      
     }
     total_data--; // Because last SDU has no size header 
     
@@ -331,34 +334,44 @@ bool bsr_proc::generate_padding_bsr(uint32_t nof_padding_bytes, bsr_t *bsr)
     }
     generate_bsr(bsr, nof_padding_bytes);
     ret = true; 
-    Debug("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
+    Info("BSR:   Including BSR type %s, format %s, nof_padding_bytes=%d\n", 
            bsr_type_tostring(triggered_bsr_type), bsr_format_tostring(bsr->format), nof_padding_bytes);
     
     if (timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && bsr->format != TRUNC_BSR) {
       timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
       timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
-    }
+    }    
+    
   }
   return ret; 
+}
+
+void bsr_proc::set_tx_tti(uint32_t tti) {
+  Debug("BSR:   Set next_tx_tti=%d\n", tti);
+  next_tx_tti = tti;  
 }
 
 bool bsr_proc::need_to_reset_sr() {
   if (reset_sr) {
     reset_sr = false; 
     sr_is_sent = false; 
-    Debug("SR reset. sr_is_sent and reset_rs false\n");
+    Debug("BSR:   SR reset. sr_is_sent and reset_rs false\n");
     return true; 
   } else {
     return false; 
   }
 }
 
-bool bsr_proc::need_to_send_sr() {
+bool bsr_proc::need_to_send_sr(uint32_t tti) {
   if (!sr_is_sent && triggered_bsr_type == REGULAR) {
-    reset_sr = false; 
-    sr_is_sent = true; 
-    Debug("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false\n");
-    return true; 
+    if (srslte_tti_interval(tti,next_tx_tti)>0 && srslte_tti_interval(tti,next_tx_tti) < 10240-4) {
+      reset_sr = false; 
+      sr_is_sent = true; 
+      Info("BSR:   Need to send sr: sr_is_sent=true, reset_sr=false, tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
+      return true; 
+    } else {
+      Debug("BSR:   Not sending SR because tti=%d, next_tx_tti=%d\n", tti, next_tx_tti);
+    }
   } 
   return false; 
 }

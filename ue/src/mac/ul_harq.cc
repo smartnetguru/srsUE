@@ -58,7 +58,7 @@ uint32_t ul_harq_entity::pidof(uint32_t tti) {
   return (uint32_t) tti%NOF_HARQ_PROC;  
 }
 
-void ul_harq_entity::start_pcap(mac_pcap* pcap_)
+void ul_harq_entity::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
 }
@@ -242,7 +242,7 @@ void ul_harq_entity::ul_harq_process::run_tti(uint32_t tti_tx, mac_interface_phy
       // Normal UL grant
       } else {
         // Request a MAC PDU from the Multiplexing & Assemble Unit
-        pdu_ptr = harq_entity->mux_unit->pdu_get(payload_buffer, grant->n_bytes);
+        pdu_ptr = harq_entity->mux_unit->pdu_get(payload_buffer, grant->n_bytes, tti_tx, pid);
         if (pdu_ptr) {            
           generate_new_tx(tti_tx, false, grant, action);          
         } else {
@@ -301,6 +301,8 @@ void ul_harq_entity::ul_harq_process::generate_retx(uint32_t tti_tx, mac_interfa
   if (is_msg3) {
     harq_entity->timers_db->get(mac::CONTENTION_TIMER)->reset();
   }
+  
+  harq_entity->mux_unit->pusch_retx(tti_tx, pid);
 }
 
 // New transmission (Section 5.4.2.2)

@@ -33,7 +33,7 @@
 #include "common/log.h"
 #include "common/mac_interface.h"
 #include "mac/mac_params.h"
-#include "mac/pdu.h"
+#include "common/pdu.h"
 #include "mac/proc_bsr.h"
 #include "mac/proc_phr.h"
 
@@ -41,7 +41,7 @@
 
 
 namespace srsue {
-
+  
 class mux
 {
 public:
@@ -52,7 +52,7 @@ public:
   bool     is_pending_any_sdu();
   bool     is_pending_sdu(uint32_t lcid); 
   
-  uint8_t* pdu_get(uint8_t *payload, uint32_t pdu_sz);
+  uint8_t* pdu_get(uint8_t *payload, uint32_t pdu_sz, uint32_t tx_tti, uint32_t pid);
   uint8_t* msg3_get(uint8_t* payload, uint32_t pdu_sz);
   
   void     msg3_flush();
@@ -61,14 +61,16 @@ public:
   void     append_crnti_ce_next_tx(uint16_t crnti); 
   
   void     set_priority(uint32_t lcid, uint32_t priority, int PBR_x_tti, uint32_t BSD);
+  void     pusch_retx(uint32_t tx_tti, uint32_t pid);
       
 private:  
   bool     pdu_move_to_msg3(uint32_t pdu_sz);
-  bool     allocate_sdu(uint32_t lcid, sch_pdu *pdu, int max_sdu_sz, uint32_t *sdu_sz);
+  bool     allocate_sdu(uint32_t lcid, srslte::sch_pdu *pdu, int max_sdu_sz, uint32_t *sdu_sz);
   
   const static int NOF_UL_LCH = 10; 
   const static int MIN_RLC_SDU_LEN = 0; 
   const static int MAX_NOF_SUBHEADERS = 20; 
+  const static int MAX_HARQ_PROC = 8; 
   
   int64_t       Bj[NOF_UL_LCH];
   int           PBR[NOF_UL_LCH]; // -1 sets to infinity
@@ -76,6 +78,9 @@ private:
   uint32_t      priority[NOF_UL_LCH];
   uint32_t      priority_sorted[NOF_UL_LCH];
   uint32_t      lchid_sorted[NOF_UL_LCH];
+  
+  // Keep track of the PIDs that transmitted BSR reports 
+  bool pid_has_bsr[MAX_HARQ_PROC]; 
   
   // Mutex for exclusive access
   pthread_mutex_t mutex; 
@@ -91,7 +96,7 @@ private:
   srslte::qbuff         msg3_buff;
   
   /* PDU Buffer */
-  sch_pdu               pdu_msg; 
+  srslte::sch_pdu    pdu_msg; 
   bool msg3_has_been_transmitted;
   
   

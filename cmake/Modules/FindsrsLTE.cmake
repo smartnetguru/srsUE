@@ -45,6 +45,12 @@ IF(DEFINED SRSLTE_SRCDIR)
                             ${SRSLTE_SRCDIR}/common/include)
 ENDIF(DEFINED SRSLTE_SRCDIR)
 
+# Add this path to find srslte/version.h when not installed in system path 
+IF(DEFINED SRSLTE_BUILDDIR) 
+    set(SRSLTE_INCLUDE_DIRS ${SRSLTE_INCLUDE_DIRS}
+                            ${SRSLTE_BUILDDIR}/srslte/include/)
+ENDIF(DEFINED SRSLTE_BUILDDIR)
+
 SET(SRSLTE_LIBRARIES ${SRSLTE_LIBRARY})
 
 message(STATUS "SRSLTE LIBRARIES: " ${SRSLTE_LIBRARIES})

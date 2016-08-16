@@ -29,17 +29,14 @@
 
 #include <stdint.h>
 #include "common/log.h"
-#include "common/mac_interface.h"
-#include "common/interfaces.h"
-#include "common/log.h"
+#include "common/interfaces_common.h"
 #include <vector>
 #include <stdio.h>
 
 /* MAC PDU Packing/Unpacking functions. Section 6 of 36.321 */   
 
 
-namespace srsue {
-
+namespace srslte {  
   
 template<class SubH>
 class pdu
@@ -233,8 +230,8 @@ public:
   // Writing functions
   void     write_subheader(uint8_t** ptr, bool is_last);
   void     write_payload(uint8_t **ptr);
-  int      set_sdu(uint32_t lcid_, uint32_t nof_bytes_, uint8_t *payload);
-  int      set_sdu(uint32_t lcid, uint32_t requested_bytes, rlc_interface_mac *rlc);
+  int      set_sdu(uint32_t lcid, uint32_t nof_bytes, uint8_t *payload);
+  int      set_sdu(uint32_t lcid, uint32_t requested_bytes, read_pdu_interface *sdu_itf);
   bool     set_c_rnti(uint16_t crnti);
   bool     set_bsr(uint32_t buff_size[4], sch_subh::cetype format);
   bool     set_con_res_id(uint64_t con_res_id);
@@ -263,7 +260,7 @@ class sch_pdu : public pdu<sch_subh>
 {
 public:
   
-  sch_pdu(uint32_t max_rars) : pdu(max_rars) {}
+  sch_pdu(uint32_t max_subh) : pdu(max_subh) {}
 
   void      parse_packet(uint8_t *ptr);
   uint8_t*  write_packet();
@@ -316,7 +313,7 @@ class rar_pdu : public pdu<rar_subh>
 {
 public:
   
-  rar_pdu(uint32_t max_rars);
+  rar_pdu(uint32_t max_rars = 16);
     
   void     set_backoff(uint8_t bi);
   bool     has_backoff();

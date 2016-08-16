@@ -72,7 +72,7 @@ void ra_proc::reset() {
   started_by_pdcch = false; 
 }
 
-void ra_proc::start_pcap(mac_pcap* pcap_)
+void ra_proc::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
 }
@@ -301,7 +301,7 @@ void ra_proc::tb_decoded_ok() {
       // FIXME: Indicate received target power
       //phy_h->set_target_power_rar(iniReceivedTargetPower, (preambleTransmissionCounter-1)*powerRampingStep);
 
-      uint8_t grant[rar_subh::RAR_GRANT_LEN];
+      uint8_t grant[srslte::rar_subh::RAR_GRANT_LEN];
       rar_pdu_msg.get()->get_sched_grant(grant);
 
       phy_h->pdcch_dl_search_reset();

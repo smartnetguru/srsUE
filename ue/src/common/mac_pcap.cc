@@ -27,12 +27,12 @@
 
 #include <stdint.h>
 #include "srslte/srslte.h"
-#include "mac/pcap.h"
-#include "mac/mac_pcap.h"
+#include "common/pcap.h"
+#include "common/mac_pcap.h"
 
 
 
-namespace srsue {
+namespace srslte {
  
 void mac_pcap::enable(bool en)
 {

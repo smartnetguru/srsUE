@@ -79,8 +79,15 @@ bool prach::init_cell(srslte_cell_t cell_)
         params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
         params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
     
+    uint32_t freq_offset = params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET);
+    
+    if (6 + freq_offset > cell.nof_prb) {
+      log_h->console("Error no space for PRACH: frequency offset=%d, N_rb_ul=%d\n", freq_offset, cell.nof_prb);
+      return false; 
+    }
+    
     if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
-                          srslte_prach_get_preamble_format(params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX)), 
+                          params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX), 
                           params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
                           params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
                           params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
@@ -95,12 +102,13 @@ bool prach::init_cell(srslte_cell_t cell_)
       if(!buffer[i]) {
         return false; 
       }    
-      if(srslte_prach_gen(&prach_obj, i, params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET), buffer[i])) {
+      if(srslte_prach_gen(&prach_obj, i, freq_offset, buffer[i])) {
         Error("Generating PRACH preamble %d\n", i);
         return false;
       }
     }
     srslte_cfo_init(&cfo_h, len);
+    srslte_cfo_set_tol(&cfo_h, 0);
     signal_buffer = (cf_t*) srslte_vec_malloc(len*sizeof(cf_t)); 
     initiated = signal_buffer?true:false; 
     transmitted_tti = -1; 
@@ -132,8 +140,7 @@ bool prach::is_ready_to_send(uint32_t current_tti_) {
   if (initiated && preamble_idx >= 0 && preamble_idx < 64 && params_db != NULL) {
     // consider the number of subframes the transmission must be anticipated 
     uint32_t current_tti = (current_tti_ + tx_advance_sf)%10240;
-    uint32_t config_idx = (uint32_t) params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX); 
-    if (srslte_prach_send_tti(config_idx, current_tti, allowed_subframe)) {
+    if (srslte_prach_tti_opportunity(&prach_obj, current_tti, allowed_subframe)) {
       Debug("PRACH Buffer: Ready to send at tti: %d (now is %d)\n", current_tti, current_tti_);
       transmitted_tti = current_tti; 
       return true; 
@@ -159,7 +166,7 @@ bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
   float old_gain = radio_handler->get_tx_gain(); 
   
   // Correct CFO before transmission
-  srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo /srslte_symbol_sz(cell.nof_prb));            
+  srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo / srslte_symbol_sz(cell.nof_prb));            
 
   // If power control is enabled, choose amplitude and power 
   if (params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {

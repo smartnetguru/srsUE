@@ -106,6 +106,7 @@ private:
 
   uint32_t      sync_sfn_cnt;
   const static uint32_t SYNC_SFN_TIMEOUT = 5000;
+  float ul_dl_factor;
   
   bool          cell_search(int force_N_id_2 = -1);
   bool          init_cell();

@@ -63,6 +63,7 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
 
   mlockall(MCL_CURRENT | MCL_FUTURE);
   
+  n_ta = 0; 
   log_h = log_h_; 
   radio_handler = radio_handler_;
   nof_workers = nof_workers_; 
@@ -125,13 +126,13 @@ void phy::get_metrics(phy_metrics_t &m) {
 void phy::set_timeadv_rar(uint32_t ta_cmd) {
   n_ta = srslte_N_ta_new_rar(ta_cmd);
   sf_recv.set_time_adv_sec(((float) n_ta)*SRSLTE_LTE_TS);
-  Debug("PHY:   Set TA RAR: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
+  Info("PHY:   Set TA RAR: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
 }
 
 void phy::set_timeadv(uint32_t ta_cmd) {
   n_ta = srslte_N_ta_new(n_ta, ta_cmd);
   sf_recv.set_time_adv_sec(((float) n_ta)*SRSLTE_LTE_TS);  
-  Debug("PHY:   Set TA: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
+  Info("PHY:   Set TA: ta_cmd: %d, n_ta: %d, ta_usec: %.1f\n", ta_cmd, n_ta, ((float) n_ta)*SRSLTE_LTE_TS*1e6);
 }
 
 void phy::set_param(phy_interface_params::phy_param_t param, int64_t value) {
@@ -211,6 +212,7 @@ int phy::prach_tx_tti()
 void phy::reset()
 {
   // TODO 
+  n_ta = 0; 
   pdcch_dl_search_reset();
   for(uint32_t i=0;i<nof_workers;i++) {
     workers[i].reset();

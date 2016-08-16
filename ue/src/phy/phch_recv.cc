@@ -303,7 +303,7 @@ int phch_recv::sync_sfn(void) {
       }
     }    
   } else {
-    Info("SYNC:  PSS/SSS not found...\n");
+    Debug("SYNC:  PSS/SSS not found...\n");
   }
   return 0;
 }
@@ -325,15 +325,19 @@ void phch_recv::run_thread()
           log_h->console("Initializating cell configuration...\n");
           init_cell();
           float srate = (float) srslte_sampling_freq_hz(cell.nof_prb); 
-          if (srate < 10e6) {
-            radio_h->set_master_clock_rate(4*srate);        
+          
+          if (30720%((int) srate/1000) == 0) {
+            radio_h->set_master_clock_rate(30.72e6);        
           } else {
-            radio_h->set_master_clock_rate(srate);        
+            radio_h->set_master_clock_rate(23.04e6);        
           }
-          log_h->console("Setting Sampling frequency %.2f MHz\n", (float) srate/1000000);
-
+          
+          log_h->console("Setting Sampling frequency %.2f MHz\n", (float) srate/1000000);          
           radio_h->set_rx_srate(srate);
           radio_h->set_tx_srate(srate);
+
+          ul_dl_factor = radio_h->get_tx_freq()/radio_h->get_rx_freq();
+
           Info("SYNC:  Cell found. Synchronizing...\n");
           phy_state = SYNCING;
           sync_sfn_cnt = 0; 
@@ -389,7 +393,7 @@ void phch_recv::run_thread()
             
             metrics.sfo = srslte_ue_sync_get_sfo(&ue_sync);
             metrics.cfo = srslte_ue_sync_get_cfo(&ue_sync);
-            worker->set_cfo(metrics.cfo/15000);
+            worker->set_cfo(ul_dl_factor*metrics.cfo/15000);
             worker_com->set_sync_metrics(metrics);
     
             float sample_offset = (float) srslte_ue_sync_get_sfo(&ue_sync)/1000; 
@@ -412,13 +416,12 @@ void phch_recv::run_thread()
             if (prach_buffer->is_ready_to_send(tti)) {
               srslte_timestamp_t cur_time; 
               radio_h->get_time(&cur_time);
-              prach_buffer->send(radio_h, metrics.cfo/15000, worker_com->pathloss, tx_time_prach);
+              prach_buffer->send(radio_h, ul_dl_factor*metrics.cfo/15000, worker_com->pathloss, tx_time_prach);
               radio_h->tx_end();            
               worker_com->p0_preamble = prach_buffer->get_p0_preamble();
               worker_com->cur_radio_power = SRSLTE_MIN(SRSLTE_PC_MAX, worker_com->pathloss + worker_com->p0_preamble);
             }            
             workers_pool->start_worker(worker);             
-            mac->tti_clock(tti);
             // Notify RRC in-sync every 1 frame
             if ((tti%10) == 0) {
               rrc->in_sync();

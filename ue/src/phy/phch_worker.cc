@@ -63,6 +63,8 @@ phch_worker::phch_worker() : tr_exec(10240)
   pregen_enabled  = false; 
   trace_enabled   = false; 
   
+  ul_dl_factor = 1; 
+  
   reset();  
 }
 
@@ -98,6 +100,7 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
     Error("Allocating memory\n");
     return false; 
   }
+
   if (srslte_ue_dl_init(&ue_dl, cell)) {    
     Error("Initiating UE DL\n");
     return false; 
@@ -110,6 +113,9 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
     
+  
+  ul_dl_factor = phy->get_radio()->get_tx_freq()/phy->get_radio()->get_rx_freq();
+  
   cell_initiated = true; 
   
   return true; 
@@ -139,7 +145,7 @@ void phch_worker::set_tti(uint32_t tti_, uint32_t tx_tti_)
 
 void phch_worker::set_cfo(float cfo_)
 {
-  cfo = cfo_;
+  cfo = cfo_*ul_dl_factor;
 }
 
 void phch_worker::set_sample_offset(float sample_offset)
@@ -325,14 +331,14 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   } else {
     chest_done = false; 
   }
-  if (decode_pdcch) { /* and not in DRX mode */
+  if (chest_done && decode_pdcch) { /* and not in DRX mode */
     
     float noise_estimate = phy->avg_noise;
     
     if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
       noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
     }
-    
+
     if (srslte_pdcch_extract_llr(&ue_dl.pdcch, ue_dl.sf_symbols, ue_dl.ce, noise_estimate, tti%10, cfi)) {
       Error("Extracting PDCCH LLR\n");
       return false; 
@@ -370,7 +376,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
       return false; 
     }
     
-    if (srslte_dci_msg_to_dl_grant(&dci_msg, dl_rnti, cell.nof_prb, &dci_unpacked, &grant->phy_grant.dl)) {
+    if (srslte_dci_msg_to_dl_grant(&dci_msg, dl_rnti, cell.nof_prb, cell.nof_ports, &dci_unpacked, &grant->phy_grant.dl)) {
       Error("Converting DCI message to DL grant\n");
       return false;   
     }
@@ -392,8 +398,13 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
   snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s\n", srslte_ra_dl_dci_string(&dci_unpacked), 
-         ue_dl.last_n_cce, dci_msg.nof_bits, timestr);
+    char hexstr[16];
+    hexstr[0]='\0';
+    if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
+      srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
+    }
+    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_dci_format_string(dci_msg.format), 
+         ue_dl.last_n_cce, dci_msg.nof_bits, timestr, hexstr);
     
     return true; 
   } else {
@@ -438,11 +449,6 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
         get_time_interval(t);
         snprintf(timestr, 64, ", dec_time=%4d us", (int) t[0].tv_usec);
   #endif
-              
-        /*
-        if (ack == false && grant->mcs.tbs == 75376 && rv == 0 && get_id() == 0 && 10*log10(srslte_chest_dl_get_snr(&ue_dl.chest) > 28) {
-          srslte_ue_dl_save_signal(&ue_dl, softbuffer, tti, rv);
-        }*/
         
         Info("PDSCH: l_crb=%2d, harq=%d, tbs=%d, mcs=%d, rv=%d, crc=%s, snr=%.1f dB, n_iter=%d%s\n", 
               grant->nof_prb, harq_pid, 
@@ -521,6 +527,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
       if (srslte_ue_dl_find_ul_dci(&ue_dl, &dci_msg, cfi, tti%10, ul_rnti) != 1) {
         return false; 
       }
+      
       if (srslte_dci_msg_to_ul_grant(&dci_msg, cell.nof_prb, pusch_hopping.hopping_offset, 
         &dci_unpacked, &grant->phy_grant.ul, tti)) 
       {
@@ -538,8 +545,13 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-      Info("PDCCH: UL DCI Format0 cce_index=%d, L=%d, n_data_bits=%d, TBS=%d%s\n", 
-           ue_dl.last_location.ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, grant->phy_grant.ul.mcs.tbs, timestr);
+      char hexstr[16];
+      hexstr[0]='\0';
+      if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
+        srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
+      }
+      Info("PDCCH: UL DCI Format0 cce_index=%d, L=%d, n_data_bits=%d, TBS=%d%s, hex=%s\n", 
+           ue_dl.last_location.ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, grant->phy_grant.ul.mcs.tbs, timestr, hexstr);
       
       if (grant->phy_grant.ul.mcs.tbs==0) {
         srslte_vec_fprint_hex(stdout, dci_msg.data, dci_msg.nof_bits);

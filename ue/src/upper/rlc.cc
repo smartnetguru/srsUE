@@ -79,13 +79,14 @@ void rlc::get_metrics(rlc_metrics_t &m)
   for (int i=0;i<SRSUE_N_RADIO_BEARERS;i++) {
     m.dl_tput_mbps += (dl_tput_bytes[i]*8/(double)1e6)/secs;
     m.ul_tput_mbps += (ul_tput_bytes[i]*8/(double)1e6)/secs;    
-    if (dl_tput_bytes[i] > 0 || ul_tput_bytes[i] > 0) {
+    if(rlc_array[i].active()) {
       rlc_log->info("LCID=%d, DL throughput: %4.6f Mbps. UL throughput: %4.6f Mbps.\n",
-                  i,
-                  (dl_tput_bytes[i]*8/(double)1e6)/secs, 
-                  (ul_tput_bytes[i]*8/(double)1e6)/secs);
+                    i,
+                    (dl_tput_bytes[i]*8/(double)1e6)/secs,
+                    (ul_tput_bytes[i]*8/(double)1e6)/secs);
     }
   }
+
   metrics_time = now;
   reset_metrics();
 }

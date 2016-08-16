@@ -85,7 +85,7 @@ bool ue::init(all_args_t *args_)
   }
   
   logger.init(args->log.filename);
-  rf_log.init("RF ", &logger);
+  rf_log.init("RF  ", &logger);
   phy_log.init("PHY ", &logger, true);
   mac_log.init("MAC ", &logger, true);
   rlc_log.init("RLC ", &logger);
@@ -259,15 +259,15 @@ void ue::stop()
 {
   if(started)
   {
-    phy.stop();
-    mac.stop();
-    rlc.stop();
-    pdcp.stop();
-    rrc.stop();
-    nas.stop();
-    gw.stop();
     usim.stop();
-
+    gw.stop();
+    nas.stop();
+    rrc.stop();
+    pdcp.stop();
+    rlc.stop();
+    mac.stop();
+    phy.stop();
+ 
     usleep(1e5);
     if(args->pcap.enable)
     {

@@ -36,7 +36,7 @@
 
 #include "common/log.h"
 #include "mac/mac.h"
-#include "mac/pcap.h"
+#include "common/pcap.h"
 
 
 namespace srsue {
@@ -90,7 +90,7 @@ void mac::stop()
   wait_thread_finish();
 }
 
-void mac::start_pcap(mac_pcap* pcap_)
+void mac::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
   dl_harq.start_pcap(pcap);
@@ -163,8 +163,8 @@ void mac::run_thread() {
       
       // Check if BSR procedure need to start SR 
       
-      if (bsr_procedure.need_to_send_sr()) {
-        Debug("Starting SR procedure by BSR request, PHY TTI=%d\n", phy_h->get_current_tti());
+      if (bsr_procedure.need_to_send_sr(tti)) {
+        Debug("Starting SR procedure by BSR request, PHY TTI=%d\n", tti);
         sr_procedure.start();
       }
       if (bsr_procedure.need_to_reset_sr()) {

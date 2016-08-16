@@ -63,7 +63,7 @@ bool dl_harq_entity::init(srslte::log* log_h_, mac_params *params_db_, srslte::t
 
 }
 
-void dl_harq_entity::start_pcap(mac_pcap* pcap_)
+void dl_harq_entity::start_pcap(srslte::mac_pcap* pcap_)
 {
   pcap = pcap_; 
 }
@@ -200,7 +200,8 @@ bool dl_harq_entity::dl_harq_process::is_sps()
 bool dl_harq_entity::dl_harq_process::calc_is_new_transmission(mac_interface_phy::mac_grant_t grant) {
   
   bool is_new_tb = true; 
-  if (srslte_tti_interval(grant.tti, cur_grant.tti) <= 8 && grant.n_bytes == cur_grant.n_bytes) 
+  if (srslte_tti_interval(grant.tti, cur_grant.tti) <= 8 && grant.n_bytes == cur_grant.n_bytes ||
+      pid == HARQ_BCCH_PID) 
   {
     is_new_tb = false; 
   }
@@ -303,8 +304,7 @@ void dl_harq_entity::dl_harq_process::tb_decoded(bool ack_)
       }
       Debug("Delivering PDU=%d bytes to Dissassemble and Demux unit (BCCH)\n", cur_grant.n_bytes);
       harq_entity->demux_unit->push_pdu(pid, payload_buffer_ptr, cur_grant.n_bytes);
-    } else {
-      
+    } else {      
       if (harq_entity->pcap) {
         harq_entity->pcap->write_dl_crnti(payload_buffer_ptr, cur_grant.n_bytes, cur_grant.rnti, ack, cur_grant.tti);            
       }

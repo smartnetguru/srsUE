@@ -53,7 +53,7 @@ void rlc_um::init(srslte::log          *log_,
                   uint32_t              lcid_,
                   pdcp_interface_rlc   *pdcp_,
                   rrc_interface_rlc    *rrc_,
-                  mac_interface_timers *mac_timers_)
+                  srslte::mac_interface_timers *mac_timers_)
 {
   log                   = log_;
   lcid                  = lcid_;

@@ -40,7 +40,7 @@
 #include "mac/proc_phr.h"
 #include "mac/mux.h"
 #include "mac/demux.h"
-#include "mac/mac_pcap.h"
+#include "common/mac_pcap.h"
 #include "common/mac_interface.h"
 #include "common/tti_sync_cv.h"
 #include "common/threads.h"
@@ -50,7 +50,7 @@ namespace srsue {
 class mac
     :public mac_interface_phy
     ,public mac_interface_rrc
-    ,public mac_interface_timers
+    ,public srslte::mac_interface_timers
     ,public thread
     ,public srslte::timer_callback
 {
@@ -88,7 +88,7 @@ public:
   int64_t get_param(mac_interface_params::mac_param_t param);
   
   void timer_expired(uint32_t timer_id); 
-  void start_pcap(mac_pcap* pcap);
+  void start_pcap(srslte::mac_pcap* pcap);
   
   srslte::timers::timer*   get(uint32_t timer_id);
   u_int32_t                get_unique_id();
@@ -115,7 +115,7 @@ private:
   static const int MAC_PDU_THREAD_PRIO  = 6;
 
   // Interaction with PHY 
-  tti_sync_cv          ttisync; 
+  srslte::tti_sync_cv   ttisync; 
   phy_interface        *phy_h; 
   rlc_interface_mac    *rlc_h; 
   srslte::log          *log_h;
@@ -153,7 +153,7 @@ private:
   void            timeAlignmentTimerExpire();
   
   // pointer to MAC PCAP object
-  mac_pcap* pcap;
+  srslte::mac_pcap* pcap;
   bool signals_pregenerated;
   bool is_first_ul_grant;
 
@@ -173,7 +173,7 @@ private:
   private:
     void run_thread();
     srslte::timers  timers_db;
-    tti_sync_cv     ttisync;
+    srslte::tti_sync_cv     ttisync;
     bool running; 
   };
   upper_timers   upper_timers_thread; 

@@ -17,6 +17,17 @@
 # and at http://www.gnu.org/licenses/.
 #
 
+# IP traffic over RLC test 
+add_executable(ip_test ip_test.cc)
+target_link_libraries(ip_test srsue_upper 
+                              srsue_common
+                              srsue_mac
+                              srsue_phy
+                              srsue_radio
+                              lte
+                              ${CMAKE_THREAD_LIBS_INIT}
+                              ${Boost_LIBRARIES})
+
 add_executable(rlc_am_data_test rlc_am_data_test.cc)
 target_link_libraries(rlc_am_data_test srsue_upper)
 add_test(rlc_am_data_test rlc_am_data_test)

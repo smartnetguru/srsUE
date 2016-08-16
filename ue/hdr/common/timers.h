@@ -35,6 +35,7 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <vector>
 #include <time.h>

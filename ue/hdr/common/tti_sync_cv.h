@@ -36,7 +36,7 @@
 #include <pthread.h>
 #include "common/tti_sync.h"
 
-namespace srsue {
+namespace srslte {
   
 class tti_sync_cv : public tti_sync
 {

@@ -145,6 +145,7 @@ private:
 #ifdef LOG_EXECTIME
   struct timeval logtime_start[3]; 
   bool chest_done;
+  float ul_dl_factor;
 #endif
   
 };

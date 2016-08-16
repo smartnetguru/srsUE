@@ -78,7 +78,7 @@ void radio::set_burst_preamble(double preamble_us)
   burst_preamble_sec = (double) preamble_us/1e6; 
 }
 
-void radio::set_tx_adv(uint32_t nsamples)
+void radio::set_tx_adv(int nsamples)
 {
   tx_adv_auto = false;
   tx_adv_nsamples = nsamples;
@@ -116,7 +116,8 @@ bool radio::rx_at(void* buffer, uint32_t nof_samples, srslte_timestamp_t rx_time
 
 bool radio::rx_now(void* buffer, uint32_t nof_samples, srslte_timestamp_t* rxd_time)
 {
-  if (srslte_rf_recv_with_time(&rf_device, buffer, nof_samples, true, &rxd_time->full_secs, &rxd_time->frac_secs) > 0) {
+  if (srslte_rf_recv_with_time(&rf_device, buffer, nof_samples, true, 
+    rxd_time?&rxd_time->full_secs:NULL, rxd_time?&rxd_time->frac_secs:NULL) > 0) {
     return true; 
   } else {
     return false; 
@@ -238,7 +239,7 @@ void radio::save_trace(uint32_t is_eob, srslte_timestamp_t *tx_time) {
 
 void radio::set_rx_freq(float freq)
 {
-  srslte_rf_set_rx_freq(&rf_device, freq);
+  rx_freq = srslte_rf_set_rx_freq(&rf_device, freq);
 }
 
 void radio::set_rx_gain(float gain)
@@ -263,12 +264,22 @@ void radio::set_rx_srate(float srate)
 
 void radio::set_tx_freq(float freq)
 {
-  srslte_rf_set_tx_freq(&rf_device, freq);  
+  tx_freq = srslte_rf_set_tx_freq(&rf_device, freq);  
 }
 
 void radio::set_tx_gain(float gain)
 {
   srslte_rf_set_tx_gain(&rf_device, gain);
+}
+
+float radio::get_rx_freq()
+{
+  return rx_freq;
+}
+
+float radio::get_tx_freq()
+{
+  return tx_freq; 
 }
 
 float radio::get_tx_gain()
@@ -296,17 +307,17 @@ void radio::set_tx_srate(float srate)
     if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
-        tx_adv_sec = 105*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 68*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 48*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 45*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
-        tx_adv_sec = 36*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 40*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
-        tx_adv_sec = 29*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 27*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 15.36e3) {
-        tx_adv_sec = 21*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 19*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 23.04e3) {
-        tx_adv_sec = 14*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 18*16*SRSLTE_LTE_TS;
       } else {
         /* Interpolate from known values */
         tx_adv_sec = uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec;        
@@ -333,6 +344,7 @@ void radio::set_tx_srate(float srate)
     }
   } else {
     tx_adv_sec = tx_adv_nsamples * (1/cur_tx_srate);
+    printf("tx_adv_sec=%f us\n", tx_adv_sec*1e6);
   }
 }
 

@@ -176,7 +176,7 @@ private:
   srslte::radio radio;
   srsue::phy        phy;
   srsue::mac        mac;
-  srsue::mac_pcap   mac_pcap;
+  srslte::mac_pcap   mac_pcap;
   srsue::rlc        rlc;
   srsue::pdcp       pdcp;
   srsue::rrc        rrc;

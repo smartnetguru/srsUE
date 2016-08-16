@@ -36,8 +36,8 @@
 #include "common/timers.h"
 #include "mac/mux.h"
 #include "mac/demux.h"
-#include "mac/pdu.h"
-#include "mac/mac_pcap.h"
+#include "common/pdu.h"
+#include "common/mac_pcap.h"
 
 /* Random access procedure as specified in Section 5.1 of 36.321 */
 
@@ -65,7 +65,7 @@ class ra_proc : public srslte::timer_callback
     void new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t* action);
     void tb_decoded_ok();
     
-    void start_pcap(mac_pcap* pcap);
+    void start_pcap(srslte::mac_pcap* pcap);
 private: 
     static bool uecrid_callback(void *arg, uint64_t uecri);
     
@@ -84,7 +84,7 @@ private:
     //  Buffer to receive RAR PDU 
     static const uint32_t MAX_RAR_PDU_LEN = 2048;
     uint8_t     rar_pdu_buffer[MAX_RAR_PDU_LEN];
-    rar_pdu     rar_pdu_msg; 
+    srslte::rar_pdu rar_pdu_msg; 
     
     // Random Access parameters provided by higher layers defined in 5.1.1
     // They are read from params_db during initialization init()    
@@ -147,7 +147,7 @@ private:
     srslte::timers  *timers_db;
     mux             *mux_unit;
     demux           *demux_unit;
-    mac_pcap        *pcap;
+    srslte::mac_pcap  *pcap;
     rrc_interface_mac *rrc;
 
         
