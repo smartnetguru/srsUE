@@ -80,7 +80,7 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
   sf_recv.init(radio_handler, mac, rrc, &prach_buffer, &workers_pool, &workers_common, log_h, SF_RECV_THREAD_PRIO);
 
   // Enable UL signal pregeneration by default
-  enable_pregen_signals(true);
+  enable_pregen_signals(false);
 
   return true; 
 }
