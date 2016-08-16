@@ -307,22 +307,21 @@ void radio::set_tx_srate(float srate)
     if (!strcmp(srslte_rf_name(&rf_device), "UHD")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
-        tx_adv_sec = 68*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 105*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 3.84e3) {
-        tx_adv_sec = 45*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 48*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 5.76e3) {
-        tx_adv_sec = 40*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 36*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
-        tx_adv_sec = 27*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 29*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 15.36e3) {
-        tx_adv_sec = 19*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 21*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 23.04e3) {
-        tx_adv_sec = 18*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 14*16*SRSLTE_LTE_TS;
       } else {
         /* Interpolate from known values */
         tx_adv_sec = uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec;        
-      }
-    } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
+      }    } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {
         tx_adv_sec = 27*16*SRSLTE_LTE_TS;
