@@ -85,7 +85,7 @@ bool ue::init(all_args_t *args_)
   }
   
   logger.init(args->log.filename);
-  rf_log.init("RF ", &logger);
+  rf_log.init("RF  ", &logger);
   phy_log.init("PHY ", &logger, true);
   mac_log.init("MAC ", &logger, true);
   rlc_log.init("RLC ", &logger);
