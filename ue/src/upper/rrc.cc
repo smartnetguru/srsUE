@@ -710,15 +710,16 @@ void rrc::parse_dl_ccch(byte_buffer_t *pdu)
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_SETUP:
     rrc_log->info("Connection Setup received\n");
+    transaction_id = dl_ccch_msg.msg.rrc_con_setup.rrc_transaction_id;
     handle_con_setup(&dl_ccch_msg.msg.rrc_con_setup);
     rrc_log->info("Notifying NAS of connection setup\n");
     state = RRC_STATE_COMPLETING_SETUP;
     nas->notify_connection_setup();
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST:
-    transaction_id = dl_ccch_msg.msg.rrc_con_reest.rrc_transaction_id;
     rrc_log->info("Connection Reestablishment received\n");
     rrc_log->console("Reestablishment OK\n");
+    transaction_id = dl_ccch_msg.msg.rrc_con_reest.rrc_transaction_id;
     handle_con_reest(&dl_ccch_msg.msg.rrc_con_reest);
     break;
   case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REEST_REJ:
