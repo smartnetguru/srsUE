@@ -313,9 +313,9 @@ void radio::set_tx_srate(float srate)
       } else if (srate_khz == 5.76e3) {
         tx_adv_sec = 36*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 11.52e3) {
-        tx_adv_sec = 29*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 26*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 15.36e3) {
-        tx_adv_sec = 21*16*SRSLTE_LTE_TS;
+        tx_adv_sec = 19*16*SRSLTE_LTE_TS;
       } else if (srate_khz == 23.04e3) {
         tx_adv_sec = 14*16*SRSLTE_LTE_TS;
       } else {
