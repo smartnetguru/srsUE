@@ -251,7 +251,13 @@ void ue::set_expert_parameters() {
     phy.set_param(phy_interface_params::SSS_ALGORITHM, 1);    
   }
   
+  if (!args->expert.estimator_average.compare("frequency")) {
+    phy.set_param(phy_interface_params::ESTIMATOR_MODE, 1);
+  } else {
+    phy.set_param(phy_interface_params::ESTIMATOR_MODE, 0);
+  }
   phy.set_param(phy_interface_params::ESTIMATOR_FIL_W_1000, args->expert.estimator_fil_w*1000);
+  phy.set_param(phy_interface_params::ESTIMATOR_FIL_T_1000, args->expert.estimator_fil_t*1000);
 
 }
 
