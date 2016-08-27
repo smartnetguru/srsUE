@@ -187,9 +187,17 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
             bpo::value<string>(&args->expert.sss_algorithm)->default_value("full"), 
             "Selects the SSS estimation algorithm.")
 
+        ("expert.estimator_average",    
+            bpo::value<string>(&args->expert.estimator_average)->default_value("time"), 
+            "Chooses pilot averaging mode from {time, frequency}")
+
         ("expert.estimator_fil_w",    
             bpo::value<float>(&args->expert.estimator_fil_w)->default_value(0.1), 
             "Chooses the coefficients for the 3-tap channel estimator centered filter.")
+        
+        ("expert.estimator_fil_t",    
+            bpo::value<float>(&args->expert.estimator_fil_t)->default_value(0.9), 
+            "Sets the EMA coefficient for time averaging with previous subframe in time averaging mode .")
         
         
         ("rf_calibration.tx_corr_dc_gain",  bpo::value<float>(&args->rf_cal.tx_corr_dc_gain)->default_value(0.0),  "TX DC offset gain correction")
