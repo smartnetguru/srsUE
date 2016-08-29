@@ -63,8 +63,8 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
     common.add_options()
         ("rf.dl_freq",        bpo::value<float>(&args->rf.dl_freq)->default_value(2680000000),  "Downlink centre frequency")
         ("rf.ul_freq",        bpo::value<float>(&args->rf.ul_freq)->default_value(2560000000),  "Uplink centre frequency")
-        ("rf.rx_gain",        bpo::value<float>(&args->rf.rx_gain)->default_value(70),          "Front-end receiver gain")
-        ("rf.tx_gain",        bpo::value<float>(&args->rf.tx_gain)->default_value(70),          "Front-end transmitter gain")
+        ("rf.rx_gain",        bpo::value<float>(&args->rf.rx_gain)->default_value(-1),          "Front-end receiver gain")
+        ("rf.tx_gain",        bpo::value<float>(&args->rf.tx_gain)->default_value(-1),          "Front-end transmitter gain")
 
         ("rf.device_name",       bpo::value<string>(&args->rf.device_name)->default_value("auto"),    "Front-end device name")
         ("rf.device_args",       bpo::value<string>(&args->rf.device_args)->default_value("auto"),    "Front-end device arguments")
