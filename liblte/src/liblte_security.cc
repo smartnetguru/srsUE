@@ -35,8 +35,7 @@
 *******************************************************************************/
 
 #include "liblte_security.h"
-#include "polarssl/compat-1.2.h"
-#include "polarssl/aes.h"
+#include "liblte_ssl.h"
 #include "math.h"
 
 /*******************************************************************************
@@ -254,7 +253,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_asme(uint8  *ck,
         }
 
         // Derive Kasme
-        sha2_hmac(key, 32, s, 14, k_asme, 0);
+        sha256(key, 32, s, 14, k_asme, 0);
 
         err = LIBLTE_SUCCESS;
     }
@@ -289,7 +288,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_enb(uint8  *k_asme,
         s[6] = 0x04; // Second byte of L0
 
         // Derive Kenb
-        sha2_hmac(k_asme, 32, s, 7, k_enb, 0);
+        sha256(k_asme, 32, s, 7, k_enb, 0);
 
         err = LIBLTE_SUCCESS;
     }
@@ -327,7 +326,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_nas(uint8                          
         s[6] = 0x01; // Second byte of L1
 
         // Derive KNASenc
-        sha2_hmac(k_asme, 32, s, 7, k_nas_enc, 0);
+        sha256(k_asme, 32, s, 7, k_nas_enc, 0);
 
         // Construct S for KNASint
         s[0] = 0x15; // FC
@@ -339,7 +338,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_nas(uint8                          
         s[6] = 0x01; // Second byte of L1
 
         // Derive KNASint
-        sha2_hmac(k_asme, 32, s, 7, k_nas_int, 0);
+        sha256(k_asme, 32, s, 7, k_nas_int, 0);
 
         err = LIBLTE_SUCCESS;
     }
@@ -377,7 +376,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_rrc(uint8                          
         s[6] = 0x01; // Second byte of L1
 
         // Derive KRRCenc
-        sha2_hmac(k_enb, 32, s, 7, k_rrc_enc, 0);
+        sha256(k_enb, 32, s, 7, k_rrc_enc, 0);
 
         // Construct S for KRRCint
         s[0] = 0x15; // FC
@@ -389,7 +388,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_rrc(uint8                          
         s[6] = 0x01; // Second byte of L1
 
         // Derive KRRCint
-        sha2_hmac(k_enb, 32, s, 7, k_rrc_int, 0);
+        sha256(k_enb, 32, s, 7, k_rrc_int, 0);
 
         err = LIBLTE_SUCCESS;
     }
@@ -428,7 +427,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_up(uint8                           
         s[6] = 0x01; // Second byte of L1
 
         // Derive KUPenc
-        sha2_hmac(k_enb, 32, s, 7, k_up_enc, 0);
+        sha256(k_enb, 32, s, 7, k_up_enc, 0);
 
         // Construct S for KUPint
         s[0] = 0x15; // FC
@@ -440,7 +439,7 @@ LIBLTE_ERROR_ENUM liblte_security_generate_k_up(uint8                           
         s[6] = 0x01; // Second byte of L1
 
         // Derive KUPint
-        sha2_hmac(k_enb, 32, s, 7, k_up_int, 0);
+        sha256(k_enb, 32, s, 7, k_up_int, 0);
 
         err = LIBLTE_SUCCESS;
     }

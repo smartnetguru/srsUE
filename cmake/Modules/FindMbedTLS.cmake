@@ -1,17 +1,17 @@
-# - Try to find polarssl
+# - Try to find mbedtls
 #
 # Once done this will define
-#  MBEDTLS_FOUND        - System has polarssl
-#  MBEDTLS_INCLUDE_DIRS - The polarssl include directories
-#  MBEDTLS_LIBRARIES    - The polarssl library
+#  MBEDTLS_FOUND        - System has mbedtls
+#  MBEDTLS_INCLUDE_DIRS - The mbedtls include directories
+#  MBEDTLS_LIBRARIES    - The mbedtls library
 
 INCLUDE(FindPkgConfig)
 PKG_CHECK_MODULES(PC_MBEDTLS mbedtls)
 
-#find Mbedtls with 1.2 compatibility header
+#find Mbedtls
 FIND_PATH(
     MBEDTLS_INCLUDE_DIRS
-    NAMES polarssl/compat-1.2.h
+    NAMES mbedtls/md.h
     HINTS $ENV{MBEDTLS_DIR}/include
           ${PC_MBEDTLS_INCLUDEDIR}
           ${CMAKE_INSTALL_PREFIX}/include
@@ -21,7 +21,7 @@ FIND_PATH(
 
 FIND_LIBRARY(
     MBEDTLS_LIBRARIES
-    NAMES mbedtls
+    NAMES mbedcrypto
     HINTS $ENV{MBEDTLS_DIR}/lib
           ${PC_MBEDTLS_LIBDIR}
           ${CMAKE_INSTALL_PREFIX}/lib
