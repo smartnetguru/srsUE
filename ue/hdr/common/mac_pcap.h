@@ -35,7 +35,7 @@ namespace srslte {
 class mac_pcap
 {
 public: 
-  mac_pcap() {enable_write=false; ue_id=0;}; 
+  mac_pcap() {enable_write=false; ue_id=0; pcap_file = NULL; }; 
   void enable(bool en);
   bool open(const char *filename, uint32_t ue_id = 0);
   void close(); 

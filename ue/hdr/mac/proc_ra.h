@@ -47,7 +47,33 @@ namespace srsue {
 class ra_proc : public srslte::timer_callback
 {
   public:
-    ra_proc() : rar_pdu_msg(20) {pcap = NULL;};
+    ra_proc() : rar_pdu_msg(20) {
+      bzero(&softbuffer_rar, sizeof(srslte_softbuffer_rx_t));
+      pcap = NULL;
+      backoff_interval_start    = 0; 
+      backoff_inteval           = 0; 
+      received_target_power_dbm = 0; 
+      ra_rnti                   = 0; 
+      current_ta                = 0; 
+      state                     = IDLE; 
+      last_msg3_group           = RA_GROUP_A; 
+      msg3_transmitted          = false; 
+      first_rar_received        = false; 
+      phy_h                     = NULL; 
+      log_h                     = NULL; 
+      params_db                 = NULL; 
+      timers_db                 = NULL; 
+      mux_unit                  = NULL; 
+      demux_unit                = NULL; 
+      rrc                       = NULL; 
+      transmitted_contention_id = 0; 
+      transmitted_crnti         = 0; 
+      pdcch_to_crnti_received   = PDCCH_CRNTI_NOT_RECEIVED; 
+      started_by_pdcch          = false; 
+      rar_grant_nbytes          = 0; 
+      rar_grant_tti             = 0; 
+      msg3_flushed              = false; 
+    };
     bool init(phy_interface *phy_h, rrc_interface_mac *rrc_, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
     void reset();
     void start_pdcch_order();

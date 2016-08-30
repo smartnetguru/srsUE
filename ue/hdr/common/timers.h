@@ -54,7 +54,7 @@ public:
   class timer
   {
   public:
-    timer(uint32_t id_=0) {id = id_; counter = 0; timeout = 0; running = false; }
+    timer(uint32_t id_=0) {id = id_; counter = 0; timeout = 0; running = false; callback = NULL; }
     void set(timer_callback *callback_, uint32_t timeout_) {
       callback = callback_; 
       timeout = timeout_; 

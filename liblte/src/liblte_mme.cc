@@ -3416,9 +3416,12 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_emergency_number_list_ie(uint8              
                 emerg_num_list->emerg_num[idx].emerg_num[i*2+0] = (*ie_ptr)[length] & 0x0F;
                 emerg_num_list->emerg_num[idx].emerg_num[i*2+1] = (*ie_ptr)[length++] >> 4;
             }
-            if(emerg_num_list->emerg_num[idx].emerg_num[i*2-1] == 0x0F)
-            {
-                emerg_num_list->emerg_num[idx].N_emerg_num_digits--;
+            // Added by Ismael: if i==0 this is negative 
+            if (i > 0) {
+              if(emerg_num_list->emerg_num[idx].emerg_num[i*2-1] == 0x0F)
+              {
+                  emerg_num_list->emerg_num[idx].N_emerg_num_digits--;
+              }
             }
             emerg_num_list->N_emerg_nums++;
         }
@@ -3745,7 +3748,8 @@ LIBLTE_ERROR_ENUM liblte_mme_pack_access_point_name_ie(LIBLTE_MME_ACCESS_POINT_N
         label_len    = 0;
         while(apn->apn.length() > apn_idx)
         {
-            (*ie_ptr)[1+apn_idx+1] = (uint8)apn_str[apn_idx++];
+            (*ie_ptr)[1+apn_idx+1] = (uint8)apn_str[apn_idx];
+            apn_idx++;
             label_len++;
 
             if(apn_str[apn_idx] == '.')

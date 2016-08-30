@@ -96,6 +96,13 @@ struct rlc_amd_pdu_header_t{
   uint16_t       li[RLC_AM_WINDOW_SIZE];  // Array of length indicators
 
   rlc_amd_pdu_header_t(){
+    dc = RLC_DC_FIELD_CONTROL_PDU;
+    rf = 0; 
+    p  = 0; 
+    fi = 0; 
+    sn = 0; 
+    lsf = 0; 
+    so = 0; 
     N_li=0;
     for(int i=0;i<RLC_AM_WINDOW_SIZE;i++)
       li[i] = 0;
@@ -124,7 +131,7 @@ struct rlc_status_nack_t{
   uint16_t so_start;
   uint16_t so_end;
 
-  rlc_status_nack_t(){has_so=false;}
+  rlc_status_nack_t(){has_so=false; nack_sn=0; so_start=0; so_end=0;}
 };
 
 // STATUS PDU
@@ -133,7 +140,7 @@ struct rlc_status_pdu_t{
   uint32_t          N_nack;
   rlc_status_nack_t nacks[RLC_AM_WINDOW_SIZE];
 
-  rlc_status_pdu_t(){N_nack=0;}
+  rlc_status_pdu_t(){N_nack=0; ack_sn=0;}
 };
 
 /****************************************************************************

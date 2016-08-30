@@ -63,7 +63,7 @@ public:
 protected:
   virtual void run_thread() = 0; 
 private:
-  static void *thread_function_entry(void *_this)  { ((thread*) _this)->run_thread();}
+  static void *thread_function_entry(void *_this)  { ((thread*) _this)->run_thread(); return NULL; }
   pthread_t _thread;
 };
   
