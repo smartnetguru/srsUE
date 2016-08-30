@@ -165,8 +165,11 @@ public:
   // UE metrics interface
   bool get_metrics(ue_metrics_t &m);
 
+  void pregenerate_signals(bool enable);
+  
   // Testing
   void test_con_restablishment(); 
+  
 
 private:
   static ue *instance;

@@ -80,7 +80,7 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
   // Warning this must be initialized after all workers have been added to the pool
   sf_recv.init(radio_handler, mac, rrc, &prach_buffer, &workers_pool, &workers_common, log_h, SF_RECV_THREAD_PRIO);
 
-  // Enable UL signal pregeneration by default
+  // Disable UL signal pregeneration until the attachment 
   enable_pregen_signals(false);
 
   return true; 
@@ -215,7 +215,7 @@ void phy::reset()
   n_ta = 0; 
   pdcch_dl_search_reset();
   for(uint32_t i=0;i<nof_workers;i++) {
-    workers[i].reset();
+    ((phch_worker) workers[i]).reset();
   }    
 }
 
@@ -261,7 +261,7 @@ void phy::set_rar_grant(uint32_t tti, uint8_t grant_payload[SRSLTE_RAR_GRANT_LEN
 
 void phy::set_crnti(uint16_t rnti) {
   for(uint32_t i=0;i<nof_workers;i++) {
-    workers[i].set_crnti(rnti);
+    ((phch_worker) workers[i]).set_crnti(rnti);
   }    
 }
 
@@ -273,10 +273,9 @@ void phy::start_plot() {
 void phy::enable_pregen_signals(bool enable)
 {  
   for(uint32_t i=0;i<nof_workers;i++) {
-    workers[i].enable_pregen_signals(enable);
-  }  
-} 
-
+    ((phch_worker) workers[i]).enable_pregen_signals(enable);
+  }
+}
 
 uint32_t phy::tti_to_SFN(uint32_t tti) {
   return tti/10; 

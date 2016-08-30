@@ -853,6 +853,11 @@ void phch_worker::encode_srs()
 void phch_worker::enable_pregen_signals(bool enabled)
 {
   pregen_enabled = enabled; 
+  if (enabled) {
+    Info("Pre-generating UL signals worker=%d\n", get_id());
+    srslte_ue_ul_pregen_signals(&ue_ul);
+    Info("Done pre-generating signals worker=%d\n", get_id());
+  }
 }
 
 void phch_worker::set_ul_params(bool pregen_disabled)
@@ -940,8 +945,9 @@ void phch_worker::set_ul_params(bool pregen_disabled)
   I_sr                         = (uint32_t) phy->params_db->get_param(phy_interface_params::SR_CONFIG_INDEX);
   
   if (pregen_enabled && !pregen_disabled) { 
-    Debug("Pre-generating UL signals\n");
+    Info("Pre-generating UL signals worker=%d\n", get_id());
     srslte_ue_ul_pregen_signals(&ue_ul);
+    Info("Done pre-generating signals worker=%d\n", get_id());
   }  
 }
 

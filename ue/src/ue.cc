@@ -200,6 +200,11 @@ bool ue::init(all_args_t *args_)
   return true;
 }
 
+void ue::pregenerate_signals(bool enable)
+{
+  phy.enable_pregen_signals(enable);
+}
+
 void ue::test_con_restablishment() {
   rrc.test_con_restablishment();
 }

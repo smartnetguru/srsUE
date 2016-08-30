@@ -350,20 +350,18 @@ int main(int argc, char *argv[])
   pthread_t input;
   pthread_create(&input, NULL, &input_loop, &metrics);
 
-  bool plot_started   = false; 
-  //int cnt=0; 
+  bool plot_started         = false; 
+  bool signals_pregenerated = false; 
   while(running) {
     if (ue->is_attached()) {
+      if (!signals_pregenerated) {
+        ue->pregenerate_signals(true);
+        signals_pregenerated = true; 
+      }
       if (!plot_started && args.gui.enable) {
         ue->start_plot();
         plot_started = true; 
       }
-      /*
-      cnt++;
-      if (cnt==5) {
-        ue->test_con_restablishment();
-      }
-      */
     }
     sleep(1);
   }
