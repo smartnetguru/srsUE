@@ -372,7 +372,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
     
     Debug("Looking for RNTI=0x%x\n", dl_rnti);
     
-    if (srslte_ue_dl_find_dl_dci_type(&ue_dl, &dci_msg, cfi, tti%10, dl_rnti, type) != 1) {
+    if (srslte_ue_dl_find_dl_dci_type(&ue_dl, cfi, tti%10, dl_rnti, type, &dci_msg) != 1) {
       return false; 
     }
     
@@ -523,7 +523,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   } else {
     ul_rnti = phy->get_ul_rnti(tti);
     if (ul_rnti) {
-      if (srslte_ue_dl_find_ul_dci(&ue_dl, &dci_msg, cfi, tti%10, ul_rnti) != 1) {
+      if (srslte_ue_dl_find_ul_dci(&ue_dl, cfi, tti%10, ul_rnti, &dci_msg) != 1) {
         return false; 
       }
       
