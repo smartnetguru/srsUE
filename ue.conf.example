@@ -22,8 +22,8 @@
 [rf]
 dl_freq = 2680000000
 ul_freq = 2560000000
-tx_gain = 70
-rx_gain = 70
+tx_gain = 60
+rx_gain = 50
 
 #device_name = auto
 #device_args = auto
@@ -125,10 +125,8 @@ enable = true
 #                       sampling frequency offset. Default is enabled. 
 # sss_algorithm:        Selects the SSS estimation algorithm. Can choose between 
 #                       {full, partial, diff}. 
-# estimator_average:    Chooses pilot averaging mode from {time, frequency}
-# estimator_fil_w:      Chooses the coefficients for the 3-tap channel estimator centered filter for frequency averaging
+# estimator_fil_w:      Chooses the coefficients for the 3-tap channel estimator centered filter. 
 #                       The taps are [w, 1-2w, w]
-# estimator_fil_t:      Sets the EMA coefficient for time averaging with previous subframe in time averaging mode 
 # metrics_period_secs:  Sets the period at which metrics are requested from the UE. 
 #
 #####################################################################
@@ -148,12 +146,10 @@ enable = true
 #equalizer_mode      = mmse
 #cfo_integer_enabled = false
 #cfo_correct_tol_hz  = 50
-#time_correct_period = 0
+#time_correct_period = 5
 #sfo_correct_disable = false
 #sss_algorithm       = full
-#estimator_average   = time
 #estimator_fil_w     = 0.1
-#estimator_fil_t     = 0.9
 #metrics_period_secs = 1.0
 
 #####################################################################

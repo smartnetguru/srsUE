@@ -46,7 +46,7 @@ bool radio::init(char *args, char *devname)
   burst_preamble_time_rounded = 0; 
   cur_tx_srate = 0; 
   is_start_of_burst = true; 
-  bzero(zeros, burst_preamble_max_samples*sizeof(cf_t));
+  
   
   tx_adv_auto = true; 
   /* Set default preamble length each known device */

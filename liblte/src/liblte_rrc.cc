@@ -1579,15 +1579,21 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_meas_gap_config_ie(LIBLTE_RRC_MEAS_GAP_CONFIG_
     if(meas_gap_cnfg != NULL &&
        ie_ptr        != NULL)
     {
-        // Gap Offset Type
-        liblte_value_2_bits(meas_gap_cnfg->gap_offset_type, ie_ptr, 1);
+        // Release choice
+        liblte_value_2_bits(meas_gap_cnfg->setup_present, ie_ptr, 1);
 
-        // Gap Offset
-        if(LIBLTE_RRC_GAP_OFFSET_TYPE_GP0 == meas_gap_cnfg->gap_offset_type)
+        if(meas_gap_cnfg->setup_present)
         {
-            liblte_value_2_bits(meas_gap_cnfg->gap_offset, ie_ptr, 6);
-        }else{
-            liblte_value_2_bits(meas_gap_cnfg->gap_offset, ie_ptr, 7);
+            // Gap Offset Type
+            liblte_value_2_bits(meas_gap_cnfg->gap_offset_type, ie_ptr, 1);
+
+            // Gap Offset
+            if(LIBLTE_RRC_GAP_OFFSET_TYPE_GP0 == meas_gap_cnfg->gap_offset_type)
+            {
+                liblte_value_2_bits(meas_gap_cnfg->gap_offset, ie_ptr, 6);
+            }else{
+                liblte_value_2_bits(meas_gap_cnfg->gap_offset, ie_ptr, 7);
+            }
         }
 
         err = LIBLTE_SUCCESS;
@@ -1603,15 +1609,21 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_meas_gap_config_ie(uint8                    
     if(ie_ptr        != NULL &&
        meas_gap_cnfg != NULL)
     {
-        // Gap Offset Type
-        meas_gap_cnfg->gap_offset_type = (LIBLTE_RRC_GAP_OFFSET_TYPE_ENUM)liblte_bits_2_value(ie_ptr, 1);
+        // Release choice
+        meas_gap_cnfg->setup_present = liblte_bits_2_value(ie_ptr, 1);
 
-        // Gap Offset
-        if(LIBLTE_RRC_GAP_OFFSET_TYPE_GP0 == meas_gap_cnfg->gap_offset_type)
+        if(meas_gap_cnfg->setup_present)
         {
-            meas_gap_cnfg->gap_offset = liblte_bits_2_value(ie_ptr, 6);
-        }else{
-            meas_gap_cnfg->gap_offset = liblte_bits_2_value(ie_ptr, 7);
+          // Gap Offset Type
+          meas_gap_cnfg->gap_offset_type = (LIBLTE_RRC_GAP_OFFSET_TYPE_ENUM)liblte_bits_2_value(ie_ptr, 1);
+
+          // Gap Offset
+          if(LIBLTE_RRC_GAP_OFFSET_TYPE_GP0 == meas_gap_cnfg->gap_offset_type)
+          {
+              meas_gap_cnfg->gap_offset = liblte_bits_2_value(ie_ptr, 6);
+          }else{
+              meas_gap_cnfg->gap_offset = liblte_bits_2_value(ie_ptr, 7);
+          }
         }
 
         err = LIBLTE_SUCCESS;

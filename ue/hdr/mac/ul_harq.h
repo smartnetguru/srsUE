@@ -47,7 +47,15 @@ public:
   const static uint32_t NOF_HARQ_PROC = 8; 
   static uint32_t pidof(uint32_t tti);
   
-  ul_harq_entity() {  pcap = NULL; }
+  ul_harq_entity() {  
+    pcap        = NULL; 
+    timers_db   = NULL; 
+    mux_unit    = NULL; 
+    log_h       = NULL; 
+    params_db   = NULL; 
+    average_retx = 0; 
+    nof_pkts     = 0; 
+  }
   bool init(srslte::log *log_h, mac_params *params_db, srslte::timers* timers_, mux *mux_unit);
   void reset();
   void reset_ndi();

@@ -1061,12 +1061,10 @@ static const double liblte_rrc_sssf_high_num[LIBLTE_RRC_SSSF_HIGH_N_ITEMS] = {0.
 typedef enum{
     LIBLTE_RRC_GAP_OFFSET_TYPE_GP0 = 0,
     LIBLTE_RRC_GAP_OFFSET_TYPE_GP1,
-    LIBLTE_RRC_GAP_OFFSET_TYPE_RELEASE,
     LIBLTE_RRC_GAP_OFFSET_TYPE_N_ITEMS,
 }LIBLTE_RRC_GAP_OFFSET_TYPE_ENUM;
 static const char liblte_rrc_gap_offset_type_text[LIBLTE_RRC_GAP_OFFSET_TYPE_N_ITEMS][20] = {"GP0",
-                                                                                             "GP1",
-                                                                                             "RELEASE"};
+                                                                                             "GP1"};
 typedef enum{
     LIBLTE_RRC_UTRA_SYSTEM_TYPE_FDD = 0,
     LIBLTE_RRC_UTRA_SYSTEM_TYPE_TDD,
@@ -1312,6 +1310,7 @@ typedef struct{
 typedef struct{
     LIBLTE_RRC_GAP_OFFSET_TYPE_ENUM gap_offset_type;
     uint8                           gap_offset;
+    bool                            setup_present;
 }LIBLTE_RRC_MEAS_GAP_CONFIG_STRUCT;
 typedef struct{
     uint8 meas_id;

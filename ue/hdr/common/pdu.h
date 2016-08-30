@@ -49,7 +49,10 @@ public:
     cur_idx        = -1; 
     pdu_len        = 0; 
     rem_len        = 0;   
-    last_sdu_idx   = -1; 
+    last_sdu_idx   = -1;
+    pdu_is_ul      = false; 
+    buffer_tx      = NULL; 
+    total_sdu_len  = 0; 
     for (int i=0;i<max_subheaders;i++) {
       subheaders[i].parent = this; 
     }
@@ -113,6 +116,8 @@ public:
   SubH* get() {
     if (cur_idx >= 0) {
       return &subheaders[cur_idx];
+    } else {
+      return NULL; 
     }
   }
   

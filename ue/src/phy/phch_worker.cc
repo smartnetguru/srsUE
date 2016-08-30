@@ -303,20 +303,13 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   /* Without a grant, we might need to do fft processing if need to decode PHICH */
   if (phy->get_pending_ack(tti) || decode_pdcch) {
     
-    // Setup estimator configuration 
+    // Setup estimator filter 
     float w_coeff = (float) phy->params_db->get_param(phy_interface_params::ESTIMATOR_FIL_W_1000)/1000; 
     if (w_coeff > 0.0) {
       srslte_chest_dl_set_smooth_filter3_coeff(&ue_dl.chest, w_coeff); 
     } else if (w_coeff == 0.0) {
       srslte_chest_dl_set_smooth_filter(&ue_dl.chest, NULL, 0); 
     }
-
-    float t_coeff = (float) phy->params_db->get_param(phy_interface_params::ESTIMATOR_FIL_T_1000)/1000; 
-    if (t_coeff > 0.0) {
-      srslte_chest_dl_set_time_ema_coeff(&ue_dl.chest, t_coeff);  
-    }
-    
-    srslte_chest_dl_set_average_subframe(&ue_dl.chest, phy->params_db->get_param(phy_interface_params::ESTIMATOR_MODE) == 0);
     
     switch(phy->params_db->get_param(phy_interface_params::SNR_ESTIM_ALG)) {
       case 1:

@@ -27,6 +27,8 @@
 #ifndef UEPRACH_H
 #define UEPRACH_H
 
+#include <string.h>
+
 #include "srslte/srslte.h"
 #include "radio/radio.h"
 #include "common/log.h"
@@ -38,9 +40,15 @@ namespace srsue {
   class prach {
   public: 
     prach() {
-      params_db = NULL; 
-      initiated = false; 
-      signal_buffer = NULL; 
+      bzero(&prach_obj, sizeof(srslte_prach_t));
+      bzero(&cell, sizeof(srslte_cell_t));
+      bzero(&cfo_h, sizeof(srslte_cfo_t));
+      
+      params_db         = NULL; 
+      initiated         = false; 
+      signal_buffer     = NULL; 
+      transmitted_tti   = 0; 
+      target_power_dbm  = 0; 
     }
     void           init(phy_params *params_db, srslte::log *log_h);
     bool           init_cell(srslte_cell_t cell);

@@ -146,10 +146,7 @@ public:
     TIME_CORRECT_PERIOD,
     SFO_CORRECT_DISABLE,
     SSS_ALGORITHM, 
-    
-    ESTIMATOR_MODE,
     ESTIMATOR_FIL_W_1000,
-    ESTIMATOR_FIL_T_1000,
     
     NOF_PARAMS,    
   } phy_param_t;

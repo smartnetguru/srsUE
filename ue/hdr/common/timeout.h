@@ -50,7 +50,7 @@ class timeout_callback
 class timeout
 {
 public:
-  timeout():running(false),callback(NULL){}
+  timeout():running(false),callback(NULL), thread(0), timeout_id(0) {}
   ~timeout()
   {
     if(running && callback)
@@ -78,6 +78,7 @@ public:
   {
     timeout *t = (timeout*)t_;
     t->thread_func();
+    return NULL; 
   }
   void thread_func()
   {
