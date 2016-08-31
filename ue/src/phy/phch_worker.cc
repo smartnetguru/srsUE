@@ -980,14 +980,17 @@ void phch_worker::start_plot() {
 }
 
 int phch_worker::read_ce_abs(float *ce_abs) {
-  int i;
+  int i=0;
+  int sz = srslte_symbol_sz(cell.nof_prb);
+  bzero(ce_abs, sizeof(float)*sz);
+  int g = (sz - 12*cell.nof_prb)/2;
   for (i = 0; i < 12*cell.nof_prb; i++) {
-    ce_abs[i] = 20 * log10(cabs(ue_dl.ce[0][i]));
-    if (isinf(ce_abs[i])) {
-      ce_abs[i] = -80;
+    ce_abs[g+i] = 20 * log10(cabs(ue_dl.ce[0][i]));
+    if (isinf(ce_abs[g+i])) {
+      ce_abs[g+i] = -80;
     }
   }
-  return i;
+  return sz;
 }
 
 int phch_worker::read_pdsch_d(cf_t* pdsch_d)
