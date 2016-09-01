@@ -74,6 +74,7 @@ void* thread_loop_hex(void *a) {
     filter.info_hex(hex, 100, "Thread %d: %d", args->thread_id, i);
     filter.debug_hex(hex, 100, "Thread %d: %d", args->thread_id, i);
   }
+  return NULL;
 }
 
 void write(std::string filename) {

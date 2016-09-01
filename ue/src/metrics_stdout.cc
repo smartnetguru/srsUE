@@ -80,6 +80,7 @@ void* metrics_stdout::metrics_thread_start(void *m_)
 {
   metrics_stdout *m = (metrics_stdout*)m_;
   m->metrics_thread_run();
+  return NULL;
 }
 
 void metrics_stdout::metrics_thread_run()

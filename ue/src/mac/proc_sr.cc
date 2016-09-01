@@ -96,6 +96,7 @@ bool sr_proc::need_random_access() {
       return false; 
     }
   }
+  return false;
 }
 
 void sr_proc::start()

@@ -42,7 +42,6 @@ namespace srsue {
 struct rlc_umd_pdu_t{
   rlc_umd_pdu_header_t  header;
   byte_buffer_t        *buf;
-  bool                  pdu_complete;
 };
 
 class rlc_um

@@ -159,7 +159,7 @@ float prach::get_p0_preamble()
 }
 
 
-bool prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte_timestamp_t tx_time)
+void prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte_timestamp_t tx_time)
 {
   
   // Get current TX gain 

@@ -107,8 +107,15 @@ struct rlc_amd_pdu_header_t{
     for(int i=0;i<RLC_AM_WINDOW_SIZE;i++)
       li[i] = 0;
   }
-  rlc_amd_pdu_header_t(const rlc_amd_pdu_header_t& h){copy(h);}
-  rlc_amd_pdu_header_t& operator= (const rlc_amd_pdu_header_t& h){copy(h);}
+  rlc_amd_pdu_header_t(const rlc_amd_pdu_header_t& h)
+  {
+    copy(h);
+  }
+  rlc_amd_pdu_header_t& operator= (const rlc_amd_pdu_header_t& h)
+  {
+    copy(h);
+    return *this;
+  }
   void copy(const rlc_amd_pdu_header_t& h)
   {
     dc   = h.dc;

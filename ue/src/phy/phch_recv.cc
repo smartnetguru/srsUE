@@ -43,7 +43,7 @@ phch_recv::phch_recv() {
   running = false; 
 }
 
-bool phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc_interface_phy *_rrc, 
+void phch_recv::init(srslte::radio* _radio_handler, mac_interface_phy *_mac, rrc_interface_phy *_rrc,
                      prach* _prach_buffer, srslte::thread_pool* _workers_pool,
                      phch_common* _worker_com, srslte::log* _log_h, uint32_t prio)
 {

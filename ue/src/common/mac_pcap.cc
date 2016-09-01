@@ -38,7 +38,7 @@ void mac_pcap::enable(bool en)
 {
   enable_write = true; 
 }
-bool mac_pcap::open(const char* filename, uint32_t ue_id)
+void mac_pcap::open(const char* filename, uint32_t ue_id)
 {
   pcap_file = MAC_LTE_PCAP_Open(filename);
   ue_id = ue_id; 

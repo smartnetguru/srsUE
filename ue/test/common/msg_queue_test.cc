@@ -44,6 +44,7 @@ void* write_thread(void *a) {
     b->N_bytes = 4;
     args->q->write(b);
   }
+  return NULL;
 }
 
 int main(int argc, char **argv) {

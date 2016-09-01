@@ -81,6 +81,7 @@ uint32_t dl_harq_entity::get_harq_sps_pid(uint32_t tti) {
   uint32_t nof_proc = ((uint32_t) params_db->get_param(mac_interface_params::SPS_DL_NOF_PROC));
   return tti/params_db.get_param(mac_interface_params::SPS_DL_SCHED_INTERVAL)%nof_proc;
   */
+  return 0;
 }
 
 void dl_harq_entity::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t* action)

@@ -45,6 +45,7 @@ void* thread_loop(void *a) {
     sprintf(buf, "Thread %d: %d", args->thread_id, i);
     args->l->log(buf);
   }
+  return NULL;
 }
 
 void write(std::string filename) {

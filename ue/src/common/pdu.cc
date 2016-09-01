@@ -105,7 +105,7 @@ void sch_pdu::parse_packet(uint8_t *ptr)
 }
 
 uint8_t* sch_pdu::write_packet() {
-  write_packet(NULL);
+  return write_packet(NULL);
 }
 
 /* Writes the MAC PDU in the packet, including the MAC headers and CE payload. Section 6.1.2 */
@@ -358,6 +358,7 @@ uint32_t sch_subh::sizeof_ce(uint32_t lcid, bool is_ul)
         return 0; 
     }  
   }
+  return 0;
 }
 bool sch_subh::is_sdu()
 {

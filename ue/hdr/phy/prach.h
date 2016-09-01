@@ -57,7 +57,7 @@ namespace srsue {
     bool           is_ready_to_send(uint32_t current_tti);
     int            tx_tti();
     
-    bool           send(srslte::radio* radio_handler, float cfo, float pathloss, srslte_timestamp_t rx_time);
+    void           send(srslte::radio* radio_handler, float cfo, float pathloss, srslte_timestamp_t rx_time);
     float          get_p0_preamble();
     
   private: 

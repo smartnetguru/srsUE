@@ -91,11 +91,11 @@ void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint
     
     // Insert priority in sorted idx array
     int new_index = 0; 
-    while(set_priority > priority_sorted[new_index] && new_index < NOF_UL_LCH) {
+    while(new_index < NOF_UL_LCH && set_priority > priority_sorted[new_index]) {
       new_index++; 
     }
     int old_index = 0; 
-    while(lch_id != lchid_sorted[old_index] && old_index < NOF_UL_LCH) {
+    while(old_index < NOF_UL_LCH && lch_id != lchid_sorted[old_index]) {
       old_index++;
     }
     if (new_index ==  NOF_UL_LCH) {

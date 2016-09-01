@@ -74,7 +74,7 @@ class ra_proc : public srslte::timer_callback
       rar_grant_tti             = 0; 
       msg3_flushed              = false; 
     };
-    bool init(phy_interface *phy_h, rrc_interface_mac *rrc_, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
+    void init(phy_interface *phy_h, rrc_interface_mac *rrc_, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db, mux *mux_unit, demux *demux_unit);
     void reset();
     void start_pdcch_order();
     void start_mac_order();

@@ -267,7 +267,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
                     act_def_eps_bearer_context_req.pdn_addr.addr[3]);
       
       // Setup GW
-      char *err_str;
+      char *err_str = NULL;
       if(gw->setup_if_addr(ip_addr, err_str))
       {
         nas_log->error("Failed to set gateway address - %s\n", err_str);

@@ -129,6 +129,7 @@ int rlc::read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
     ul_tput_bytes[lcid] += nof_bytes;
     return rlc_array[lcid].read_pdu(payload, nof_bytes);
   }
+  return 0;
 }
 
 void rlc::write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)

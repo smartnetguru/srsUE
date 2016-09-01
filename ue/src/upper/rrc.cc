@@ -847,6 +847,7 @@ void* rrc::start_sib_thread(void *rrc_)
 {
   rrc *r = (rrc*)rrc_;
   r->sib_search();
+  return NULL;
 }
 
 void rrc::sib_search()

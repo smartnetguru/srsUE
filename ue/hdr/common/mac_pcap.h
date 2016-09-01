@@ -37,7 +37,7 @@ class mac_pcap
 public: 
   mac_pcap() {enable_write=false; ue_id=0; pcap_file = NULL; }; 
   void enable(bool en);
-  bool open(const char *filename, uint32_t ue_id = 0);
+  void open(const char *filename, uint32_t ue_id = 0);
   void close(); 
   void write_ul_crnti(uint8_t *pdu, uint32_t pdu_len_bytes, uint16_t crnti, uint32_t reTX, uint32_t tti);
   void write_dl_crnti(uint8_t *pdu, uint32_t pdu_len_bytes, uint16_t crnti, bool crc_ok, uint32_t tti);

@@ -201,7 +201,7 @@ void radio::set_tti_len(uint32_t sf_len_)
   sf_len = sf_len_; 
 }
 
-bool radio::tx_end()
+void radio::tx_end()
 {
   if (!is_start_of_burst) {
     save_trace(2, &end_of_burst_time);

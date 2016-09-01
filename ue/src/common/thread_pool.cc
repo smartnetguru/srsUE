@@ -190,7 +190,7 @@ void thread_pool::worker::finished()
 
 thread_pool::worker* thread_pool::wait_worker()
 {
-  wait_worker(0);
+  return wait_worker(0);
 }
 
 bool thread_pool::find_finished_worker(uint32_t tti, uint32_t *id) {
@@ -269,6 +269,7 @@ thread_pool::worker* thread_pool::get_worker(uint32_t id)
   if (id < nof_workers) {
     return workers[id];
   }
+  return NULL;
 }
 
 uint32_t thread_pool::get_nof_workers()

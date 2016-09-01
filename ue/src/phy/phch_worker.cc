@@ -389,6 +389,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
     grant->rv  = dci_unpacked.rv_idx;
     grant->rnti = dl_rnti; 
     grant->rnti_type = type; 
+    grant->last_tti = 0;
     
     last_dl_pdcch_ncce = srslte_ue_dl_get_ncce(&ue_dl);
 
@@ -691,6 +692,10 @@ void phch_worker::set_uci_periodic_cqi()
 void phch_worker::set_uci_aperiodic_cqi()
 {
   int mode = phy->params_db->get_param(phy_interface_params::CQI_APERIODIC_MODE);
+
+  if (mode < 0) {
+    Warning("PHY parameters not set - phy_interface_params::CQI_APERIODIC_MODE not found\n");
+  }
 
   if (mode == LIBLTE_RRC_CQI_REPORT_MODE_APERIODIC_RM30) {
       /* only Higher Layer-configured subband feedback support right now, according to TS36.213 section 7.2.1

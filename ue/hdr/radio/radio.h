@@ -88,7 +88,7 @@ namespace srslte {
       
       void get_time(srslte_timestamp_t *now);
       bool tx(void *buffer, uint32_t nof_samples, srslte_timestamp_t tx_time);
-      bool tx_end();
+      void tx_end();
       bool rx_now(void *buffer, uint32_t nof_samples, srslte_timestamp_t *rxd_time);
       bool rx_at(void *buffer, uint32_t nof_samples, srslte_timestamp_t rx_time);
 

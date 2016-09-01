@@ -161,7 +161,7 @@ bool bsr_proc::check_single_channel() {
       return true; 
     } 
   }
-
+  return false;
 }
 
 void bsr_proc::update_pending_data() {
@@ -268,6 +268,8 @@ char* bsr_proc::bsr_type_tostring(triggered_bsr_type_t type) {
       return (char*) "Padding";
     case bsr_proc::PERIODIC: 
       return (char*) "Periodic";
+    default:
+      return (char*) "Regular";
   }
 }
 

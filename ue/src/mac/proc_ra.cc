@@ -48,7 +48,7 @@ uint32_t backoff_table[16] = {0, 10, 20, 30, 40, 60, 80, 120, 160, 240, 320, 480
 // Table 7.6-1: DELTA_PREAMBLE values.
 int delta_preamble_db_table[5] = {0, 0, -3, -3, 8};
 
-bool ra_proc::init(phy_interface* phy_h_, rrc_interface_mac *rrc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers* timers_db_,
+void ra_proc::init(phy_interface* phy_h_, rrc_interface_mac *rrc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers* timers_db_,
                    mux* mux_unit_, demux* demux_unit_)
 {
   phy_h     = phy_h_; 

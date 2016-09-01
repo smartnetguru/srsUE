@@ -79,6 +79,7 @@ void logger::log(str_ptr msg) {
 void* logger::start(void *input) {
   logger *l = (logger*)input;
   l->reader_loop();
+  return NULL;
 }
 
 void logger::reader_loop() {
