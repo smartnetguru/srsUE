@@ -405,7 +405,7 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
       srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
     }
     Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_dci_format_string(dci_msg.format), 
-         ue_dl.last_n_cce, dci_msg.nof_bits, timestr, hexstr);
+         last_dl_pdcch_ncce, dci_msg.nof_bits, timestr, hexstr);
     
     return true; 
   } else {
