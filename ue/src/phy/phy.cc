@@ -215,7 +215,7 @@ void phy::reset()
   n_ta = 0; 
   pdcch_dl_search_reset();
   for(uint32_t i=0;i<nof_workers;i++) {
-    ((phch_worker) workers[i]).reset();
+    workers[i].reset();
   }    
 }
 
@@ -261,19 +261,19 @@ void phy::set_rar_grant(uint32_t tti, uint8_t grant_payload[SRSLTE_RAR_GRANT_LEN
 
 void phy::set_crnti(uint16_t rnti) {
   for(uint32_t i=0;i<nof_workers;i++) {
-    ((phch_worker) workers[i]).set_crnti(rnti);
+    workers[i].set_crnti(rnti);
   }    
 }
 
 // Start GUI 
 void phy::start_plot() {
-  ((phch_worker) workers[0]).start_plot();
+  workers[0].start_plot();
 }
 
 void phy::enable_pregen_signals(bool enable)
 {  
   for(uint32_t i=0;i<nof_workers;i++) {
-    ((phch_worker) workers[i]).enable_pregen_signals(enable);
+    workers[i].enable_pregen_signals(enable);
   }
 }
 
