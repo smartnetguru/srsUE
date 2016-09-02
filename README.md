@@ -52,9 +52,12 @@ Download & Install Instructions
 
 * Mandatory dependencies: 
   * srsLTE:            https://github.com/srslte/srslte
-  * UHD:               https://github.com/EttusResearch/uhd
   * Boost:             http://www.boost.org
   * PolarSSL/mbed TLS  https://tls.mbed.org
+
+* RF front-end driver:
+  * UHD:               https://github.com/EttusResearch/uhd
+  * BladeRF:           https://github.com/Nuand/bladeRF
 
 Download and build srsUE: 
 ```
