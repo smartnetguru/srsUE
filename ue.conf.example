@@ -35,8 +35,10 @@ rx_gain = 50
 # MAC-layer packet capture configuration
 #
 # Packets are captured to file in the compact format decoded by 
-# the Wireshark mac-lte-framed dissector. For more information see:
-# https://wiki.wireshark.org/MAC-LTE
+# the Wireshark mac-lte-framed dissector and with DLT 147. 
+# To use the dissector, edit the preferences for DLT_USER to 
+# add an entry with DLT=147, Payload Protocol=mac-lte-framed.
+# For more information see: https://wiki.wireshark.org/MAC-LTE
 #
 # enable:   Enable MAC layer packet captures (true/false)
 # filename: File path to use for packet captures
