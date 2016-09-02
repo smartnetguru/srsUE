@@ -63,8 +63,7 @@ filename = /tmp/ue.pcap
 # filename: File path to use for log output
 #####################################################################
 [log]
-phy_level = info
-all_level = warning
+all_level = info
 all_hex_limit = 32
 filename = /tmp/ue.log
 
@@ -87,7 +86,7 @@ imsi = 001010123456789
 imei = 353490069873319
 
 [gui]
-enable = true
+enable = false
 
 #####################################################################
 # Expert configuration options
