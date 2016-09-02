@@ -5,8 +5,7 @@ srsUE
 
 srsUE is a software radio LTE UE developed by SRS (www.softwareradiosystems.com). It is written in C++ and builds upon the srsLTE library (https://github.com/srslte/srslte). Running on an Intel Core i7-4790, srsUE achieves up to 60Mbps DL with a 20Mhz bandwidth SISO configuration.
 srsUE is released under the AGPLv3 license and uses software from the OpenLTE project (http://sourceforge.net/projects/openlte) for some security functions and for RRC/NAS message parsing.
-
-*News*: We have just released srsUE 1.2 containing important bugfixes and improvements in the synchronization procedure. Checkout the [CHANGELOG](CHANGELOG).  
+ 
 
 Features
 --------
@@ -52,10 +51,10 @@ Download & Install Instructions
 -------------------------------
 
 * Mandatory dependencies: 
-  * srsLTE:        https://github.com/srslte/srslte
-  * UHD:           https://github.com/EttusResearch/uhd
-  * Boost:         ```sudo apt-get install libboost-all-dev```
-  * Polarssl.......```sudo apt-get install libpolarssl-dev```
+  * srsLTE:            https://github.com/srslte/srslte
+  * UHD:               https://github.com/EttusResearch/uhd
+  * Boost:             http://www.boost.org
+  * PolarSSL/mbed TLS  https://tls.mbed.org
 
 Download and build srsUE: 
 ```

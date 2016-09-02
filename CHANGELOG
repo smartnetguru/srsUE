@@ -12,6 +12,9 @@ Change Log for Releases
   
 * Improvements: 
   * Added Aperiodic CQI support 3-1
+  * Added EIA1 support
+  * Added RLC AM resegmentation support
+  
 
 * Known bugs: 
   * Tun/tap write failure, seen at high rates with many retx (>70% retx)
