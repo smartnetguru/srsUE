@@ -79,17 +79,15 @@ void sr_proc::step(uint32_t tti)
     if (is_pending_sr) {
       if (params_db->get_param(mac_interface_params::SR_PUCCH_CONFIGURED)) {
         if (sr_counter < dsr_transmax) {
-          int last_tx_tti = phy_h->sr_last_tx_tti(); 
-          if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4 || sr_counter == 0) {
+          if (sr_counter == 0 && need_tx(tti)) {
             sr_counter++;
-            Info("SR:    Signalling PHY sr_counter=%d, tti=%d, last_tx_tti=%d\n", sr_counter, tti, last_tx_tti);
+            Info("SR:    Signalling PHY sr_counter=%d\n", sr_counter);
             phy_h->sr_send();
           }
         } else {
-          int last_tx_tti = phy_h->sr_last_tx_tti(); 
-          if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4) {
-            Info("SR:    Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d, tti=%d, last_tx_tti=%d\n", 
-                 sr_counter, dsr_transmax, tti, last_tx_tti);
+          if (need_tx(tti)) {
+            Info("SR:    Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", 
+                 sr_counter, dsr_transmax);
             log_h->console("Scheduling request failed: releasing RRC connection...\n");
             rrc->release_pucch_srs();
             do_ra = true; 
