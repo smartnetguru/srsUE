@@ -48,6 +48,8 @@ public:
   bool need_random_access(); 
   
 private:
+  bool need_tx(uint32_t tti); 
+  
   uint32_t      sr_counter;
   uint32_t      dsr_transmax; 
   bool          is_pending_sr;

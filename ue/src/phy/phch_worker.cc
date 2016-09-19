@@ -606,11 +606,12 @@ void phch_worker::set_uci_sr()
 {
   uci_data.scheduling_request = false; 
   if (phy->sr_enabled) {
-    // Get I_sr parameter
-    if (srslte_ue_ul_sr_send_tti(I_sr, (tti+4)%10240)) {
-      Info("PUCCH: SR transmission at TTI=%d\n", (tti+4)%10240);
+    uint32_t sr_tx_tti = (tti+4)%10240;
+    // Get I_sr parameter   
+    if (srslte_ue_ul_sr_send_tti(I_sr, sr_tx_tti)) {
+      Info("PUCCH: SR transmission at TTI=%d\n", sr_tx_tti);
       uci_data.scheduling_request = true; 
-      phy->sr_last_tx_tti = (tti+4)%10240; 
+      phy->sr_last_tx_tti = sr_tx_tti; 
       phy->sr_enabled = false;
     }
   } 

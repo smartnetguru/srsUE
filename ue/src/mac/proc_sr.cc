@@ -55,6 +55,24 @@ void sr_proc::reset()
   is_pending_sr = false;
 }
 
+bool sr_proc::need_tx(uint32_t tti) 
+{
+  int last_tx_tti = phy_h->sr_last_tx_tti(); 
+  if (last_tx_tti >= 0)  {
+    if (tti > last_tx_tti) {
+      if (tti - last_tx_tti > 8) {
+        return true; 
+      }
+    } else {
+      uint32_t interval = 10240-last_tx_tti+tti;
+      if (interval > 8 && tti < 8) {
+        return true; 
+      }
+    }
+  }
+  return false; 
+}
+
 void sr_proc::step(uint32_t tti)
 {
   if (initiated) {
@@ -64,14 +82,14 @@ void sr_proc::step(uint32_t tti)
           int last_tx_tti = phy_h->sr_last_tx_tti(); 
           if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4 || sr_counter == 0) {
             sr_counter++;
-            Info("SR:    Signalling PHY sr_counter=%d\n", sr_counter);
+            Info("SR:    Signalling PHY sr_counter=%d, tti=%d, last_tx_tti=%d\n", sr_counter, tti, last_tx_tti);
             phy_h->sr_send();
           }
         } else {
           int last_tx_tti = phy_h->sr_last_tx_tti(); 
           if (last_tx_tti >= 0 && srslte_tti_interval(tti, last_tx_tti) > 4) {
-            Info("SR:    Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d\n", 
-                 sr_counter, dsr_transmax);
+            Info("SR:    Releasing PUCCH/SRS resources, sr_counter=%d, dsr_transmax=%d, tti=%d, last_tx_tti=%d\n", 
+                 sr_counter, dsr_transmax, tti, last_tx_tti);
             log_h->console("Scheduling request failed: releasing RRC connection...\n");
             rrc->release_pucch_srs();
             do_ra = true; 
