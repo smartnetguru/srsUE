@@ -42,10 +42,15 @@
   * 
   *********************************************************/
     
-bool ul_harq_entity::init(srslte::log *log_h_, mac_params *params_db_, srslte::timers *timers_db_, mux *mux_unit_) {
+bool ul_harq_entity::init(srslte::log *log_h_, 
+                          mac_interface_rrc::ue_rnti_t *rntis_, 
+                          mac_interface_rrc::mac_cfg_t *mac_cfg_, 
+                          srslte::timers *timers_db_, 
+                          mux *mux_unit_) {
   log_h     = log_h_; 
   mux_unit  = mux_unit_; 
-  params_db = params_db_; 
+  mac_cfg   = mac_cfg_; 
+  rntis     = rntis_; 
   timers_db = timers_db_;
   for (uint32_t i=0;i<NOF_HARQ_PROC;i++) {
     if (!proc[i].init(i, this)) {
@@ -259,7 +264,7 @@ void ul_harq_entity::ul_harq_process::run_tti(uint32_t tti_tx, mac_interface_phy
   }
   if (harq_entity->pcap && grant) {
     if (grant->is_from_rar) {
-      grant->rnti = harq_entity->params_db->get_param(mac_interface_params::RNTI_TEMP);
+      grant->rnti = harq_entity->rntis->temp_rnti;
     }
     harq_entity->pcap->write_ul_crnti(pdu_ptr, grant->n_bytes, grant->rnti, get_nof_retx(), tti_tx);
   }
@@ -333,7 +338,7 @@ void ul_harq_entity::ul_harq_process::generate_tx(uint32_t tti_tx, mac_interface
 {
   action->current_tx_nb = current_tx_nb;
   action->expect_ack = true;
-  action->rnti = is_msg3?harq_entity->params_db->get_param(mac_interface_params::RNTI_TEMP):cur_grant.rnti; 
+  action->rnti = is_msg3?harq_entity->rntis->temp_rnti:cur_grant.rnti; 
   action->rv = cur_grant.rv>0?cur_grant.rv:get_rv();
   action->softbuffer = &softbuffer; 
   action->tx_enabled = true; 
@@ -342,22 +347,17 @@ void ul_harq_entity::ul_harq_process::generate_tx(uint32_t tti_tx, mac_interface
   
   current_irv = (current_irv+1)%4;  
   tti_last_tx = tti_tx; 
+  int max_retx; 
   if (is_msg3) {
-    if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX)) {
-      Info("UL %d:  Maximum number of ReTX for Msg3 reached (%d). Discarting TB.\n", pid, 
-           harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXMSG3TX));
-      reset();          
-      action->expect_ack = false;
-    }        
+    max_retx = harq_entity->mac_cfg->rach.max_harq_msg3_tx;
   } else {
-    if (current_tx_nb >= harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX)) {
-      Info("UL %d:  Maximum number of ReTX reached (%d). Discarting TB.\n", pid, 
-           harq_entity->params_db->get_param(mac_interface_params::HARQ_MAXTX));
-      reset();
-      action->expect_ack = false;
-    }
+    max_retx = liblte_rrc_max_harq_tx_num[harq_entity->mac_cfg->main.ulsch_cnfg.max_harq_tx];
   }
-
+  if (current_tx_nb >= max_retx) {
+    Info("UL %d:  Maximum number of ReTX for Msg3 reached (%d). Discarting TB.\n", pid, max_retx);
+    reset();          
+    action->expect_ack = false;
+  }
 }
 
 bool ul_harq_entity::ul_harq_process::is_sps()

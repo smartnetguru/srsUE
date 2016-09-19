@@ -32,7 +32,6 @@
 #include "common/log.h"
 #include "common/mac_interface.h"
 #include "common/interfaces.h"
-#include "mac/mac_params.h"
 #include "common/timers.h"
 
 /* Buffer status report procedure */
@@ -44,7 +43,7 @@ class bsr_proc : public srslte::timer_callback
 {
 public:
   bsr_proc();
-  void init(rlc_interface_mac *rlc, srslte::log *log_h, mac_params *params_db, srslte::timers *timers_db);
+  void init(rlc_interface_mac *rlc, srslte::log *log_h, mac_interface_rrc::mac_cfg_t *mac_cfg, srslte::timers *timers_db);
   void step(uint32_t tti);  
   void reset();
   void setup_lcg(uint32_t lcid, uint32_t new_lcg);
@@ -74,7 +73,7 @@ private:
   const static int QUEUE_STATUS_PERIOD_MS = 500; 
   
   bool              reset_sr;
-  mac_params        *params_db;
+  mac_interface_rrc::mac_cfg_t *mac_cfg;
   srslte::timers    *timers_db;
   srslte::log       *log_h;
   rlc_interface_mac *rlc;

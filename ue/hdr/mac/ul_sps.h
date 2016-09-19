@@ -29,7 +29,6 @@
 
 #include "common/log.h"
 #include "phy/phy.h"
-#include "mac/mac_params.h"
 #include "common/timers.h"
 
 /* Uplink Semi-Persistent schedulign (Section 5.10.2) */

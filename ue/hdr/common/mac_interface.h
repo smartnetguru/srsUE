@@ -40,6 +40,8 @@
 #include "common/interfaces_common.h"
 #include "common/timers.h"
 
+#include "liblte_rrc.h"
+
 namespace srsue {
   
 /* Interface PHY -> MAC */
@@ -117,65 +119,28 @@ public:
   
 };
 
-class mac_interface_params 
-{
-public: 
-      typedef enum {
-      
-      SPS_DL_SCHED_INTERVAL,
-      SPS_DL_NOF_PROC,
-      
-      RNTI_TEMP,
-      RNTI_C,
-      
-      CONTENTION_ID, // Transmitted UE Contention ID
-      
-      TIMER_TIMEALIGN,
-      
-      // Random Access parameters. See 5.1.1
-      RA_CONFIGINDEX,
-      RA_PREAMBLEINDEX,
-      RA_MASKINDEX,
-      RA_NOFPREAMBLES,
-      RA_NOFGROUPAPREAMBLES,
-      RA_MESSAGEPOWEROFFSETB,
-      RA_MESSAGESIZEA,
-      RA_PCMAX,
-      RA_DELTAPREAMBLEMSG3,
-      RA_RESPONSEWINDOW,
-      RA_POWERRAMPINGSTEP,
-      RA_PREAMBLETRANSMAX,
-      RA_INITRECEIVEDPOWER,
-      RA_CONTENTIONTIMER,
-      
-      SR_PUCCH_CONFIGURED,
-      SR_TRANS_MAX,
-      
-      BSR_TIMER_PERIODIC,
-      BSR_TIMER_RETX,
-      
-      PHR_TIMER_PERIODIC,
-      PHR_TIMER_PROHIBIT,
-      PHR_DL_PATHLOSS_CHANGE,
-      PHR_PATHLOSS_DB,
-      
-      HARQ_MAXTX,
-      HARQ_MAXMSG3TX,
-      
-      NOF_PARAMS,    
-    } mac_param_t;
-  
-  /* Sets/gets a parameter */
-  virtual void    set_param(mac_param_t param, int64_t value) = 0; 
-  virtual int64_t get_param(mac_param_t param) = 0;  
-};
-
 
 /* Interface RRC -> MAC */
 class mac_interface_rrc
-    :public mac_interface_params
 {
 public:
+  
+  typedef struct {
+    LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT           main; 
+    LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT        rach;     
+    LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT sr; 
+    uint32_t prach_config_index; 
+  } mac_cfg_t; 
+
+  
+  // Class to handle UE specific RNTIs between RRC and MAC
+  typedef struct {
+    uint16_t crnti; 
+    uint16_t temp_rnti; 
+    uint16_t tpc_rnti; 
+    uint16_t sps_rnti; 
+    uint64_t contention_id; 
+  } ue_rnti_t;  
   
   /* Instructs the MAC to start receiving BCCH */
   virtual void    bcch_start_rx() = 0; 
@@ -191,8 +156,18 @@ public:
 
   virtual uint32_t get_current_tti() = 0;
   
-  virtual void    reconfiguration() = 0;
-  virtual void    reset() = 0;
+  virtual void set_config(mac_cfg_t *mac_cfg) = 0;
+  virtual void set_main_config(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *main_cfg) = 0;
+  virtual void set_rach_config(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT *rach_cfg, uint32_t prach_config_index) = 0;
+  virtual void set_sr_config(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT *sr_cfg) = 0;
+  virtual void get_config(mac_cfg_t *mac_cfg) = 0;
+  
+  virtual void get_rntis(ue_rnti_t *rntis) = 0;
+  virtual void set_contention_id(uint64_t uecri) = 0;
+
+  
+  virtual void reconfiguration() = 0;
+  virtual void reset() = 0;
 };
 
 }

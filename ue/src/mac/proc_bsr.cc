@@ -45,11 +45,11 @@ bsr_proc::bsr_proc()
   
 }
 
-void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_)
+void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_, srslte::timers *timers_db_)
 {
   log_h     = log_h_; 
   rlc       = rlc_; 
-  params_db = params_db_;
+  mac_cfg   = mac_cfg_;
   timers_db = timers_db_; 
   reset();
   initiated = true;
@@ -57,8 +57,6 @@ void bsr_proc::init(rlc_interface_mac *rlc_, srslte::log* log_h_, mac_params* pa
 
 void bsr_proc::reset()
 {
-  params_db->set_param(mac_interface_params::BSR_TIMER_PERIODIC, 0);
-  params_db->set_param(mac_interface_params::BSR_TIMER_RETX, 0);
   timers_db->get(mac::BSR_TIMER_PERIODIC)->stop();
   timers_db->get(mac::BSR_TIMER_PERIODIC)->reset();
   timers_db->get(mac::BSR_TIMER_RETX)->stop();
@@ -220,22 +218,21 @@ void bsr_proc::step(uint32_t tti)
     return;
   }  
   
-  if (params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC) != 
-      timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() &&
-      params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC) > 0) 
-  {
-    timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));
-    timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
-    Info("BSR:   Configured timer periodic %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_PERIODIC));    
-  }
-
-  if (params_db->get_param(mac_interface_params::BSR_TIMER_RETX) != 
-      timers_db->get(mac::BSR_TIMER_RETX)->get_timeout() && 
-      params_db->get_param(mac_interface_params::BSR_TIMER_RETX) > 0) 
-  {
-    timers_db->get(mac::BSR_TIMER_RETX)->set(this, params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
-    timers_db->get(mac::BSR_TIMER_RETX)->run();
-    Info("BSR:   Configured timer reTX %d ms\n", params_db->get_param(mac_interface_params::BSR_TIMER_RETX));
+  if (mac_cfg->main.ulsch_cnfg_present) {
+    int periodic = liblte_rrc_periodic_bsr_timer_num[mac_cfg->main.ulsch_cnfg.periodic_bsr_timer];
+    if (periodic != timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && periodic > 0) 
+    {
+      timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, periodic);
+      timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
+      Info("BSR:   Configured timer periodic %d ms\n", periodic);    
+    }      
+    int retx = liblte_rrc_retransmission_bsr_timer_num[mac_cfg->main.ulsch_cnfg.retx_bsr_timer];
+    if (retx != timers_db->get(mac::BSR_TIMER_RETX)->get_timeout() && retx > 0) 
+    {
+      timers_db->get(mac::BSR_TIMER_RETX)->set(this, retx);
+      timers_db->get(mac::BSR_TIMER_RETX)->run();
+      Info("BSR:   Configured timer reTX %d ms\n", retx);
+    }
   }
 
   // Check condition 1 in Sec 5.4.5   

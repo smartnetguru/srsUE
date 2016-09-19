@@ -63,14 +63,14 @@ bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_mac *rr
   
   srslte_softbuffer_rx_init(&pch_softbuffer, 100);
   
-  bsr_procedure.init(       rlc_h, log_h, &params_db, &timers_db);
-  phr_procedure.init(phy_h,        log_h, &params_db, &timers_db);
-  mux_unit.init     (       rlc_h, log_h,                         &bsr_procedure, &phr_procedure);
-  demux_unit.init   (phy_h, rlc_h, log_h,             &timers_db);
-  ra_procedure.init (phy_h, rrc,   log_h, &params_db, &timers_db, &mux_unit, &demux_unit);
-  sr_procedure.init (phy_h, rrc,   log_h, &params_db);
-  ul_harq.init      (              log_h, &params_db, &timers_db, &mux_unit);
-  dl_harq.init      (              log_h, &params_db, &timers_db, &demux_unit);
+  bsr_procedure.init(       rlc_h, log_h,          &config, &timers_db);
+  phr_procedure.init(phy_h,        log_h,          &config, &timers_db);
+  mux_unit.init     (       rlc_h, log_h,                               &bsr_procedure, &phr_procedure);
+  demux_unit.init   (phy_h, rlc_h, log_h,                   &timers_db);
+  ra_procedure.init (phy_h, rrc,   log_h, &uernti, &config, &timers_db, &mux_unit, &demux_unit);
+  sr_procedure.init (phy_h, rrc,   log_h,          &config);
+  ul_harq.init      (              log_h, &uernti, &config, &timers_db, &mux_unit);
+  dl_harq.init      (              log_h,          &config, &timers_db, &demux_unit);
 
   reset();
   
@@ -132,8 +132,7 @@ void mac::reset()
   signals_pregenerated = false; 
   is_first_ul_grant = true;   
   
-  params_db.set_param(mac_interface_params::RNTI_C, 0);
-  params_db.set_param(mac_interface_params::RNTI_TEMP, 0);  
+  bzero(&uernti, sizeof(ue_rnti_t));
 }
 
 void mac::run_thread() {
@@ -182,13 +181,12 @@ void mac::run_thread() {
       if (ra_procedure.is_successful() && !signals_pregenerated) {
 
         // Configure PHY to look for UL C-RNTI grants
-        uint16_t crnti = params_db.get_param(mac_interface_params::RNTI_C);
-        phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, crnti);
-        phy_h->pdcch_dl_search(SRSLTE_RNTI_USER, crnti);
+        phy_h->pdcch_ul_search(SRSLTE_RNTI_USER, uernti.crnti);
+        phy_h->pdcch_dl_search(SRSLTE_RNTI_USER, uernti.crnti);
         
         // Pregenerate UL signals and C-RNTI scrambling sequences
-        Debug("Pre-computing C-RNTI scrambling sequences for C-RNTI=0x%x\n", crnti);
-        ((phy*) phy_h)->set_crnti(crnti);
+        Debug("Pre-computing C-RNTI scrambling sequences for C-RNTI=0x%x\n", uernti.crnti);
+        ((phy*) phy_h)->set_crnti(uernti.crnti);
         signals_pregenerated = true; 
       }
       
@@ -355,8 +353,9 @@ void mac::harq_recv(uint32_t tti, bool ack, mac_interface_phy::tb_action_ul_t* a
 
 void mac::setup_timers()
 {
-  if (params_db.get_param(mac_interface_params::TIMER_TIMEALIGN) > 0) {
-    timers_db.get(TIME_ALIGNMENT)->set(this, params_db.get_param(mac_interface_params::TIMER_TIMEALIGN));
+  int value = liblte_rrc_time_alignment_timer_num[config.main.time_alignment_timer];
+  if (value > 0) {
+    timers_db.get(TIME_ALIGNMENT)->set(this, value);
   }
 }
 
@@ -378,14 +377,40 @@ void mac::timeAlignmentTimerExpire()
   ul_harq.reset();
 }
 
-void mac::set_param(mac_interface_params::mac_param_t param, int64_t value)
+void mac::get_rntis(ue_rnti_t* rntis)
 {
-  params_db.set_param((uint32_t) param, value);
+  memcpy(rntis, &uernti, sizeof(ue_rnti_t));
 }
 
-int64_t mac::get_param(mac_interface_params::mac_param_t param)
+void mac::set_contention_id(uint64_t uecri)
 {
-  return params_db.get_param((uint32_t) param);
+  uernti.contention_id = uecri; 
+}
+
+void mac::get_config(mac_cfg_t* mac_cfg)
+{
+  memcpy(mac_cfg, &config, sizeof(mac_cfg_t));
+}
+
+void mac::set_config(mac_cfg_t* mac_cfg)
+{
+  memcpy(&config, mac_cfg, sizeof(mac_cfg_t));
+}
+
+void mac::set_main_config(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT* main_cfg)
+{
+  memcpy(&config.main, main_cfg, sizeof(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT));
+}
+
+void mac::set_rach_config(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT* rach_cfg, uint32_t prach_config_index)
+{
+  memcpy(&config.rach, rach_cfg, sizeof(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT));
+  config.prach_config_index = prach_config_index;
+}
+
+void mac::set_sr_config(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT* sr_cfg)
+{
+  memcpy(&config.sr, sr_cfg, sizeof(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT));
 }
 
 void mac::setup_lcid(uint32_t lcid, uint32_t lcg, uint32_t priority, int PBR_x_tti, uint32_t BSD)

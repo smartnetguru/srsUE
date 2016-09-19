@@ -29,7 +29,6 @@
 
 #include "common/mac_interface.h"
 #include "common/log.h"
-#include "mac/mac_params.h"
 #include "mac/mux.h"
 #include "mac/ul_sps.h"
 #include "common/mac_pcap.h"
@@ -52,11 +51,15 @@ public:
     timers_db   = NULL; 
     mux_unit    = NULL; 
     log_h       = NULL; 
-    params_db   = NULL; 
+    mac_cfg     = NULL; 
     average_retx = 0; 
     nof_pkts     = 0; 
   }
-  bool init(srslte::log *log_h, mac_params *params_db, srslte::timers* timers_, mux *mux_unit);
+  bool init(srslte::log *log_h, 
+            mac_interface_rrc::ue_rnti_t *rntis, 
+            mac_interface_rrc::mac_cfg_t *mac_cfg, 
+            srslte::timers* timers_, 
+            mux *mux_unit);
   void reset();
   void reset_ndi();
 
@@ -132,8 +135,10 @@ private:
   mux             *mux_unit;
   ul_harq_process proc[NOF_HARQ_PROC];
   srslte::log     *log_h;
-  mac_params      *params_db; 
   srslte::mac_pcap *pcap; 
+
+  mac_interface_rrc::ue_rnti_t *rntis;
+  mac_interface_rrc::mac_cfg_t *mac_cfg; 
   
   float            average_retx;   
   uint64_t         nof_pkts; 

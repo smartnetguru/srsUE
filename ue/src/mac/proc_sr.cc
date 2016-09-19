@@ -30,8 +30,6 @@
 #define Debug(fmt, ...)   log_h->debug_line(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 #include "mac/proc_sr.h"
-#include "mac/mac_params.h"
-
 
 
 namespace srsue {
@@ -40,11 +38,11 @@ sr_proc::sr_proc() {
   initiated = false; 
 }
   
-void sr_proc::init(phy_interface* phy_h_, rrc_interface_mac *rrc_, srslte::log* log_h_, mac_params* params_db_)
+void sr_proc::init(phy_interface* phy_h_, rrc_interface_mac *rrc_, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_)
 {
   log_h     = log_h_;
   rrc       = rrc_; 
-  params_db = params_db_; 
+  mac_cfg   = mac_cfg_; 
   phy_h     = phy_h_;
   initiated = true; 
   do_ra = false; 
@@ -77,7 +75,7 @@ void sr_proc::step(uint32_t tti)
 {
   if (initiated) {
     if (is_pending_sr) {
-      if (params_db->get_param(mac_interface_params::SR_PUCCH_CONFIGURED)) {
+      if (mac_cfg->sr.setup_present) {
         if (sr_counter < dsr_transmax) {
           if (sr_counter == 0 || need_tx(tti)) {
             sr_counter++;
@@ -122,7 +120,7 @@ void sr_proc::start()
       sr_counter = 0;
       is_pending_sr = true; 
     }
-    dsr_transmax = params_db->get_param(mac_interface_params::SR_TRANS_MAX);
+    dsr_transmax = liblte_rrc_dsr_trans_max_num[mac_cfg->sr.dsr_trans_max];
     Debug("SR:    Starting Procedure. dsrTransMax=%d\n", dsr_transmax);
   }
 }

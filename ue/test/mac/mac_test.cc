@@ -113,30 +113,13 @@ uint32_t sib_start_tti(uint32_t tti, uint32_t period, uint32_t x) {
 }
 
 void setup_mac_phy_sib2(LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT *sib2, srsue::mac *mac, srsue::phy *phy) {
-  // RACH-CONFIGCOMMON
-  if (sib2->rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.present) {
-    mac->set_param(srsue::mac_interface_params::RA_NOFGROUPAPREAMBLES, 
-                   liblte_rrc_message_size_group_a_num[sib2->rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.size_of_ra]);
-    mac->set_param(srsue::mac_interface_params::RA_MESSAGESIZEA, 
-                   liblte_rrc_message_size_group_a_num[sib2->rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.msg_size]);
-    mac->set_param(srsue::mac_interface_params::RA_MESSAGEPOWEROFFSETB, 
-                   liblte_rrc_message_power_offset_group_b_num[sib2->rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.msg_pwr_offset_group_b]);        
-  }
-  mac->set_param(srsue::mac_interface_params::RA_NOFPREAMBLES, 
-                 liblte_rrc_number_of_ra_preambles_num[sib2->rr_config_common_sib.rach_cnfg.num_ra_preambles]);
-  mac->set_param(srsue::mac_interface_params::RA_POWERRAMPINGSTEP, 
-                 liblte_rrc_power_ramping_step_num[sib2->rr_config_common_sib.rach_cnfg.pwr_ramping_step]);
-  mac->set_param(srsue::mac_interface_params::RA_INITRECEIVEDPOWER, 
-                 liblte_rrc_preamble_initial_received_target_power_num[sib2->rr_config_common_sib.rach_cnfg.preamble_init_rx_target_pwr]);
-  mac->set_param(srsue::mac_interface_params::RA_PREAMBLETRANSMAX, 
-                 liblte_rrc_preamble_trans_max_num[sib2->rr_config_common_sib.rach_cnfg.preamble_trans_max]);
-  mac->set_param(srsue::mac_interface_params::RA_RESPONSEWINDOW, 
-                 liblte_rrc_ra_response_window_size_num[sib2->rr_config_common_sib.rach_cnfg.ra_resp_win_size]);
-  mac->set_param(srsue::mac_interface_params::RA_CONTENTIONTIMER, 
-                 liblte_rrc_mac_contention_resolution_timer_num[sib2->rr_config_common_sib.rach_cnfg.mac_con_res_timer]);
-  mac->set_param(srsue::mac_interface_params::HARQ_MAXMSG3TX, 
-                 sib2->rr_config_common_sib.rach_cnfg.max_harq_msg3_tx);
-  
+
+  // Apply RACH configuration 
+  srsue::mac_interface_rrc::mac_cfg_t mac_cfg; 
+  mac->get_config(&mac_cfg);
+  memcpy(&mac_cfg.rach, &sib2->rr_config_common_sib.rach_cnfg, sizeof(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT));
+  mac->set_config(&mac_cfg);
+
   printf("Set RACH ConfigCommon: NofPreambles=%d, ResponseWindow=%d, ContentionResolutionTimer=%d ms, MaxTrials=%d\n",  
          liblte_rrc_number_of_ra_preambles_num[sib2->rr_config_common_sib.rach_cnfg.num_ra_preambles], 
          liblte_rrc_ra_response_window_size_num[sib2->rr_config_common_sib.rach_cnfg.ra_resp_win_size], 
@@ -258,16 +241,12 @@ void process_connsetup(LIBLTE_RRC_CONNECTION_SETUP_STRUCT *msg, srsue::mac *mac,
          msg->rr_cnfg.phy_cnfg_ded.srs_ul_cnfg_ded.srs_hopping_bandwidth,
          msg->rr_cnfg.phy_cnfg_ded.srs_ul_cnfg_ded.cyclic_shift);
   
-  mac->set_param(srsue::mac_interface_params::HARQ_MAXTX, 
-                 liblte_rrc_max_harq_tx_num[msg->rr_cnfg.mac_main_cnfg.explicit_value.ulsch_cnfg.max_harq_tx]);
-  mac->set_param(srsue::mac_interface_params::SR_TRANS_MAX, 
-                 liblte_rrc_dsr_trans_max_num[msg->rr_cnfg.phy_cnfg_ded.sched_request_cnfg.dsr_trans_max]);
-  mac->set_param(srsue::mac_interface_params::SR_PUCCH_CONFIGURED, 1);
-  
-  mac->set_param(srsue::mac_interface_params::BSR_TIMER_RETX, 
-                 liblte_rrc_retransmission_bsr_timer_num[msg->rr_cnfg.mac_main_cnfg.explicit_value.ulsch_cnfg.retx_bsr_timer]);
-  mac->set_param(srsue::mac_interface_params::BSR_TIMER_PERIODIC, 
-                 liblte_rrc_periodic_bsr_timer_num[msg->rr_cnfg.mac_main_cnfg.explicit_value.ulsch_cnfg.periodic_bsr_timer]);
+  srsue::mac_interface_rrc::mac_cfg_t mac_set; 
+  mac->get_config(&mac_set);
+  memcpy(&mac_set.main, &msg->rr_cnfg.mac_main_cnfg, sizeof(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT));
+  // SR is a PHY config but is needed by SR procedure in 36.321 5.4.4
+  memcpy(&mac_set.sr, &msg->rr_cnfg.phy_cnfg_ded.sched_request_cnfg, sizeof(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT));
+  mac->set_config(&mac_set);
   
   printf("Set MAC configuration: dsr-TransMAX: %d, harq-MaxReTX=%d, bsr-TimerReTX=%d, bsr-TimerPeriodic=%d\n", 
          liblte_rrc_dsr_trans_max_num[msg->rr_cnfg.phy_cnfg_ded.sched_request_cnfg.dsr_trans_max], 
@@ -395,7 +374,7 @@ public:
         ue_cri_ptr[nbytes-i-1] = (uint8_t) srslte_bit_pack(&ptr, 8);
       }
       printf("Setting UE contention resolution ID: %lu\n", uecri);
-      mac.set_param(srsue::mac_interface_params::CONTENTION_ID, uecri);
+      mac.set_contention_id(uecri);
 
       // Send ConnectionRequest Packet
       printf("Send ConnectionRequest %d/%d bytes\n", nbytes, nof_bytes);
@@ -446,7 +425,6 @@ public:
           connsetup_decoded = true; 
           break;
         case LIBLTE_RRC_DL_CCCH_MSG_TYPE_RRC_CON_REJ:
-          mac.set_param(srsue::mac_interface_params::RNTI_C, 0);
           break;
       } 
     } else if (lcid == 1) {

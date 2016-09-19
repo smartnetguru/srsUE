@@ -29,11 +29,12 @@
 
 #include "common/log.h"
 #include "phy/phy.h"
-#include "mac/mac_params.h"
 #include "common/timers.h"
 #include "mac/demux.h"
 #include "mac/dl_sps.h"
 #include "common/mac_pcap.h"
+
+#include "common/mac_interface.h"
 
 /* Downlink HARQ entity as defined in 5.3.2 of 36.321 */
 
@@ -48,7 +49,7 @@ public:
   const static uint32_t HARQ_BCCH_PID = NOF_HARQ_PROC; 
   
   dl_harq_entity();
-  bool init(srslte::log *log_h_, mac_params *params_db, srslte::timers *timers_, demux *demux_unit);
+  bool init(srslte::log *log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg, srslte::timers *timers_, demux *demux_unit);
   
   
   /***************** PHY->MAC interface for DL processes **************************/
@@ -104,7 +105,7 @@ private:
   
   dl_harq_process  proc[NOF_HARQ_PROC+1];
   srslte::timers   *timers_db;
-  mac_params      *params_db; 
+  mac_interface_rrc::mac_cfg_t *mac_cfg; 
   demux           *demux_unit; 
   srslte::log     *log_h;
   srslte::mac_pcap *pcap; 

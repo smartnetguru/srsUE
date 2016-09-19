@@ -191,6 +191,7 @@ public:
   virtual uint32_t get_current_tti() = 0;
   
   virtual float get_phr() = 0; 
+  virtual float get_pathloss_db() = 0;
     
 };
 

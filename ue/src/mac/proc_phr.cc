@@ -42,11 +42,11 @@ phr_proc::phr_proc()
   initiated = false; 
 }
 
-void phr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_)
+void phr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_, srslte::timers *timers_db_)
 {
   phy_h     = phy_h_;
   log_h     = log_h_; 
-  params_db = params_db_;
+  mac_cfg   = mac_cfg_;
   timers_db = timers_db_; 
   initiated = true;
   reset();
@@ -60,6 +60,19 @@ void phr_proc::reset()
   dl_pathloss_change = -2; 
 }
 
+bool phr_proc::pathloss_changed() {
+  
+  int min_change      = liblte_rrc_dl_pathloss_change_num[mac_cfg->main.phr_cnfg.dl_pathloss_change];
+  int cur_pathloss_db = (int) phy_h->get_pathloss_db(); 
+  
+  if (abs(cur_pathloss_db - last_pathloss_db) > min_change && min_change > 0) {
+    last_pathloss_db = cur_pathloss_db;
+    return true; 
+  } else {
+    return false;
+  }
+}
+
 /* Trigger PHR when timers exire */
 void phr_proc::timer_expired(uint32_t timer_id) {
   switch(timer_id) {
@@ -70,10 +83,9 @@ void phr_proc::timer_expired(uint32_t timer_id) {
       phr_is_triggered = true; 
       break;
     case mac::PHR_TIMER_PROHIBIT:
-      if (abs(params_db->get_param(mac_interface_params::PHR_PATHLOSS_DB) - cur_pathloss_db) > 
-              params_db->get_param(mac_interface_params::PHR_DL_PATHLOSS_CHANGE)) 
-      {
-        Info("PHR:   Triggered by pathloss difference. cur_pathloss_db=%f (timer expired)\n", cur_pathloss_db);
+      int pathloss_db = liblte_rrc_dl_pathloss_change_num[mac_cfg->main.phr_cnfg.dl_pathloss_change];
+      if (pathloss_changed()) {
+        Info("PHR:   Triggered by pathloss difference. cur_pathloss_db=%f (timer expired)\n", last_pathloss_db);
         phr_is_triggered = true; 
       }
       break;      
@@ -85,34 +97,35 @@ void phr_proc::step(uint32_t tti)
   if (!initiated) {
     return;
   }  
+  
+  if (mac_cfg->main.phr_cnfg.setup_present) {
+    int cfg_timer_periodic = liblte_rrc_periodic_phr_timer_num[mac_cfg->main.phr_cnfg.periodic_phr_timer];
+    
+    // Setup timers and trigger PHR when configuration changed by higher layers
+    if (timer_periodic != cfg_timer_periodic && cfg_timer_periodic > 0) 
+    {
+      timer_periodic = cfg_timer_periodic; 
+      timers_db->get(mac::PHR_TIMER_PERIODIC)->set(this, timer_periodic);
+      timers_db->get(mac::PHR_TIMER_PERIODIC)->run();
+      phr_is_triggered = true; 
+      Info("PHR:   Configured timer periodic %d ms\n", timer_periodic);
+    }
 
-  // Setup timers and trigger PHR when configuration changed by higher layers
-  if (timer_periodic != params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC) &&
-      params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC)                   && 
-      params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC) != -1) 
-  {
-    timer_periodic = params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC); 
-    timers_db->get(mac::PHR_TIMER_PERIODIC)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PERIODIC));
-    timers_db->get(mac::PHR_TIMER_PERIODIC)->run();
-    phr_is_triggered = true; 
-    Info("PHR:   Configured timer periodic %d ms\n", timer_periodic);
   }
 
-  if (timer_prohibit != params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT) &&
-      params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT)                   && 
-      params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT) != -1) 
+  int cfg_timer_prohibit = liblte_rrc_prohibit_phr_timer_num[mac_cfg->main.phr_cnfg.prohibit_phr_timer];
+
+  if (timer_prohibit != cfg_timer_prohibit && cfg_timer_prohibit > 0) 
   {
-    timer_prohibit = params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT); 
-    timers_db->get(mac::PHR_TIMER_PROHIBIT)->set(this, params_db->get_param(mac_interface_params::PHR_TIMER_PROHIBIT));
+    timer_prohibit = cfg_timer_prohibit; 
+    timers_db->get(mac::PHR_TIMER_PROHIBIT)->set(this, timer_prohibit);
     timers_db->get(mac::PHR_TIMER_PROHIBIT)->run();
     Info("PHR:   Configured timer prohibit %d ms\n", timer_prohibit);
     phr_is_triggered = true; 
   }  
-  if (abs(params_db->get_param(mac_interface_params::PHR_PATHLOSS_DB) - cur_pathloss_db) > 
-          params_db->get_param(mac_interface_params::PHR_DL_PATHLOSS_CHANGE) && 
-          timers_db->get(mac::PHR_TIMER_PROHIBIT)->is_expired()) 
+  if (pathloss_changed() && timers_db->get(mac::PHR_TIMER_PROHIBIT)->is_expired()) 
   {
-    Info("PHR:   Triggered by pathloss difference. cur_pathloss_db=%f\n", cur_pathloss_db);
+    Info("PHR:   Triggered by pathloss difference. cur_pathloss_db=%f\n", last_pathloss_db);
     phr_is_triggered = true;        
   }
 }

@@ -110,6 +110,7 @@ public:
   int64_t get_param(phy_param_t param);
 
   float   get_phr();
+  float   get_pathloss_db();
     
   uint32_t get_current_tti();
   void     get_current_cell(srslte_cell_t *cell);

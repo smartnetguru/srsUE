@@ -171,6 +171,11 @@ float phy::get_phr()
   return phr; 
 }
 
+float phy::get_pathloss_db()
+{
+  return workers_common.cur_pathloss;
+}
+
 void phy::pdcch_ul_search(srslte_rnti_type_t rnti_type, uint16_t rnti, int tti_start, int tti_end)
 {
   workers_common.set_ul_rnti(rnti_type, rnti, tti_start, tti_end);

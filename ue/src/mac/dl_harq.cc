@@ -47,11 +47,12 @@ dl_harq_entity::dl_harq_entity()
 {
   pcap = NULL; 
 }
-bool dl_harq_entity::init(srslte::log* log_h_, mac_params *params_db_, srslte::timers* timers_, demux *demux_unit_)
+
+bool dl_harq_entity::init(srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_, srslte::timers* timers_, demux *demux_unit_)
 {
   timers_db  = timers_; 
   demux_unit = demux_unit_; 
-  params_db  = params_db_; 
+  mac_cfg    = mac_cfg_; 
   si_window_start = 0; 
   log_h = log_h_; 
   for (uint32_t i=0;i<NOF_HARQ_PROC+1;i++) {
@@ -77,10 +78,6 @@ void dl_harq_entity::reset()
 }
 
 uint32_t dl_harq_entity::get_harq_sps_pid(uint32_t tti) {
-  /*
-  uint32_t nof_proc = ((uint32_t) params_db->get_param(mac_interface_params::SPS_DL_NOF_PROC));
-  return tti/params_db.get_param(mac_interface_params::SPS_DL_SCHED_INTERVAL)%nof_proc;
-  */
   return 0;
 }
 

@@ -32,7 +32,6 @@
 #include "common/qbuff.h"
 #include "common/log.h"
 #include "common/mac_interface.h"
-#include "mac/mac_params.h"
 #include "common/pdu.h"
 #include "mac/proc_bsr.h"
 #include "mac/proc_phr.h"

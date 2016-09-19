@@ -193,8 +193,10 @@ private:
   void          set_phy_default_pucch_srs();
   void          set_phy_default_uci();
   void          set_phy_default_powerctrl();
+  void          set_phy_default();
   void          set_mac_default();
   void          set_rrc_default(); 
+  void          fill_mac_main_defaults(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT* mac_cfg);
   
 };
 

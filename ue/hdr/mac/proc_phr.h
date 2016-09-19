@@ -28,10 +28,11 @@
 #define PROCPHR_H
 
 #include <stdint.h>
-#include "mac_params.h"
 #include "common/timers.h"
 #include "common/phy_interface.h"
 #include "common/log.h"
+
+#include "common/mac_interface.h"
 
 /* Power headroom report procedure */
 
@@ -42,7 +43,7 @@ class phr_proc : public srslte::timer_callback
 {
 public:
   phr_proc();  
-  void init(phy_interface* phy_h, srslte::log* log_h_, mac_params* params_db_, srslte::timers *timers_db_);
+  void init(phy_interface* phy_h, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg, srslte::timers *timers_db_);
   
   void step(uint32_t tti);
   void reset();
@@ -51,15 +52,18 @@ public:
   void timer_expired(uint32_t timer_id);
   
 private:
+  
+  bool pathloss_changed(); 
+  
   srslte::log* log_h;
-  mac_params* params_db; 
+  mac_interface_rrc::mac_cfg_t *mac_cfg; 
   phy_interface* phy_h; 
   srslte::timers* timers_db;
   bool initiated;
   int timer_prohibit;
   int timer_periodic;
   int dl_pathloss_change; 
-  int cur_pathloss_db;
+  int last_pathloss_db;
   bool phr_is_triggered;
 };
 

@@ -30,7 +30,6 @@
 #include <stdint.h>
 
 #include "phy/phy.h"
-#include "mac/mac_params.h"
 
 /* Scheduling Request procedure as defined in 5.4.4 of 36.321 */
 
@@ -41,7 +40,7 @@ class sr_proc
 {
 public:
   sr_proc();
-  void init(phy_interface *phy_h, rrc_interface_mac *rrc, srslte::log *log_h, mac_params *params_db);
+  void init(phy_interface *phy_h, rrc_interface_mac *rrc, srslte::log *log_h, mac_interface_rrc::mac_cfg_t *mac_cfg);
   void step(uint32_t tti);  
   void reset();
   void start();
@@ -53,7 +52,7 @@ private:
   uint32_t      sr_counter;
   uint32_t      dsr_transmax; 
   bool          is_pending_sr;
-  mac_params    *params_db; 
+  mac_interface_rrc::mac_cfg_t *mac_cfg; 
   
   rrc_interface_mac *rrc;
   phy_interface *phy_h; 

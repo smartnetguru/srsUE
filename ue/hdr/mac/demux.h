@@ -33,7 +33,6 @@
 #include "common/log.h"
 #include "common/qbuff.h"
 #include "common/timers.h"
-#include "mac/mac_params.h"
 #include "common/pdu.h"
 
 /* Logical Channel Demultiplexing and MAC CE dissassemble */   
