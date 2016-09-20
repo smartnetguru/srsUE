@@ -50,7 +50,7 @@ namespace srsue {
       transmitted_tti   = 0; 
       target_power_dbm  = 0; 
     }
-    void           init(LIBLTE_RRC_PRACH_CONFIG_STRUCT *config, phy_args_t *args, srslte::log *log_h);
+    void           init(LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT *config, phy_args_t *args, srslte::log *log_h);
     bool           init_cell(srslte_cell_t cell);
     void           free_cell();
     bool           prepare_to_send(uint32_t preamble_idx, int allowed_subframe = -1, float target_power_dbm = -1);
@@ -63,8 +63,8 @@ namespace srsue {
   private: 
     static const uint32_t tx_advance_sf = 4; // Number of subframes to advance transmission
     
-    LIBLTE_RRC_PRACH_CONFIG_STRUCT *config;
-    phy_args_t                     *args; 
+    LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT *config;
+    phy_args_t                         *args; 
     
     srslte::log   *log_h;
     int            preamble_idx;  

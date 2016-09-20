@@ -128,11 +128,11 @@ void setup_mac_phy_sib2(LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT *sib2, srsue::ma
   
   // Apply PHY RR Config Common
   srsue::phy_interface_rrc::phy_cfg_common_t common; 
-  memcpy(&common.pdsch_cnfg,  &sib2->rr_config_common_sib.pdsch_cnfg, sizeof(LIBLTE_RRC_PDSCH_CONFIG_COMMON_STRUCT));
-  memcpy(&common.pusch_cnfg,  &sib2->rr_config_common_sib.pusch_cnfg, sizeof(LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT));
-  memcpy(&common.pucch_cnfg,  &sib2->rr_config_common_sib.pucch_cnfg, sizeof(LIBLTE_RRC_PUCCH_CONFIG_COMMON_STRUCT));
+  memcpy(&common.pdsch_cnfg,  &sib2->rr_config_common_sib.pdsch_cnfg,  sizeof(LIBLTE_RRC_PDSCH_CONFIG_COMMON_STRUCT));
+  memcpy(&common.pusch_cnfg,  &sib2->rr_config_common_sib.pusch_cnfg,  sizeof(LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT));
+  memcpy(&common.pucch_cnfg,  &sib2->rr_config_common_sib.pucch_cnfg,  sizeof(LIBLTE_RRC_PUCCH_CONFIG_COMMON_STRUCT));
   memcpy(&common.ul_pwr_ctrl, &sib2->rr_config_common_sib.ul_pwr_ctrl, sizeof(LIBLTE_RRC_UL_POWER_CONTROL_COMMON_STRUCT));
-  memcpy(&common.prach_cnfg,  &sib2->rr_config_common_sib.prach_cnfg, sizeof(LIBLTE_RRC_PRACH_CONFIG_STRUCT));
+  memcpy(&common.prach_cnfg,  &sib2->rr_config_common_sib.prach_cnfg,  sizeof(LIBLTE_RRC_PRACH_CONFIG_STRUCT));
   if (sib2->rr_config_common_sib.srs_ul_cnfg.present) {
     memcpy(&common.srs_ul_cnfg,  &sib2->rr_config_common_sib.srs_ul_cnfg, sizeof(LIBLTE_RRC_SRS_UL_CONFIG_COMMON_STRUCT));
   } else {

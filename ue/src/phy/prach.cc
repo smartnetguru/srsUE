@@ -58,7 +58,7 @@ void prach::free_cell()
   }
 }
 
-void prach::init(LIBLTE_RRC_PRACH_CONFIG_STRUCT *config_, phy_args_t *args_, srslte::log* log_h_)
+void prach::init(LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT *config_, phy_args_t *args_, srslte::log* log_h_)
 {
   log_h  = log_h_; 
   config = config_; 

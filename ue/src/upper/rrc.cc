@@ -949,7 +949,7 @@ void rrc::apply_sib2_configs()
   memcpy(&common.pusch_cnfg,  &sib2.rr_config_common_sib.pusch_cnfg,  sizeof(LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT));
   memcpy(&common.pucch_cnfg,  &sib2.rr_config_common_sib.pucch_cnfg,  sizeof(LIBLTE_RRC_PUCCH_CONFIG_COMMON_STRUCT));
   memcpy(&common.ul_pwr_ctrl, &sib2.rr_config_common_sib.ul_pwr_ctrl, sizeof(LIBLTE_RRC_UL_POWER_CONTROL_COMMON_STRUCT));
-  memcpy(&common.prach_cnfg,  &sib2.rr_config_common_sib.prach_cnfg,  sizeof(LIBLTE_RRC_PRACH_CONFIG_STRUCT));
+  memcpy(&common.prach_cnfg,  &sib2.rr_config_common_sib.prach_cnfg,  sizeof(LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT));
   if (sib2.rr_config_common_sib.srs_ul_cnfg.present) {
     memcpy(&common.srs_ul_cnfg,  &sib2.rr_config_common_sib.srs_ul_cnfg, sizeof(LIBLTE_RRC_SRS_UL_CONFIG_COMMON_STRUCT));
   } else {

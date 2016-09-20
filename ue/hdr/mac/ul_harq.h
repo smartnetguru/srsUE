@@ -52,6 +52,7 @@ public:
     mux_unit    = NULL; 
     log_h       = NULL; 
     mac_cfg     = NULL; 
+    rntis       = NULL; 
     average_retx = 0; 
     nof_pkts     = 0; 
   }

@@ -104,7 +104,7 @@ class phy_interface_rrc
 public:
 
   typedef struct {
-    LIBLTE_RRC_PRACH_CONFIG_STRUCT              prach_cnfg;
+    LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT          prach_cnfg;
     LIBLTE_RRC_PDSCH_CONFIG_COMMON_STRUCT       pdsch_cnfg;
     LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT       pusch_cnfg;
     LIBLTE_RRC_PHICH_CONFIG_STRUCT              phich_cnfg;
