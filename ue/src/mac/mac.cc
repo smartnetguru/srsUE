@@ -50,11 +50,12 @@ mac::mac() : ttisync(10240),
   signals_pregenerated = false; 
 }
   
-bool mac::init(phy_interface *phy, rlc_interface_mac *rlc, rrc_interface_mac *rrc, srslte::log *log_h_)
+bool mac::init(phy_interface_mac *phy, rlc_interface_mac *rlc, rrc_interface_mac *rrc, srslte::log *log_h_)
 {
   started = false; 
   phy_h = phy;
   rlc_h = rlc;   
+  rrc_h = rrc;   
   log_h = log_h_; 
   tti = 0; 
   is_synchronized = false;   
@@ -114,7 +115,6 @@ void mac::reset()
   timers_db.stop_all();
   upper_timers_thread.reset();
   
-  timeAlignmentTimerExpire(); 
   ul_harq.reset_ndi();
   
   mux_unit.msg3_flush();
@@ -136,7 +136,6 @@ void mac::reset()
 }
 
 void mac::run_thread() {
-  setup_timers();
   int cnt=0;
   
   Info("Waiting PHY to synchronize with cell\n");  
@@ -373,6 +372,8 @@ void mac::timer_expired(uint32_t timer_id)
 /* Function called on expiry of TimeAlignmentTimer */
 void mac::timeAlignmentTimerExpire() 
 {
+  printf("timeAlignmentTimer has expired value=%d ms\n", timers_db.get(TIME_ALIGNMENT)->get_timeout());
+  rrc_h->release_pucch_srs();
   dl_harq.reset();
   ul_harq.reset();
 }
@@ -395,20 +396,22 @@ void mac::get_config(mac_cfg_t* mac_cfg)
 void mac::set_config(mac_cfg_t* mac_cfg)
 {
   memcpy(&config, mac_cfg, sizeof(mac_cfg_t));
+  setup_timers();
 }
 
-void mac::set_main_config(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT* main_cfg)
+void mac::set_config_main(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT* main_cfg)
 {
   memcpy(&config.main, main_cfg, sizeof(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT));
+  setup_timers();
 }
 
-void mac::set_rach_config(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT* rach_cfg, uint32_t prach_config_index)
+void mac::set_config_rach(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT* rach_cfg, uint32_t prach_config_index)
 {
   memcpy(&config.rach, rach_cfg, sizeof(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT));
   config.prach_config_index = prach_config_index;
 }
 
-void mac::set_sr_config(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT* sr_cfg)
+void mac::set_config_sr(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT* sr_cfg)
 {
   memcpy(&config.sr, sr_cfg, sizeof(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT));
 }

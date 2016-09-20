@@ -37,131 +37,35 @@
 #include <string>
 #include "srslte/srslte.h"
 
+#include "liblte_rrc.h"
+
 namespace srsue {
   
-class phy_interface_params 
-{
-public: 
   
-  /* PHY parameters */
-  typedef enum {
-    
-    DL_FREQ = 0, 
-    UL_FREQ, 
-    
-    PHY_CELL_ID,
-
-    P_MAX,
-    PDSCH_RSPOWER,
-    PDSCH_PB,
-    
-    PUSCH_EN_64QAM,
-    PUSCH_RS_CYCLIC_SHIFT,
-    PUSCH_RS_GROUP_ASSIGNMENT,
-    DMRS_GROUP_HOPPING_EN,
-    DMRS_SEQUENCE_HOPPING_EN,
-    
-    PUSCH_HOPPING_N_SB,
-    PUSCH_HOPPING_INTRA_SF,
-    PUSCH_HOPPING_OFFSET,
-    
-    PUCCH_DELTA_SHIFT,
-    PUCCH_CYCLIC_SHIFT,
-    PUCCH_N_RB_2,
-    PUCCH_N_PUCCH_1_0,
-    PUCCH_N_PUCCH_1_1,
-    PUCCH_N_PUCCH_1_2,
-    PUCCH_N_PUCCH_1_3,
-    PUCCH_N_PUCCH_1,
-    PUCCH_N_PUCCH_2,
-    PUCCH_N_PUCCH_SR,
-
-    SR_CONFIG_INDEX,
-    
-    SRS_UE_TXCOMB, 
-    SRS_UE_NRRC,
-    SRS_UE_DURATION,
-    SRS_UE_CONFIGINDEX,
-    SRS_UE_BW,
-    SRS_UE_HOP,
-    SRS_UE_CS,
-    SRS_UE_CYCLICSHIFT,
-    SRS_CS_BWCFG,
-    SRS_CS_SFCFG,
-    SRS_CS_ACKNACKSIMUL,
-    SRS_IS_CONFIGURED,
-    
-    CQI_PERIODIC_PMI_IDX,
-    CQI_PERIODIC_SIMULT_ACK,
-    CQI_PERIODIC_FORMAT_SUBBAND,
-    CQI_PERIODIC_FORMAT_SUBBAND_K,
-    CQI_PERIODIC_CONFIGURED,
-
-    CQI_APERIODIC_MODE,
-    CQI_NOM_PDSCH_RS_EPRE_OFFSET,
-          
-    PWRCTRL_ENABLED, 
-    PWRCTRL_P0_NOMINAL_PUSCH,
-    PWRCTRL_ALPHA,
-    PWRCTRL_P0_NOMINAL_PUCCH,
-    PWRCTRL_DELTA_PUCCH_F1,
-    PWRCTRL_DELTA_PUCCH_F1B,
-    PWRCTRL_DELTA_PUCCH_F2,
-    PWRCTRL_DELTA_PUCCH_F2A,
-    PWRCTRL_DELTA_PUCCH_F2B,
-    PWRCTRL_DELTA_MSG3,
-    PWRCTRL_P0_UE_PUSCH,
-    PWRCTRL_DELTA_MCS_EN,
-    PWRCTRL_ACC_EN,
-    PWRCTRL_P0_UE_PUCCH,
-    PWRCTRL_SRS_OFFSET,
-        
-    UCI_I_OFFSET_ACK,
-    UCI_I_OFFSET_RI,
-    UCI_I_OFFSET_CQI,
-    
-    PRACH_CONFIG_INDEX,
-    PRACH_ROOT_SEQ_IDX,
-    PRACH_HIGH_SPEED_FLAG,
-    PRACH_ZC_CONFIG,
-    PRACH_FREQ_OFFSET,
-    
-    PRACH_GAIN,    
-    FORCE_ENABLE_64QAM,
-    
-    PDSCH_MAX_ITS,
-    
-    EQUALIZER_COEFF,
-    CQI_MAX,
-    CQI_OFFSET,
-    CQI_FIXED,
-    CQI_RANDOM_MS,
-    CQI_PERIOD_MS,
-    CQI_PERIOD_DUTY_100,
-    
-    SNR_ESTIM_ALG, 
-    SNR_EMA_COEFF_100,
-    CFO_INTEGER_ENABLED,
-    CFO_CORRECT_TOL_HZ_100,
-    TIME_CORRECT_PERIOD,
-    SFO_CORRECT_DISABLE,
-    SSS_ALGORITHM, 
-    ESTIMATOR_FIL_W_1000,
-    
-    NOF_PARAMS,    
-  } phy_param_t;
-
-  /* Get/Set PHY parameters */  
-  virtual void    set_param(phy_param_t param, int64_t value) = 0; 
-  virtual int64_t get_param(phy_param_t param) = 0;  
-
-};
-
+typedef struct {
+  bool ul_pwr_ctrl_en; 
+  float prach_gain;
+  int pdsch_max_its;
+  bool attach_enable_64qam; 
+  int nof_phy_threads;  
+  std::string equalizer_mode; 
+  int cqi_max; 
+  int cqi_fixed; 
+  float snr_ema_coeff; 
+  std::string snr_estim_alg; 
+  bool cfo_integer_enabled; 
+  float cfo_correct_tol_hz; 
+  int time_correct_period; 
+  bool sfo_correct_disable; 
+  std::string sss_algorithm; 
+  float estimator_fil_w;   
+} phy_args_t; 
+  
 /* Interface MAC -> PHY */
-class phy_interface
+class phy_interface_mac
 {
 public:
-  /* Configure PRACH using parameters written with set_param() */
+  /* Configure PRACH using parameters written by RRC */
   virtual void configure_prach_params() = 0;
   
   /* Start synchronization with strongest cell in the current carrier frequency */
@@ -196,9 +100,35 @@ public:
 };
 
 class phy_interface_rrc
-    :public phy_interface_params
 {
 public:
+
+  typedef struct {
+    LIBLTE_RRC_PRACH_CONFIG_STRUCT              prach_cnfg;
+    LIBLTE_RRC_PDSCH_CONFIG_COMMON_STRUCT       pdsch_cnfg;
+    LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT       pusch_cnfg;
+    LIBLTE_RRC_PHICH_CONFIG_STRUCT              phich_cnfg;
+    LIBLTE_RRC_PUCCH_CONFIG_COMMON_STRUCT       pucch_cnfg;
+    LIBLTE_RRC_SRS_UL_CONFIG_COMMON_STRUCT      srs_ul_cnfg;
+    LIBLTE_RRC_UL_POWER_CONTROL_COMMON_STRUCT   ul_pwr_ctrl;
+    LIBLTE_RRC_TDD_CONFIG_STRUCT                tdd_cnfg;
+    LIBLTE_RRC_ANTENNA_PORTS_COUNT_ENUM         ant_info;      
+  } phy_cfg_common_t; 
+  
+  typedef struct {
+    LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT dedicated;
+    phy_cfg_common_t                            common; 
+    bool                                        enable_64qam; 
+  } phy_cfg_t; 
+
+  virtual void get_current_cell(srslte_cell_t *cell) = 0;
+  virtual void get_config(phy_cfg_t *phy_cfg) = 0; 
+  virtual void set_config(phy_cfg_t *phy_cfg) = 0; 
+  virtual void set_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT *dedicated) = 0;
+  virtual void set_config_common(phy_cfg_common_t *common) = 0; 
+  virtual void set_config_tdd(LIBLTE_RRC_TDD_CONFIG_STRUCT *tdd) = 0; 
+  virtual void set_config_64qam_en(bool enable) = 0;
+  
   /* Is the PHY downlink synchronized? */
   virtual bool status_is_sync() = 0;
 
@@ -207,7 +137,7 @@ public:
 
   virtual void reset() = 0;
   
-  virtual void resync_sfn() = 0; 
+  virtual void resync_sfn() = 0;   
 
 };
   

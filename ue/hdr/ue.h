@@ -109,26 +109,8 @@ typedef struct {
 }gui_args_t;
 
 typedef struct {
-  float prach_gain;
-  int pdsch_max_its;
-  bool attach_enable_64qam; 
-  int nof_phy_threads;  
-  std::string equalizer_mode; 
-  int cqi_max; 
-  int cqi_offset; 
-  int cqi_fixed; 
-  int cqi_random_ms; 
-  int cqi_period_ms; 
-  float cqi_period_duty; 
-  float snr_ema_coeff; 
-  std::string snr_estim_alg; 
-  bool cfo_integer_enabled; 
-  float cfo_correct_tol_hz; 
-  int time_correct_period; 
-  bool sfo_correct_disable; 
-  std::string sss_algorithm; 
-  float estimator_fil_w; 
-  float metrics_period_secs;
+  phy_args_t phy; 
+  float      metrics_period_secs;
 }expert_args_t;
 
 typedef struct {
@@ -207,7 +189,6 @@ private:
   srslte::LOG_LEVEL_ENUM level(std::string l);
   
   bool check_srslte_version();
-  void set_expert_parameters();
 };
 
 } // namespace srsue

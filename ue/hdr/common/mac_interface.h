@@ -157,9 +157,9 @@ public:
   virtual uint32_t get_current_tti() = 0;
   
   virtual void set_config(mac_cfg_t *mac_cfg) = 0;
-  virtual void set_main_config(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *main_cfg) = 0;
-  virtual void set_rach_config(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT *rach_cfg, uint32_t prach_config_index) = 0;
-  virtual void set_sr_config(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT *sr_cfg) = 0;
+  virtual void set_config_main(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *main_cfg) = 0;
+  virtual void set_config_rach(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT *rach_cfg, uint32_t prach_config_index) = 0;
+  virtual void set_config_sr(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT *sr_cfg) = 0;
   virtual void get_config(mac_cfg_t *mac_cfg) = 0;
   
   virtual void get_rntis(ue_rnti_t *rntis) = 0;

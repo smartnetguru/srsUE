@@ -150,7 +150,7 @@ void phch_worker::set_cfo(float cfo_)
 
 void phch_worker::set_sample_offset(float sample_offset)
 {
-  if (phy->params_db->get_param(phy_interface_params::SFO_CORRECT_DISABLE)) {
+  if (phy->args->sfo_correct_disable) {
     sample_offset = 0; 
   }
   srslte_ue_dl_set_sample_offset(&ue_dl, sample_offset);
@@ -215,6 +215,7 @@ void phch_worker::work_imp()
         dl_ack = dl_action.generate_ack_callback(dl_action.generate_ack_callback_arg);
         Debug("Calling generate ACK callback returned=%d\n", dl_ack);
       }
+      Debug("dl_ack=%d, generate_ack=%d\n", dl_ack, dl_action.generate_ack);
       if (dl_action.generate_ack) {
         set_uci_ack(dl_ack);
       }
@@ -304,23 +305,19 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
   if (phy->get_pending_ack(tti) || decode_pdcch) {
     
     // Setup estimator filter 
-    float w_coeff = (float) phy->params_db->get_param(phy_interface_params::ESTIMATOR_FIL_W_1000)/1000; 
+    float w_coeff = phy->args->estimator_fil_w; 
     if (w_coeff > 0.0) {
       srslte_chest_dl_set_smooth_filter3_coeff(&ue_dl.chest, w_coeff); 
     } else if (w_coeff == 0.0) {
       srslte_chest_dl_set_smooth_filter(&ue_dl.chest, NULL, 0); 
     }
     
-    switch(phy->params_db->get_param(phy_interface_params::SNR_ESTIM_ALG)) {
-      case 1:
-        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_REFS);
-        break;
-      case 2:
-        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_EMPTY);
-        break;
-      default:
-        srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_PSS);
-        break;
+    if (!phy->args->snr_estim_alg.compare("refs")) {
+      srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_REFS);
+    } else if (!phy->args->snr_estim_alg.compare("empty")) {
+      srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_EMPTY);
+    } else {
+      srslte_chest_dl_set_noise_alg(&ue_dl.chest, SRSLTE_NOISE_ALG_PSS);      
     }
   
     if (srslte_ue_dl_decode_fft_estimate(&ue_dl, signal_buffer, tti%10, &cfi) < 0) {
@@ -335,8 +332,8 @@ bool phch_worker::extract_fft_and_pdcch_llr() {
     
     float noise_estimate = phy->avg_noise;
     
-    if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
-      noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
+    if (!phy->args->equalizer_mode.compare("zf")) {
+      noise_estimate = 0; 
     }
 
     if (srslte_pdcch_extract_llr(&ue_dl.pdcch, ue_dl.sf_symbols, ue_dl.ce, noise_estimate, tti%10, cfi)) {
@@ -428,13 +425,13 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
         
         float noise_estimate = srslte_chest_dl_get_noise_estimate(&ue_dl.chest);
         
-        if (phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF) >= 0) {
-          noise_estimate = phy->params_db->get_param(phy_interface_params::EQUALIZER_COEFF);
+        if (!phy->args->equalizer_mode.compare("zf")) {
+          noise_estimate = 0; 
         }
         
         /* Set decoder iterations */
-        if (phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS) > 0) {
-          srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->params_db->get_param(phy_interface_params::PDSCH_MAX_ITS));
+        if (phy->args->pdsch_max_its > 0) {
+          srslte_sch_set_max_noi(&ue_dl.pdsch.dl_sch, phy->args->pdsch_max_its);
         }
 
         
@@ -561,7 +558,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   }
   
   /* Limit UL modulation if not supported by the UE or disabled by higher layers */
-  if (!phy->params_db->get_param(phy_interface_params::FORCE_ENABLE_64QAM) && !phy->params_db->get_param(phy_interface_params::PUSCH_EN_64QAM)) {
+  if (!phy->args->attach_enable_64qam && !phy->config->enable_64qam) {
     if (grant->phy_grant.ul.mcs.mod == SRSLTE_MOD_64QAM) {
       grant->phy_grant.ul.mcs.mod = SRSLTE_MOD_16QAM;
       grant->phy_grant.ul.Qm      = 4;
@@ -619,42 +616,9 @@ void phch_worker::set_uci_sr()
 
 void phch_worker::set_uci_periodic_cqi()
 {
-  int cqi_period_ms = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_MS);
-  int cqi_random_ms = phy->params_db->get_param(phy_interface_params::CQI_RANDOM_MS);
-  int cqi_fixed     = phy->params_db->get_param(phy_interface_params::CQI_FIXED);
-  int cqi_max       = phy->params_db->get_param(phy_interface_params::CQI_MAX);
-  int cqi_offset    = phy->params_db->get_param(phy_interface_params::CQI_OFFSET); 
-  int duty_cycle    = phy->params_db->get_param(phy_interface_params::CQI_PERIOD_DUTY_100); 
-  int cqi_value; 
-  if (cqi_period_ms) {
-    phy->cqi_period_cnt++; 
-    if (phy->cqi_period_cnt >= (cqi_period_ms*duty_cycle)/100) {
-      if (cqi_fixed < 0) {
-        phy->cqi_period_value = 0; 
-      } else {
-        phy->cqi_period_value = cqi_fixed;
-      }
-    } 
-    if (phy->cqi_period_cnt >= cqi_period_ms) {
-      phy->cqi_period_cnt = 0; 
-      if (cqi_fixed < 0) {
-        phy->cqi_period_value = 15; 
-      } else {
-        phy->cqi_period_value = cqi_fixed+cqi_offset;
-      }
-    }
-  } else if (cqi_random_ms) {
-    phy->cqi_period_cnt++; 
-    if (phy->cqi_period_cnt == cqi_random_ms) {
-      phy->cqi_period_cnt = 0; 
-      if (cqi_fixed < 0) {
-        phy->cqi_random_value = rand()%15;
-      } else {
-        phy->cqi_random_value = cqi_fixed + (rand()%cqi_offset);              
-      }
-    }
-  }
-
+  int cqi_fixed     = phy->args->cqi_fixed;
+  int cqi_max       = phy->args->cqi_max;
+  
   if ((period_cqi.configured || rar_cqi_request) && rnti_is_set) {
     if (srslte_cqi_send(period_cqi.pmi_idx, (tti+4)%10240)) {
       srslte_cqi_value_t cqi_report;
@@ -667,20 +631,13 @@ void phch_worker::set_uci_periodic_cqi()
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.subband.subband_cqi, phy->avg_snr_db);
       } else {
         cqi_report.type = SRSLTE_CQI_TYPE_WIDEBAND;
-        if (cqi_period_ms) {
-          cqi_report.wideband.wideband_cqi = phy->cqi_period_value;
-        } else if (cqi_random_ms) {
-          cqi_report.wideband.wideband_cqi = phy->cqi_random_value;          
+        if (cqi_fixed >= 0) {
+          cqi_report.wideband.wideband_cqi = cqi_fixed;
         } else {
-          if (cqi_fixed < 0) {
-            cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
-            cqi_report.wideband.wideband_cqi -= cqi_offset;          
-            if (cqi_report.wideband.wideband_cqi > cqi_max && cqi_max >= 0) {
-              cqi_report.wideband.wideband_cqi = cqi_max;
-            }
-          } else {
-            cqi_report.wideband.wideband_cqi = cqi_fixed; 
-          }
+          cqi_report.wideband.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);      
+        }
+        if (cqi_max >= 0 && cqi_report.wideband.wideband_cqi > cqi_max) {
+          cqi_report.wideband.wideband_cqi = cqi_max; 
         }
         Info("PUCCH: Periodic CQI=%d, SNR=%.1f dB\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db);
       }
@@ -692,36 +649,35 @@ void phch_worker::set_uci_periodic_cqi()
 
 void phch_worker::set_uci_aperiodic_cqi()
 {
-  int mode = phy->params_db->get_param(phy_interface_params::CQI_APERIODIC_MODE);
+  if (phy->config->dedicated.cqi_report_cnfg.report_mode_aperiodic_present) {
+    switch(phy->config->dedicated.cqi_report_cnfg.report_mode_aperiodic) {
+      case LIBLTE_RRC_CQI_REPORT_MODE_APERIODIC_RM30:
+        /* only Higher Layer-configured subband feedback support right now, according to TS36.213 section 7.2.1
+          - A UE shall report a wideband CQI value which is calculated assuming transmission on set S subbands
+          - The UE shall also report one subband CQI value for each set S subband. The subband CQI
+            value is calculated assuming transmission only in the subband
+          - Both the wideband and subband CQI represent channel quality for the first codeword,
+            even when RI>1
+          - For transmission mode 3 the reported CQI values are calculated conditioned on the
+            reported RI. For other transmission modes they are reported conditioned on rank 1.
+        */
+        if (rnti_is_set) {
+          srslte_cqi_value_t cqi_report;
+          cqi_report.type = SRSLTE_CQI_TYPE_SUBBAND_HL;
+          cqi_report.subband_hl.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);
 
-  if (mode < 0) {
-    Warning("PHY parameters not set - phy_interface_params::CQI_APERIODIC_MODE not found\n");
-  }
+          // TODO: implement subband CQI properly
+          cqi_report.subband_hl.subband_diff_cqi = 0; // Always report zero offset on all subbands
+          cqi_report.subband_hl.N = (cell.nof_prb > 7) ? srslte_cqi_hl_get_no_subbands(cell.nof_prb) : 0;
 
-  if (mode == LIBLTE_RRC_CQI_REPORT_MODE_APERIODIC_RM30) {
-      /* only Higher Layer-configured subband feedback support right now, according to TS36.213 section 7.2.1
-         - A UE shall report a wideband CQI value which is calculated assuming transmission on set S subbands
-         - The UE shall also report one subband CQI value for each set S subband. The subband CQI
-           value is calculated assuming transmission only in the subband
-         - Both the wideband and subband CQI represent channel quality for the first codeword,
-           even when RI>1
-         - For transmission mode 3 the reported CQI values are calculated conditioned on the
-           reported RI. For other transmission modes they are reported conditioned on rank 1.
-      */
-      if (rnti_is_set) {
-        srslte_cqi_value_t cqi_report;
-        cqi_report.type = SRSLTE_CQI_TYPE_SUBBAND_HL;
-        cqi_report.subband_hl.wideband_cqi = srslte_cqi_from_snr(phy->avg_snr_db);
-
-        // TODO: implement subband CQI properly
-        cqi_report.subband_hl.subband_diff_cqi = 0; // Always report zero offset on all subbands
-        cqi_report.subband_hl.N = (cell.nof_prb > 7) ? srslte_cqi_hl_get_no_subbands(cell.nof_prb) : 0;
-
-        Info("PUSCH: Aperiodic CQI=%d, SNR=%.1f dB, for %d subbands\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db, cqi_report.subband_hl.N);
-        uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
-      }
-  } else {
-    Warning("Aperiodic CQI mode %s not supported\n", liblte_rrc_cqi_report_mode_aperiodic_text[mode]);
+          Info("PUSCH: Aperiodic CQI=%d, SNR=%.1f dB, for %d subbands\n", cqi_report.wideband.wideband_cqi, phy->avg_snr_db, cqi_report.subband_hl.N);
+          uci_data.uci_cqi_len = srslte_cqi_value_pack(&cqi_report, uci_data.uci_cqi);
+        }
+        break;
+      default:
+        Warning("Aperiodic CQI mode %s not supported\n", 
+                liblte_rrc_cqi_report_mode_aperiodic_text[phy->config->dedicated.cqi_report_cnfg.report_mode_aperiodic]);
+    }
   }
 }
 
@@ -852,7 +808,7 @@ void phch_worker::encode_srs()
   float gain = set_power(tx_power);
   uint32_t fi = srslte_vec_max_fi((float*) signal_buffer, SRSLTE_SF_LEN_PRB(cell.nof_prb));
   float *f = (float*) signal_buffer;
-  Debug("SRS:   power=%.2f dBm, tti_tx=%d%s\n", tx_power, (tti+4)%10240, timestr);
+  Info("SRS:   power=%.2f dBm, tti_tx=%d%s\n", tx_power, (tti+4)%10240, timestr);
   
 }
 
@@ -868,99 +824,108 @@ void phch_worker::enable_pregen_signals(bool enabled)
 
 void phch_worker::set_ul_params(bool pregen_disabled)
 {
-
+  phy_interface_rrc::phy_cfg_common_t         *common    = &phy->config->common;
+  LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT *dedicated = &phy->config->dedicated;
+  
+  Info("Setting new params worker_id=%d, pregen_disabled=%d\n", get_id(), pregen_disabled);
+  
   /* PUSCH DMRS signal configuration */
   bzero(&dmrs_cfg, sizeof(srslte_refsignal_dmrs_pusch_cfg_t));    
-  dmrs_cfg.group_hopping_en    = (bool)     phy->params_db->get_param(phy_interface_params::DMRS_GROUP_HOPPING_EN);
-  dmrs_cfg.sequence_hopping_en = (bool)     phy->params_db->get_param(phy_interface_params::DMRS_SEQUENCE_HOPPING_EN);
-  dmrs_cfg.cyclic_shift        = (uint32_t) phy->params_db->get_param(phy_interface_params::PUSCH_RS_CYCLIC_SHIFT);
-  dmrs_cfg.delta_ss            = (uint32_t) phy->params_db->get_param(phy_interface_params::PUSCH_RS_GROUP_ASSIGNMENT);
+  dmrs_cfg.group_hopping_en    = common->pusch_cnfg.ul_rs.group_hopping_enabled;
+  dmrs_cfg.sequence_hopping_en = common->pusch_cnfg.ul_rs.sequence_hopping_enabled;
+  dmrs_cfg.cyclic_shift        = common->pusch_cnfg.ul_rs.cyclic_shift;
+  dmrs_cfg.delta_ss            = common->pusch_cnfg.ul_rs.group_assignment_pusch;
   
   /* PUSCH Hopping configuration */
   bzero(&pusch_hopping, sizeof(srslte_pusch_hopping_cfg_t));
-  pusch_hopping.n_sb           = (uint32_t) phy->params_db->get_param(phy_interface_params::PUSCH_HOPPING_N_SB);
-  pusch_hopping.hop_mode       = (uint32_t) phy->params_db->get_param(phy_interface_params::PUSCH_HOPPING_INTRA_SF) ? 
+  pusch_hopping.n_sb           = common->pusch_cnfg.n_sb;
+  pusch_hopping.hop_mode       = common->pusch_cnfg.hopping_mode == LIBLTE_RRC_HOPPING_MODE_INTRA_AND_INTER_SUBFRAME ? 
                                   pusch_hopping.SRSLTE_PUSCH_HOP_MODE_INTRA_SF : 
                                   pusch_hopping.SRSLTE_PUSCH_HOP_MODE_INTER_SF; 
-  pusch_hopping.hopping_offset = (uint32_t) phy->params_db->get_param(phy_interface_params::PUSCH_HOPPING_OFFSET);
+  pusch_hopping.hopping_offset = common->pusch_cnfg.pusch_hopping_offset;
 
   /* PUSCH UCI configuration */
   bzero(&uci_cfg, sizeof(srslte_uci_cfg_t));
-  uci_cfg.I_offset_ack         = (uint32_t) phy->params_db->get_param(phy_interface_params::UCI_I_OFFSET_ACK);
-  uci_cfg.I_offset_cqi         = (uint32_t) phy->params_db->get_param(phy_interface_params::UCI_I_OFFSET_CQI);
-  uci_cfg.I_offset_ri          = (uint32_t) phy->params_db->get_param(phy_interface_params::UCI_I_OFFSET_RI);
+  uci_cfg.I_offset_ack         = dedicated->pusch_cnfg_ded.beta_offset_ack_idx;
+  uci_cfg.I_offset_cqi         = dedicated->pusch_cnfg_ded.beta_offset_cqi_idx;
+  uci_cfg.I_offset_ri          = dedicated->pusch_cnfg_ded.beta_offset_ri_idx;
   
   /* PUCCH configuration */  
   bzero(&pucch_cfg, sizeof(srslte_pucch_cfg_t));
-  pucch_cfg.delta_pucch_shift  = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_DELTA_SHIFT);
-  pucch_cfg.N_cs               = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_CYCLIC_SHIFT);
-  pucch_cfg.n_rb_2             = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_RB_2);
-  pucch_cfg.srs_configured     = (bool)     phy->params_db->get_param(phy_interface_params::SRS_IS_CONFIGURED)?true:false;
-  pucch_cfg.srs_cs_subf_cfg    = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_CS_SFCFG);
-  pucch_cfg.srs_simul_ack      = (bool)     phy->params_db->get_param(phy_interface_params::SRS_CS_ACKNACKSIMUL)?true:false;
+  pucch_cfg.delta_pucch_shift  = liblte_rrc_delta_pucch_shift_num[common->pucch_cnfg.delta_pucch_shift];
+  pucch_cfg.N_cs               = common->pucch_cnfg.n_cs_an;
+  pucch_cfg.n_rb_2             = common->pucch_cnfg.n_rb_cqi;
+  pucch_cfg.srs_configured     = dedicated->srs_ul_cnfg_ded.setup_present;
+  pucch_cfg.srs_cs_subf_cfg    = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg];
+  pucch_cfg.srs_simul_ack      = common->srs_ul_cnfg.ack_nack_simul_tx;
   
   /* PUCCH Scheduling configuration */
   bzero(&pucch_sched, sizeof(srslte_pucch_sched_t));
-  pucch_sched.n_pucch_1[0]     = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_1_0);
-  pucch_sched.n_pucch_1[1]     = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_1_1);
-  pucch_sched.n_pucch_1[2]     = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_1_2);
-  pucch_sched.n_pucch_1[3]     = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_1_3);
-  pucch_sched.N_pucch_1        = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_1);
-  pucch_sched.n_pucch_2        = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_2);
-  pucch_sched.n_pucch_sr       = (uint32_t) phy->params_db->get_param(phy_interface_params::PUCCH_N_PUCCH_SR);
+  pucch_sched.n_pucch_1[0]     = 0; // TODO: n_pucch_1 for SPS
+  pucch_sched.n_pucch_1[1]     = 0;
+  pucch_sched.n_pucch_1[2]     = 0;
+  pucch_sched.n_pucch_1[3]     = 0;
+  pucch_sched.N_pucch_1        = common->pucch_cnfg.n1_pucch_an;
+  pucch_sched.n_pucch_2        = dedicated->cqi_report_cnfg.report_periodic.pucch_resource_idx;
+  pucch_sched.n_pucch_sr       = dedicated->sched_request_cnfg.sr_pucch_resource_idx;
 
   /* SRS Configuration */
   bzero(&srs_cfg, sizeof(srslte_refsignal_srs_cfg_t));
-  srs_cfg.configured           = (bool)     phy->params_db->get_param(phy_interface_params::SRS_IS_CONFIGURED)?true:false;
-  srs_cfg.subframe_config      = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_CS_SFCFG);
-  srs_cfg.bw_cfg               = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_CS_BWCFG);
-  srs_cfg.I_srs                = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_CONFIGINDEX);
-  srs_cfg.B                    = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_BW);
-  srs_cfg.b_hop                = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_HOP);
-  srs_cfg.n_rrc                = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_NRRC);
-  srs_cfg.k_tc                 = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_TXCOMB);
-  srs_cfg.n_srs                = (uint32_t) phy->params_db->get_param(phy_interface_params::SRS_UE_CYCLICSHIFT);
+  srs_cfg.configured           = dedicated->srs_ul_cnfg_ded.setup_present;
+  srs_cfg.subframe_config      = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg];
+  srs_cfg.bw_cfg               = liblte_rrc_srs_bw_config_num[common->srs_ul_cnfg.bw_cnfg];
+  srs_cfg.I_srs                = dedicated->srs_ul_cnfg_ded.srs_cnfg_idx;
+  srs_cfg.B                    = dedicated->srs_ul_cnfg_ded.srs_bandwidth;
+  srs_cfg.b_hop                = dedicated->srs_ul_cnfg_ded.srs_hopping_bandwidth;
+  srs_cfg.n_rrc                = dedicated->srs_ul_cnfg_ded.freq_domain_pos;
+  srs_cfg.k_tc                 = dedicated->srs_ul_cnfg_ded.tx_comb;
+  srs_cfg.n_srs                = dedicated->srs_ul_cnfg_ded.cyclic_shift;
 
   /* UL power control configuration */
   bzero(&power_ctrl, sizeof(srslte_ue_ul_powerctrl_t));
-  power_ctrl.p0_nominal_pusch  = (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_P0_NOMINAL_PUSCH);
-  power_ctrl.alpha             =((float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_ALPHA))/10;
-  power_ctrl.p0_nominal_pucch  = (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_P0_NOMINAL_PUCCH);
-  for (int i=0;i<5;i++) {
-    power_ctrl.delta_f_pucch[i]= (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_DELTA_PUCCH_F1+i);
-  }
-  power_ctrl.delta_preamble_msg3=(float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_DELTA_MSG3);
+  power_ctrl.p0_nominal_pusch  = common->ul_pwr_ctrl.p0_nominal_pusch;
+  power_ctrl.alpha             = liblte_rrc_ul_power_control_alpha_num[common->ul_pwr_ctrl.alpha];
+  power_ctrl.p0_nominal_pucch  = common->ul_pwr_ctrl.p0_nominal_pucch;
+  power_ctrl.delta_f_pucch[0]  = liblte_rrc_delta_f_pucch_format_1_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1];
+  power_ctrl.delta_f_pucch[1]  = liblte_rrc_delta_f_pucch_format_1b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1b];
+  power_ctrl.delta_f_pucch[2]  = liblte_rrc_delta_f_pucch_format_2_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2];
+  power_ctrl.delta_f_pucch[3]  = liblte_rrc_delta_f_pucch_format_2a_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2a];
+  power_ctrl.delta_f_pucch[4]  = liblte_rrc_delta_f_pucch_format_2b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2b];
   
-  power_ctrl.p0_ue_pusch       = (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_P0_UE_PUSCH);
-  power_ctrl.delta_mcs_based   = (bool)     phy->params_db->get_param(phy_interface_params::PWRCTRL_DELTA_MCS_EN)?true:false;
-  power_ctrl.acc_enabled       = (bool)     phy->params_db->get_param(phy_interface_params::PWRCTRL_ACC_EN)?true:false;
-  power_ctrl.p0_ue_pucch       = (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_P0_UE_PUCCH);
-  power_ctrl.p_srs_offset      = (float)    phy->params_db->get_param(phy_interface_params::PWRCTRL_SRS_OFFSET);
+  power_ctrl.delta_preamble_msg3 = common->ul_pwr_ctrl.delta_preamble_msg3;
+  
+  power_ctrl.p0_ue_pusch       = dedicated->ul_pwr_ctrl_ded.p0_ue_pusch;
+  power_ctrl.delta_mcs_based   = dedicated->ul_pwr_ctrl_ded.delta_mcs_en==LIBLTE_RRC_DELTA_MCS_ENABLED_EN0;
+  power_ctrl.acc_enabled       = dedicated->ul_pwr_ctrl_ded.accumulation_en;
+  power_ctrl.p0_ue_pucch       = dedicated->ul_pwr_ctrl_ded.p0_ue_pucch;
+  power_ctrl.p_srs_offset      = dedicated->ul_pwr_ctrl_ded.p_srs_offset;
   
   srslte_ue_ul_set_cfg(&ue_ul, &dmrs_cfg, &srs_cfg, &pucch_cfg, &pucch_sched, &uci_cfg, &pusch_hopping, &power_ctrl);
 
   /* CQI configuration */
   bzero(&period_cqi, sizeof(srslte_cqi_periodic_cfg_t));
-  period_cqi.configured        = (bool)     phy->params_db->get_param(phy_interface_params::CQI_PERIODIC_CONFIGURED)?true:false;
-  period_cqi.pmi_idx           = (uint32_t) phy->params_db->get_param(phy_interface_params::CQI_PERIODIC_PMI_IDX); 
-  period_cqi.simul_cqi_ack     = (bool)     phy->params_db->get_param(phy_interface_params::CQI_PERIODIC_SIMULT_ACK)?true:false;
-  period_cqi.format_is_subband = (bool)     phy->params_db->get_param(phy_interface_params::CQI_PERIODIC_FORMAT_SUBBAND)?true:false;
-  period_cqi.subband_size      = (uint32_t) phy->params_db->get_param(phy_interface_params::CQI_PERIODIC_FORMAT_SUBBAND_K);
+  period_cqi.configured        = dedicated->cqi_report_cnfg.report_periodic_setup_present;
+  period_cqi.pmi_idx           = dedicated->cqi_report_cnfg.report_periodic.pmi_cnfg_idx; 
+  period_cqi.simul_cqi_ack     = dedicated->cqi_report_cnfg.report_periodic.simult_ack_nack_and_cqi;
+  period_cqi.format_is_subband = dedicated->cqi_report_cnfg.report_periodic.format_ind_periodic ==
+                                 LIBLTE_RRC_CQI_FORMAT_INDICATOR_PERIODIC_SUBBAND_CQI;
+  period_cqi.subband_size      = dedicated->cqi_report_cnfg.report_periodic.format_ind_periodic_subband_k;
   
   /* SR configuration */
-  I_sr                         = (uint32_t) phy->params_db->get_param(phy_interface_params::SR_CONFIG_INDEX);
+  I_sr                         = dedicated->sched_request_cnfg.sr_cnfg_idx;
+  
   
   if (pregen_enabled && !pregen_disabled) { 
     Info("Pre-generating UL signals worker=%d\n", get_id());
     srslte_ue_ul_pregen_signals(&ue_ul);
     Info("Done pre-generating signals worker=%d\n", get_id());
-  }  
+  } 
 }
 
 float phch_worker::set_power(float tx_power) {
   float gain = 0; 
   /* Check if UL power control is enabled */
-  if(phy->params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {    
+  if(phy->args->ul_pwr_ctrl_en) {    
     /* Adjust maximum power if it changes significantly */
     if (tx_power < phy->cur_radio_power - 5 || tx_power > phy->cur_radio_power + 5) {
       phy->cur_radio_power = tx_power; 
@@ -1011,7 +976,7 @@ int phch_worker::read_pdsch_d(cf_t* pdsch_d)
 
 void phch_worker::update_measurements() 
 {
-  float snr_ema_coeff = (float) phy->params_db->get_param(phy_interface_params::SNR_EMA_COEFF_100)/100;
+  float snr_ema_coeff = phy->args->snr_ema_coeff;
   if (chest_done) {
     /* Compute ADC/RX gain offset every 20 ms */
     if ((tti%20) == 0 || phy->rx_gain_offset == 0) {
@@ -1060,7 +1025,7 @@ void phch_worker::update_measurements()
       }    
     }
     // Compute PL
-    float tx_crs_power = (float) phy->params_db->get_param(phy_interface_params::PDSCH_RSPOWER);
+    float tx_crs_power = phy->config->common.pdsch_cnfg.rs_power;
     phy->pathloss = tx_crs_power - phy->avg_rsrp_db;
 
     // Average noise 

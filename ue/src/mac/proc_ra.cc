@@ -48,7 +48,7 @@ uint32_t backoff_table[16] = {0, 10, 20, 30, 40, 60, 80, 120, 160, 240, 320, 480
 // Table 7.6-1: DELTA_PREAMBLE values.
 int delta_preamble_db_table[5] = {0, 0, -3, -3, 8};
 
-void ra_proc::init(phy_interface* phy_h_, 
+void ra_proc::init(phy_interface_mac* phy_h_, 
                    rrc_interface_mac *rrc_, 
                    srslte::log* log_h_, 
                    mac_interface_rrc::ue_rnti_t *rntis_, 
@@ -166,7 +166,7 @@ const char* state_str[12] = {"Idle",
                             
 // Process Timing Advance Command as defined in Section 5.2
 void ra_proc::process_timeadv_cmd(uint32_t ta) {
-  if (preambleIndex > 0) {
+  if (preambleIndex == 0) {
     // Preamble not selected by UE MAC 
     phy_h->set_timeadv_rar(ta);
     timers_db->get(mac::TIME_ALIGNMENT)->reset();

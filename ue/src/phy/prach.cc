@@ -58,10 +58,11 @@ void prach::free_cell()
   }
 }
 
-void prach::init(phy_params* params_db_, srslte::log* log_h_)
+void prach::init(LIBLTE_RRC_PRACH_CONFIG_STRUCT *config_, phy_args_t *args_, srslte::log* log_h_)
 {
-  log_h = log_h_; 
-  params_db = params_db_; 
+  log_h  = log_h_; 
+  config = config_; 
+  args   = args_; 
 }
 
 bool prach::init_cell(srslte_cell_t cell_)
@@ -74,12 +75,11 @@ bool prach::init_cell(srslte_cell_t cell_)
     cell = cell_; 
     preamble_idx = -1; 
 
-    Debug("ConfigIdx=%d, RootSeq=%d, ZC=%d\n", 
-        params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX),     
-        params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX),     
-        params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG));
-    
-    uint32_t freq_offset = params_db->get_param(phy_interface_params::PRACH_FREQ_OFFSET);
+    uint32_t configIdx      = config->prach_cnfg_info.prach_config_index;
+    uint32_t rootSeq        = config->root_sequence_index;
+    uint32_t zeroCorrConfig = config->prach_cnfg_info.zero_correlation_zone_config;
+    uint32_t freq_offset    = config->prach_cnfg_info.prach_freq_offset;
+    bool     highSpeed      = config->prach_cnfg_info.high_speed_flag; 
     
     if (6 + freq_offset > cell.nof_prb) {
       log_h->console("Error no space for PRACH: frequency offset=%d, N_rb_ul=%d\n", freq_offset, cell.nof_prb);
@@ -87,10 +87,7 @@ bool prach::init_cell(srslte_cell_t cell_)
     }
     
     if (srslte_prach_init(&prach_obj, srslte_symbol_sz(cell.nof_prb), 
-                          params_db->get_param(phy_interface_params::PRACH_CONFIG_INDEX), 
-                          params_db->get_param(phy_interface_params::PRACH_ROOT_SEQ_IDX), 
-                          params_db->get_param(phy_interface_params::PRACH_HIGH_SPEED_FLAG)?true:false, 
-                          params_db->get_param(phy_interface_params::PRACH_ZC_CONFIG))) 
+                          configIdx, rootSeq, highSpeed, zeroCorrConfig))
     {
       Error("Initiating PRACH library\n");
       return false; 
@@ -137,7 +134,7 @@ bool prach::prepare_to_send(uint32_t preamble_idx_, int allowed_subframe_, float
 }
 
 bool prach::is_ready_to_send(uint32_t current_tti_) {
-  if (initiated && preamble_idx >= 0 && preamble_idx < 64 && params_db != NULL) {
+  if (initiated && preamble_idx >= 0 && preamble_idx < 64) {
     // consider the number of subframes the transmission must be anticipated 
     uint32_t current_tti = (current_tti_ + tx_advance_sf)%10240;
     if (srslte_prach_tti_opportunity(&prach_obj, current_tti, allowed_subframe)) {
@@ -169,7 +166,7 @@ void prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
   srslte_cfo_correct(&cfo_h, buffer[preamble_idx], signal_buffer, cfo / srslte_symbol_sz(cell.nof_prb));            
 
   // If power control is enabled, choose amplitude and power 
-  if (params_db->get_param(phy_interface_params::PWRCTRL_ENABLED)) {
+  if (args->ul_pwr_ctrl_en) {
     // Get PRACH transmission power 
     float tx_power = SRSLTE_MIN(SRSLTE_PC_MAX, pathloss + target_power_dbm);
     
@@ -185,12 +182,11 @@ void prach::send(srslte::radio *radio_handler, float cfo, float pathloss, srslte
           pathloss, target_power_dbm, tx_power, radio_handler->get_tx_gain(), scale);
     
   } else {
-    float prach_gain = (float) params_db->get_param(phy_interface_params::PRACH_GAIN); 
+    float prach_gain = args->prach_gain; 
     if (prach_gain > 0) {
       radio_handler->set_tx_gain(prach_gain);
     }
-    Debug("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", 
-      (float) params_db->get_param(phy_interface_params::PRACH_GAIN));
+    Debug("TX PRACH: Power control for PRACH is disabled, setting gain to %.0f dB\n", prach_gain);
   }
     
   radio_handler->tx(signal_buffer, len, tx_time);

@@ -28,6 +28,7 @@
 
 #include "srslte/utils/debug.h"
 #include "phy/phy.h"
+#include "common/phy_interface.h"
 #include "common/log_stdout.h"
 #include "radio/radio.h"
 
@@ -170,24 +171,25 @@ uint32_t nof_rtx_connsetup = 0;
 uint32_t rv_value[4] = {0, 2, 3, 1}; 
 
 void config_phy() {
-  my_phy.set_param(srsue::phy_interface_params::PRACH_CONFIG_INDEX, 0);
-  my_phy.set_param(srsue::phy_interface_params::PRACH_FREQ_OFFSET, 0);
-  my_phy.set_param(srsue::phy_interface_params::PRACH_HIGH_SPEED_FLAG, 0);
-  my_phy.set_param(srsue::phy_interface_params::PRACH_ROOT_SEQ_IDX, 0);
-  my_phy.set_param(srsue::phy_interface_params::PRACH_ZC_CONFIG, 11);
-
-  my_phy.set_param(srsue::phy_interface_params::DMRS_GROUP_HOPPING_EN, 0);
-  my_phy.set_param(srsue::phy_interface_params::DMRS_SEQUENCE_HOPPING_EN, 0);
-  my_phy.set_param(srsue::phy_interface_params::PUSCH_HOPPING_N_SB, 2);
-  my_phy.set_param(srsue::phy_interface_params::PUSCH_RS_CYCLIC_SHIFT, 0);
-  my_phy.set_param(srsue::phy_interface_params::PUSCH_RS_GROUP_ASSIGNMENT, 0);
-  my_phy.set_param(srsue::phy_interface_params::PUSCH_HOPPING_OFFSET, 0);
-
-  my_phy.set_param(srsue::phy_interface_params::PUCCH_DELTA_SHIFT, 2);
-  my_phy.set_param(srsue::phy_interface_params::PUCCH_CYCLIC_SHIFT, 0);
-  my_phy.set_param(srsue::phy_interface_params::PUCCH_N_PUCCH_1, 1);
-  my_phy.set_param(srsue::phy_interface_params::PUCCH_N_RB_2, 2);
-
+  srsue::phy_interface_rrc::phy_cfg_t config; 
+  
+  config.common.prach_cnfg.prach_cnfg_info.prach_config_index = 0; 
+  config.common.prach_cnfg.prach_cnfg_info.prach_freq_offset  = 0; 
+  config.common.prach_cnfg.prach_cnfg_info.high_speed_flag    = false;
+  config.common.prach_cnfg.root_sequence_index                = 0; 
+  config.common.prach_cnfg.prach_cnfg_info.zero_correlation_zone_config = 11;
+  
+  config.common.pusch_cnfg.ul_rs.group_hopping_enabled    = false; 
+  config.common.pusch_cnfg.ul_rs.sequence_hopping_enabled = false; 
+  config.common.pusch_cnfg.n_sb = 2;
+  config.common.pusch_cnfg.ul_rs.cyclic_shift = 0;
+  config.common.pusch_cnfg.ul_rs.group_assignment_pusch = 0; 
+  config.common.pusch_cnfg.pusch_hopping_offset = 0; 
+  
+  config.common.pucch_cnfg.delta_pucch_shift = LIBLTE_RRC_DELTA_PUCCH_SHIFT_DS2; 
+  config.common.pucch_cnfg.n_cs_an = 0;
+  config.common.pucch_cnfg.n1_pucch_an = 1;
+  
   my_phy.configure_ul_params();
   my_phy.configure_prach_params();
 }

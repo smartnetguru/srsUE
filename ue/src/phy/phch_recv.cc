@@ -101,23 +101,31 @@ void phch_recv::set_time_adv_sec(float _time_adv_sec) {
 }
 
 void phch_recv::set_ue_sync_opts(srslte_ue_sync_t *q) {
-  if (worker_com->params_db->get_param(phy_interface_params::CFO_INTEGER_ENABLED)) {
+  if (worker_com->args->cfo_integer_enabled) {
     srslte_ue_sync_cfo_i_detec_en(q, true); 
   }
   
-  float cfo_tol = (float) worker_com->params_db->get_param(phy_interface_params::CFO_CORRECT_TOL_HZ_100)/100; 
+  float cfo_tol = worker_com->args->cfo_correct_tol_hz; 
   srslte_cfo_set_tol(&q->strack.cfocorr, cfo_tol/(15000*q->fft_size));
   srslte_cfo_set_tol(&q->sfind.cfocorr, cfo_tol/(15000*q->fft_size));
 
-  int time_correct_period = worker_com->params_db->get_param(phy_interface_params::TIME_CORRECT_PERIOD); 
+  int time_correct_period = worker_com->args->time_correct_period; 
   if (time_correct_period > 0) {
     srslte_ue_sync_set_sample_offset_correct_period(q, time_correct_period);     
   }
-  int sss_alg = worker_com->params_db->get_param(phy_interface_params::SSS_ALGORITHM); 
-  if (sss_alg >= 0 && sss_alg < 3) {
-    srslte_sync_set_sss_algorithm(&q->strack, (sss_alg_t) sss_alg); 
-    srslte_sync_set_sss_algorithm(&q->sfind, (sss_alg_t) sss_alg); 
-  }  
+  
+  sss_alg_t sss_alg = SSS_FULL; 
+  if (!worker_com->args->sss_algorithm.compare("diff")) {
+    sss_alg = SSS_DIFF;
+  } else if (!worker_com->args->sss_algorithm.compare("partial")) {
+    sss_alg = SSS_PARTIAL_3;
+  } else if (!worker_com->args->sss_algorithm.compare("full")){
+    sss_alg = SSS_FULL; 
+  } else {
+    Warning("Invalid SSS algorithm %s. Using 'full'\n", worker_com->args->sss_algorithm.c_str());     
+  }
+  srslte_sync_set_sss_algorithm(&q->strack, (sss_alg_t) sss_alg); 
+  srslte_sync_set_sss_algorithm(&q->sfind, (sss_alg_t) sss_alg);  
 }
 
 bool phch_recv::init_cell() {
@@ -130,7 +138,6 @@ bool phch_recv::init_cell() {
       // Set options defined in expert section 
       set_ue_sync_opts(&ue_sync); 
       
-      worker_com->params_db->set_param(phy_interface_params::PHY_CELL_ID, cell.id);
       for (int i=0;i<workers_pool->get_nof_workers();i++) {
         if (!((phch_worker*) workers_pool->get_worker(i))->init_cell(cell)) {
           Error("Error setting cell: initiating PHCH worker\n");

@@ -33,7 +33,6 @@
 #include "phy/phy_metrics.h"
 #include "phy/phch_recv.h"
 #include "phy/prach.h"
-#include "phy/phy_params.h"
 #include "phy/phch_worker.h"
 #include "phy/phch_common.h"
 #include "radio/radio.h"
@@ -47,12 +46,17 @@ namespace srsue {
 typedef _Complex float cf_t; 
 
 class phy
-    : public phy_interface
+    : public phy_interface_mac
     , public phy_interface_rrc
 {
 public:
   phy();
-  bool init(srslte::radio *radio_handler, mac_interface_phy *mac, rrc_interface_phy *rrc, srslte::log *log_h, uint32_t nof_workers = DEFAULT_WORKERS);
+  bool init(srslte::radio *radio_handler, 
+            mac_interface_phy *mac, 
+            rrc_interface_phy *rrc, 
+            srslte::log *log_h, 
+            phy_args_t *args = NULL);
+  
   void stop();
 
   void set_agc_enable(bool enabled);
@@ -105,9 +109,14 @@ public:
   void    pdcch_ul_search_reset();
   void    pdcch_dl_search_reset();
 
-  /* Get/Set PHY parameters */  
-  void    set_param(phy_param_t param, int64_t value); 
-  int64_t get_param(phy_param_t param);
+  /* Get/Set PHY parameters interface from RRC */  
+  void get_config(phy_cfg_t *phy_cfg); 
+  void set_config(phy_cfg_t *phy_cfg); 
+  void set_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT *dedicated);
+  void set_config_common(phy_cfg_common_t *common); 
+  void set_config_tdd(LIBLTE_RRC_TDD_CONFIG_STRUCT *tdd); 
+  void set_config_64qam_en(bool enable);
+
 
   float   get_phr();
   float   get_pathloss_db();
@@ -137,14 +146,16 @@ private:
   phch_recv                sf_recv; 
   prach                    prach_buffer; 
   
-  phy_params   params_db; 
-
   srslte_cell_t cell;
+  
+  phy_cfg_t  config;
+  phy_args_t args;
   
   /* Current time advance */
   uint32_t     n_ta;
     
   bool init_(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, bool do_agc, uint32_t nof_workers);
+  void set_default_args();
 
 };
 

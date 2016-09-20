@@ -43,7 +43,7 @@ class phr_proc : public srslte::timer_callback
 {
 public:
   phr_proc();  
-  void init(phy_interface* phy_h, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg, srslte::timers *timers_db_);
+  void init(phy_interface_mac* phy_h, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg, srslte::timers *timers_db_);
   
   void step(uint32_t tti);
   void reset();
@@ -57,7 +57,7 @@ private:
   
   srslte::log* log_h;
   mac_interface_rrc::mac_cfg_t *mac_cfg; 
-  phy_interface* phy_h; 
+  phy_interface_mac* phy_h; 
   srslte::timers* timers_db;
   bool initiated;
   int timer_prohibit;

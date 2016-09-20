@@ -40,7 +40,7 @@ demux::demux() : mac_msg(20), pending_mac_msg(20)
 {
 }
 
-void demux::init(phy_interface* phy_h_, rlc_interface_mac *rlc_, srslte::log* log_h_, srslte::timers* timers_db_)
+void demux::init(phy_interface_mac* phy_h_, rlc_interface_mac *rlc_, srslte::log* log_h_, srslte::timers* timers_db_)
 {
   phy_h     = phy_h_; 
   log_h     = log_h_; 
@@ -170,11 +170,11 @@ bool demux::process_ce(srslte::sch_subh *subh) {
       break;
     case srslte::sch_subh::TA_CMD:
       phy_h->set_timeadv(subh->get_ta_cmd());
+      Info("Received TA=%d\n", subh->get_ta_cmd());
       
       // Start or restart timeAlignmentTimer
       timers_db->get(mac::TIME_ALIGNMENT)->reset();
-      timers_db->get(mac::TIME_ALIGNMENT)->run();
-      Debug("Received time advance command %d\n", subh->get_ta_cmd());
+      timers_db->get(mac::TIME_ALIGNMENT)->run();      
       break;
     case srslte::sch_subh::PADDING:
       break;

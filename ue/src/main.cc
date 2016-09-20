@@ -111,84 +111,68 @@ void parse_args(all_args_t *args, int argc, char* argv[]) {
         
         
         /* Expert section */
-        ("expert.prach_gain", 
-            bpo::value<float>(&args->expert.prach_gain)->default_value(-1.0),  
+        ("expert.phy.prach_gain", 
+            bpo::value<float>(&args->expert.phy.prach_gain)->default_value(-1.0),  
             "Disable PRACH power control")
         
-        ("expert.cqi_max",         
-            bpo::value<int>(&args->expert.cqi_max)->default_value(15), 
+        ("expert.phy.cqi_max",         
+            bpo::value<int>(&args->expert.phy.cqi_max)->default_value(15), 
             "Upper bound on the maximum CQI to be reported. Default 15.")
         
-        ("expert.cqi_offset",         
-            bpo::value<int>(&args->expert.cqi_offset)->default_value(0), 
-            "Adds a postive or negative offset to the CQI calculated by the UE. Default 0.")
-        
-        ("expert.cqi_fixed",         
-            bpo::value<int>(&args->expert.cqi_fixed)->default_value(-1), 
+        ("expert.phy.cqi_fixed",         
+            bpo::value<int>(&args->expert.phy.cqi_fixed)->default_value(-1), 
             "Fixes the reported CQI to a constant value. Default disabled.")
         
-        ("expert.cqi_random_ms",         
-            bpo::value<int>(&args->expert.cqi_random_ms)->default_value(0), 
-            "If non-zero, randomly change the reported CQI in the interval [cqi_fixed,cqi_fixed+cqi_offset].")
-        
-        ("expert.cqi_period_ms",         
-            bpo::value<int>(&args->expert.cqi_period_ms)->default_value(0), 
-            "If non-zero, periodically change the reported CQI between cqi_fixed and cqi_fixed+cqi_offset")
-        
-        ("expert.cqi_period_duty",         
-            bpo::value<float>(&args->expert.cqi_period_duty)->default_value(0.5), 
-            "Sets the duty cycle in the interval (0,1) for cqi_period_ms option (Default 0.5)")
-        
-        ("expert.snr_ema_coeff",         
-            bpo::value<float>(&args->expert.snr_ema_coeff)->default_value(0.1), 
+        ("expert.phy.snr_ema_coeff",         
+            bpo::value<float>(&args->expert.phy.snr_ema_coeff)->default_value(0.1), 
             "Sets the SNR exponential moving average coefficient (Default 0.1)")
         
-        ("expert.snr_estim_alg",         
-            bpo::value<string>(&args->expert.snr_estim_alg)->default_value("refs"), 
+        ("expert.phy.snr_estim_alg",         
+            bpo::value<string>(&args->expert.phy.snr_estim_alg)->default_value("refs"), 
             "Sets the noise estimation algorithm. (Default refs)")
         
-        ("expert.pdsch_max_its",         
-            bpo::value<int>(&args->expert.pdsch_max_its)->default_value(4), 
+        ("expert.phy.pdsch_max_its",         
+            bpo::value<int>(&args->expert.phy.pdsch_max_its)->default_value(4), 
             "Maximum number of turbo decoder iterations")
 
-        ("expert.attach_enable_64qam",      
-            bpo::value<bool>(&args->expert.attach_enable_64qam)->default_value(false), 
+        ("expert.phy.attach_enable_64qam",      
+            bpo::value<bool>(&args->expert.phy.attach_enable_64qam)->default_value(false), 
             "PUSCH 64QAM modulation before attachment")
         
-        ("expert.nof_phy_threads",    
-            bpo::value<int>(&args->expert.nof_phy_threads)->default_value(2), 
+        ("expert.phy.nof_phy_threads",    
+            bpo::value<int>(&args->expert.phy.nof_phy_threads)->default_value(2), 
             "Number of PHY threads")
         
-        ("expert.metrics_period_secs",
+        ("expert.phy.metrics_period_secs",
             bpo::value<float>(&args->expert.metrics_period_secs)->default_value(1.0), 
             "Periodicity for metrics in seconds")
 
-        ("expert.equalizer_mode",    
-            bpo::value<string>(&args->expert.equalizer_mode)->default_value("mmse"), 
+        ("expert.phy.equalizer_mode",    
+            bpo::value<string>(&args->expert.phy.equalizer_mode)->default_value("mmse"), 
             "Equalizer mode")
      
-        ("expert.cfo_integer_enabled",    
-            bpo::value<bool>(&args->expert.cfo_integer_enabled)->default_value(false), 
+        ("expert.phy.cfo_integer_enabled",    
+            bpo::value<bool>(&args->expert.phy.cfo_integer_enabled)->default_value(false), 
             "Enables integer CFO estimation and correction.")
         
-        ("expert.cfo_correct_tol_hz",    
-            bpo::value<float>(&args->expert.cfo_correct_tol_hz)->default_value(50.0), 
+        ("expert.phy.cfo_correct_tol_hz",    
+            bpo::value<float>(&args->expert.phy.cfo_correct_tol_hz)->default_value(50.0), 
             "Tolerance (in Hz) for digial CFO compensation.")
         
-        ("expert.time_correct_period",    
-            bpo::value<int>(&args->expert.time_correct_period)->default_value(5), 
+        ("expert.phy.time_correct_period",    
+            bpo::value<int>(&args->expert.phy.time_correct_period)->default_value(5), 
             "Period for sampling time offset correction.")
         
-        ("expert.sfo_correct_disable",    
-            bpo::value<bool>(&args->expert.sfo_correct_disable)->default_value(false), 
+        ("expert.phy.sfo_correct_disable",    
+            bpo::value<bool>(&args->expert.phy.sfo_correct_disable)->default_value(false), 
             "Disables phase correction before channel estimation.")
         
-        ("expert.sss_algorithm",    
-            bpo::value<string>(&args->expert.sss_algorithm)->default_value("full"), 
+        ("expert.phy.sss_algorithm",    
+            bpo::value<string>(&args->expert.phy.sss_algorithm)->default_value("full"), 
             "Selects the SSS estimation algorithm.")
 
-        ("expert.estimator_fil_w",    
-            bpo::value<float>(&args->expert.estimator_fil_w)->default_value(0.1), 
+        ("expert.phy.estimator_fil_w",    
+            bpo::value<float>(&args->expert.phy.estimator_fil_w)->default_value(0.1), 
             "Chooses the coefficients for the 3-tap channel estimator centered filter.")
         
         
@@ -341,6 +325,7 @@ int main(int argc, char *argv[])
 
   cout << "---  Software Radio Systems LTE UE  ---" << endl << endl;
 
+  bzero(&args, sizeof(all_args_t));
   parse_args(&args, argc, argv);
   if(!ue->init(&args)) {
     exit(1);
@@ -355,7 +340,7 @@ int main(int argc, char *argv[])
   while(running) {
     if (ue->is_attached()) {
       if (!signals_pregenerated) {
-        ue->pregenerate_signals(true);
+        //ue->pregenerate_signals(true);
         signals_pregenerated = true; 
       }
       if (!plot_started && args.gui.enable) {

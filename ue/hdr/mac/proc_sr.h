@@ -40,7 +40,7 @@ class sr_proc
 {
 public:
   sr_proc();
-  void init(phy_interface *phy_h, rrc_interface_mac *rrc, srslte::log *log_h, mac_interface_rrc::mac_cfg_t *mac_cfg);
+  void init(phy_interface_mac *phy_h, rrc_interface_mac *rrc, srslte::log *log_h, mac_interface_rrc::mac_cfg_t *mac_cfg);
   void step(uint32_t tti);  
   void reset();
   void start();
@@ -55,8 +55,9 @@ private:
   mac_interface_rrc::mac_cfg_t *mac_cfg; 
   
   rrc_interface_mac *rrc;
-  phy_interface *phy_h; 
-  srslte::log   *log_h;
+  phy_interface_mac *phy_h; 
+  srslte::log       *log_h;
+  
   bool          initiated;
   bool          do_ra;
 };

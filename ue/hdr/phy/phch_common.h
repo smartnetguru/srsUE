@@ -32,9 +32,9 @@
 #include <vector>
 #include "srslte/srslte.h"
 #include "common/mac_interface.h"
+#include "common/phy_interface.h"
 #include "radio/radio.h"
 #include "common/log.h"
-#include "phy/phy_params.h"
 #include "phy/phy_metrics.h"
 
 //#define CONTINUOUS_TX
@@ -46,34 +46,9 @@ namespace srsue {
   class phch_common {
   public:
     
-    phch_common() {
-      pathloss = 0; 
-      avg_noise = 0;
-      avg_rsrp = 0; 
-      avg_snr_db = 0; 
-      cur_pathloss = 0; 
-      avg_rsrq_db = 0; 
-      avg_rsrp_db = 0; 
-      cur_pusch_power = 0; 
-      p0_preamble = 0; 
-      cur_radio_power = 0; 
-      rx_gain_offset = 0;
-      bzero(&dl_metrics, sizeof(dl_metrics_t));
-      dl_metrics_read = true;
-      dl_metrics_count = 0;
-      bzero(&ul_metrics, sizeof(ul_metrics_t));
-      ul_metrics_read = true;
-      ul_metrics_count = 0;
-      bzero(&sync_metrics, sizeof(sync_metrics_t));
-      sync_metrics_read = true;
-      sync_metrics_count = 0;
-      cqi_period_cnt = 0; 
-      cqi_random_value = 0; 
-      cqi_period_value = 0; 
-    }
-    
     /* Common variables used by all phy workers */
-    phy_params        *params_db; 
+    phy_interface_rrc::phy_cfg_t *config; 
+    phy_args_t                   *args; 
     srslte::log       *log_h;
     mac_interface_phy *mac;
     srslte_ue_ul_t     ue_ul; 
@@ -91,13 +66,12 @@ namespace srsue {
     float avg_noise; 
     float avg_rsrp; 
   
-    // For artificial CQI reporting
-    uint32_t cqi_period_value; 
-    uint32_t cqi_random_value; 
-    uint32_t cqi_period_cnt; 
-
-    phch_common(uint32_t max_mutex);
-    void init(phy_params *_params, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac);
+    phch_common(uint32_t max_mutex = 3);
+    void init(phy_interface_rrc::phy_cfg_t *config, 
+              phy_args_t  *args, 
+              srslte::log *_log, 
+              srslte::radio *_radio, 
+              mac_interface_phy *_mac);
     
     /* For RNTI searches, -1 means now or forever */    
     void               set_ul_rnti(srslte_rnti_type_t type, uint16_t rnti_value, int tti_start = -1, int tti_end = -1);

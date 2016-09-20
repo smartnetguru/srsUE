@@ -73,7 +73,7 @@ class ra_proc : public srslte::timer_callback
       rar_grant_tti             = 0; 
       msg3_flushed              = false; 
     };
-    void init(phy_interface *phy_h, 
+    void init(phy_interface_mac *phy_h, 
               rrc_interface_mac *rrc_, 
               srslte::log *log_h, 
               mac_interface_rrc::ue_rnti_t *rntis, 
@@ -119,7 +119,6 @@ private:
     srslte::rar_pdu rar_pdu_msg; 
     
     // Random Access parameters provided by higher layers defined in 5.1.1
-    // They are read from params_db during initialization init()    
     uint32_t configIndex;
     uint32_t nof_preambles; 
     uint32_t nof_groupA_preambles;
@@ -171,11 +170,11 @@ private:
     bool        first_rar_received; 
     void        read_params();
     
-    phy_interface   *phy_h;
-    srslte::log     *log_h;
-    srslte::timers  *timers_db;
-    mux             *mux_unit;
-    demux           *demux_unit;
+    phy_interface_mac *phy_h;
+    srslte::log       *log_h;
+    srslte::timers    *timers_db;
+    mux               *mux_unit;
+    demux             *demux_unit;
     srslte::mac_pcap  *pcap;
     rrc_interface_mac *rrc;
 

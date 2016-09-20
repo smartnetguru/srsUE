@@ -42,7 +42,7 @@ phr_proc::phr_proc()
   initiated = false; 
 }
 
-void phr_proc::init(phy_interface* phy_h_, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_, srslte::timers *timers_db_)
+void phr_proc::init(phy_interface_mac* phy_h_, srslte::log* log_h_, mac_interface_rrc::mac_cfg_t *mac_cfg_, srslte::timers *timers_db_)
 {
   phy_h     = phy_h_;
   log_h     = log_h_; 

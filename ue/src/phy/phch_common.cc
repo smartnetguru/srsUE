@@ -42,7 +42,8 @@ cf_t zeros[50000];
 
 phch_common::phch_common(uint32_t max_mutex_) : tx_mutex(max_mutex_)
 {
-  params_db = NULL; 
+  config    = NULL; 
+  args      = NULL; 
   log_h     = NULL; 
   radio_h   = NULL; 
   mac       = NULL; 
@@ -73,15 +74,16 @@ phch_common::phch_common(uint32_t max_mutex_) : tx_mutex(max_mutex_)
   sync_metrics_count = 0;
 }
   
-void phch_common::init(phy_params *_params, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac)
+void phch_common::init(phy_interface_rrc::phy_cfg_t *_config, phy_args_t *_args, srslte::log *_log, srslte::radio *_radio, mac_interface_phy *_mac)
 {
-  params_db = _params;
   log_h     = _log; 
   radio_h   = _radio; 
   mac       = _mac; 
-    
+  config    = _config;     
+  args      = _args; 
   is_first_tx = true; 
   sr_last_tx_tti = -1;
+  
   for (int i=0;i<nof_mutex;i++) {
     pthread_mutex_init(&tx_mutex[i], NULL);
   }

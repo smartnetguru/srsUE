@@ -33,7 +33,6 @@
 #include "radio/radio.h"
 #include "common/log.h"
 #include "common/phy_interface.h"
-#include "phy/phy_params.h"
 
 namespace srsue {
 
@@ -44,13 +43,14 @@ namespace srsue {
       bzero(&cell, sizeof(srslte_cell_t));
       bzero(&cfo_h, sizeof(srslte_cfo_t));
       
-      params_db         = NULL; 
+      args              = NULL; 
+      config            = NULL; 
       initiated         = false; 
       signal_buffer     = NULL; 
       transmitted_tti   = 0; 
       target_power_dbm  = 0; 
     }
-    void           init(phy_params *params_db, srslte::log *log_h);
+    void           init(LIBLTE_RRC_PRACH_CONFIG_STRUCT *config, phy_args_t *args, srslte::log *log_h);
     bool           init_cell(srslte_cell_t cell);
     void           free_cell();
     bool           prepare_to_send(uint32_t preamble_idx, int allowed_subframe = -1, float target_power_dbm = -1);
@@ -62,7 +62,10 @@ namespace srsue {
     
   private: 
     static const uint32_t tx_advance_sf = 4; // Number of subframes to advance transmission
-    phy_params    *params_db; 
+    
+    LIBLTE_RRC_PRACH_CONFIG_STRUCT *config;
+    phy_args_t                     *args; 
+    
     srslte::log   *log_h;
     int            preamble_idx;  
     int            allowed_subframe; 

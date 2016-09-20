@@ -128,9 +128,6 @@ bool ue::init(all_args_t *args_)
     radio.start_trace();
   }
   
-  // Set up expert mode parameters
-  set_expert_parameters();
-
   // Init layers
   
   /* Start Radio */
@@ -160,8 +157,13 @@ bool ue::init(all_args_t *args_)
   }
   
   radio.set_manual_calibration(&args->rf_cal);
-  
-  phy.init(&radio, &mac, &rrc, &phy_log, args->expert.nof_phy_threads);
+
+  if (args->rf.tx_gain > 0) {
+    args->expert.phy.ul_pwr_ctrl_en = false; 
+  } else {
+    args->expert.phy.ul_pwr_ctrl_en = true; 
+  }
+  phy.init(&radio, &mac, &rrc, &phy_log, &args->expert.phy);
   
   if (args->rf.rx_gain < 0) {
     radio.start_agc(false);    
@@ -171,11 +173,9 @@ bool ue::init(all_args_t *args_)
     radio.set_rx_gain(args->rf.rx_gain);
   }
   if (args->rf.tx_gain > 0) {
-    radio.set_tx_gain(args->rf.tx_gain);
-    phy.set_param(phy_interface_params::PWRCTRL_ENABLED, 0);
+    radio.set_tx_gain(args->rf.tx_gain);    
   } else {
     radio.set_tx_gain(args->rf.rx_gain);
-    phy.set_param(phy_interface_params::PWRCTRL_ENABLED, 1);
     std::cout << std::endl << 
                 "Warning: TX gain was not set. " << 
                 "Using open-loop power control (not working properly)" << std::endl << std::endl; 
@@ -207,57 +207,6 @@ void ue::pregenerate_signals(bool enable)
 
 void ue::test_con_restablishment() {
   rrc.test_con_restablishment();
-}
-
-void ue::set_expert_parameters() {
-  
-  phy.set_param(phy_interface_params::PRACH_GAIN, args->rf.tx_gain);
-  phy.set_param(phy_interface_params::CQI_MAX, args->expert.cqi_max);      
-  phy.set_param(phy_interface_params::CQI_OFFSET, args->expert.cqi_offset);      
-  phy.set_param(phy_interface_params::CQI_FIXED, args->expert.cqi_fixed);
-  phy.set_param(phy_interface_params::CQI_RANDOM_MS, args->expert.cqi_random_ms);
-  phy.set_param(phy_interface_params::CQI_PERIOD_MS, args->expert.cqi_period_ms);
-  phy.set_param(phy_interface_params::CQI_PERIOD_DUTY_100, args->expert.cqi_period_duty*100);
-
-  
-  if (!args->expert.snr_estim_alg.compare("refs")) {
-    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 1);
-  } else if (!args->expert.snr_estim_alg.compare("empty")) {
-    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 2);
-  } else {
-    phy.set_param(phy_interface_params::SNR_ESTIM_ALG, 0);
-  }
-  
-  phy.set_param(phy_interface_params::SNR_EMA_COEFF_100, 100*args->expert.snr_ema_coeff);      
-  phy.set_param(phy_interface_params::PDSCH_MAX_ITS, args->expert.pdsch_max_its);
-  phy.set_param(phy_interface_params::FORCE_ENABLE_64QAM, args->expert.attach_enable_64qam?1:0);
-    
-  if (!args->expert.equalizer_mode.compare("zf")) {
-    phy.set_param(phy_interface_params::EQUALIZER_COEFF, 0);
-  } else if (!args->expert.equalizer_mode.compare("mmse")) {
-    phy.set_param(phy_interface_params::EQUALIZER_COEFF, -1);    
-  } else {
-    phy.set_param(phy_interface_params::EQUALIZER_COEFF, atof(args->expert.equalizer_mode.c_str()));
-  }
-  
-  phy.set_param(phy_interface_params::CFO_INTEGER_ENABLED, args->expert.cfo_integer_enabled?1:0);
-  phy.set_param(phy_interface_params::CFO_CORRECT_TOL_HZ_100, args->expert.cfo_correct_tol_hz*100);
-  phy.set_param(phy_interface_params::TIME_CORRECT_PERIOD, args->expert.time_correct_period);
-  phy.set_param(phy_interface_params::SFO_CORRECT_DISABLE, args->expert.sfo_correct_disable?1:0);
-
-  if (!args->expert.sss_algorithm.compare("diff")) {
-    phy.set_param(phy_interface_params::SSS_ALGORITHM, 0);
-  } else if (!args->expert.sss_algorithm.compare("partial")) {
-    phy.set_param(phy_interface_params::SSS_ALGORITHM, 2);    
-  } else if (!args->expert.sss_algorithm.compare("full")){
-    phy.set_param(phy_interface_params::SSS_ALGORITHM, 1);    
-  } else {
-    std::cout << "Invalid SSS algorithm " << args->expert.sss_algorithm << ". Using 'full'" << std::endl; 
-    phy.set_param(phy_interface_params::SSS_ALGORITHM, 1);    
-  }
-  
-  phy.set_param(phy_interface_params::ESTIMATOR_FIL_W_1000, args->expert.estimator_fil_w*1000);
-
 }
 
 void ue::stop()
