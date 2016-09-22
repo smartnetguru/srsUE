@@ -29,7 +29,7 @@
 
 #define REQ_SRSLTE_VMAJOR  001
 #define REQ_SRSLTE_VMINOR  003
-#define REQ_SRSLTE_VPATCH  000
+#define REQ_SRSLTE_VPATCH  001
 
 #include <srslte/srslte.h>
 
