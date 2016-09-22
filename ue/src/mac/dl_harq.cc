@@ -220,8 +220,8 @@ bool dl_harq_entity::dl_harq_process::calc_is_new_transmission(mac_interface_phy
 
 void dl_harq_entity::dl_harq_process::new_grant_dl(mac_interface_phy::mac_grant_t grant, mac_interface_phy::tb_action_dl_t* action)
 {
-  if (pid == HARQ_BCCH_PID) {
-    // Compute RV
+  // Compute RV for BCCH when not specified in PDCCH format
+  if (pid == HARQ_BCCH_PID && grant.rv == -1) {
     uint32_t k; 
     if ((grant.tti/10)%2 == 0 && grant.tti%10 == 5) { // This is SIB1, k is different
       k = (grant.tti/20)%4; 
