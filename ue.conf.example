@@ -123,7 +123,9 @@ enable = false
 #                       The taps are [w, 1-2w, w]
 # metrics_period_secs:  Sets the period at which metrics are requested from the UE. 
 #
-z#####################################################################
+# pregenerate_signals:  Pregenerate uplink signals after attach. Improves CPU performance.
+#
+#####################################################################
 [expert]
 #prach_gain          = 30
 #cqi_max             = 15
@@ -144,7 +146,7 @@ z#####################################################################
 #sfo_correct_disable = false
 #sss_algorithm       = full
 #estimator_fil_w     = 0.1
-#metrics_period_secs = 1.0
+#pregenerate_signals = false
 
 #####################################################################
 # Manual RF calibration
