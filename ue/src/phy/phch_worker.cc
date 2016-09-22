@@ -676,9 +676,12 @@ void phch_worker::set_uci_aperiodic_cqi()
         }
         break;
       default:
-        Warning("Aperiodic CQI mode %s not supported\n", 
+        Warning("Received CQI request but mode %s is not supported\n", 
                 liblte_rrc_cqi_report_mode_aperiodic_text[phy->config->dedicated.cqi_report_cnfg.report_mode_aperiodic]);
+        break;
     }
+  } else {
+    Warning("Received CQI request but aperiodic mode is not configured\n");    
   }
 }
 
