@@ -86,10 +86,13 @@ void bsr_proc::timer_expired(uint32_t timer_id) {
       }
       break;
     case mac::BSR_TIMER_RETX:
-      // Enable reTx of SR 
-      triggered_bsr_type = REGULAR; 
-      Info("BSR:   Triggering BSR reTX\n");
-      sr_is_sent = false; 
+      // Enable reTx of SR only if periodic timer is not infinity
+      int periodic = liblte_rrc_periodic_bsr_timer_num[mac_cfg->main.ulsch_cnfg.periodic_bsr_timer];
+      if (periodic >= 0) {
+        triggered_bsr_type = REGULAR; 
+        Info("BSR:   Triggering BSR reTX\n");
+        sr_is_sent = false; 
+      }
       break;      
   }
 }
@@ -218,21 +221,19 @@ void bsr_proc::step(uint32_t tti)
     return;
   }  
   
-  if (mac_cfg->main.ulsch_cnfg_present) {
-    int periodic = liblte_rrc_periodic_bsr_timer_num[mac_cfg->main.ulsch_cnfg.periodic_bsr_timer];
-    if (periodic != timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && periodic > 0) 
-    {
-      timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, periodic);
-      timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
-      Info("BSR:   Configured timer periodic %d ms\n", periodic);    
-    }      
-    int retx = liblte_rrc_retransmission_bsr_timer_num[mac_cfg->main.ulsch_cnfg.retx_bsr_timer];
-    if (retx != timers_db->get(mac::BSR_TIMER_RETX)->get_timeout() && retx > 0) 
-    {
-      timers_db->get(mac::BSR_TIMER_RETX)->set(this, retx);
-      timers_db->get(mac::BSR_TIMER_RETX)->run();
-      Info("BSR:   Configured timer reTX %d ms\n", retx);
-    }
+  int periodic = liblte_rrc_periodic_bsr_timer_num[mac_cfg->main.ulsch_cnfg.periodic_bsr_timer];
+  if (periodic != timers_db->get(mac::BSR_TIMER_PERIODIC)->get_timeout() && periodic > 0) 
+  {
+    timers_db->get(mac::BSR_TIMER_PERIODIC)->set(this, periodic);
+    timers_db->get(mac::BSR_TIMER_PERIODIC)->run();
+    Info("BSR:   Configured timer periodic %d ms\n", periodic);    
+  }      
+  int retx = liblte_rrc_retransmission_bsr_timer_num[mac_cfg->main.ulsch_cnfg.retx_bsr_timer];
+  if (retx != timers_db->get(mac::BSR_TIMER_RETX)->get_timeout() && retx > 0) 
+  {
+    timers_db->get(mac::BSR_TIMER_RETX)->set(this, retx);
+    timers_db->get(mac::BSR_TIMER_RETX)->run();
+    Info("BSR:   Configured timer reTX %d ms\n", retx);
   }
 
   // Check condition 1 in Sec 5.4.5   

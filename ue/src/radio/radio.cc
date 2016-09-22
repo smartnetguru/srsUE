@@ -51,9 +51,9 @@ bool radio::init(char *args, char *devname)
   tx_adv_auto = true; 
   // Set default preamble length each known device
   // We distinguish by device family, maybe we should calibrate per device
-  if (!strstr(srslte_rf_name(&rf_device), "uhd")) {
+  if (strstr(srslte_rf_name(&rf_device), "uhd")) {
     burst_preamble_sec = uhd_default_burst_preamble_sec;
-  } else if (!strstr(srslte_rf_name(&rf_device), "bladeRF")) {
+  } else if (strstr(srslte_rf_name(&rf_device), "bladeRF")) {
     burst_preamble_sec = blade_default_burst_preamble_sec;
   } else {
     printf("\nWarning burst preamble is not calibrated for device %s. Set a value manually\n\n", srslte_rf_name(&rf_device));

@@ -220,40 +220,40 @@ void phch_worker::work_imp()
         set_uci_ack(dl_ack);
       }
     }
-
-    // Decode PHICH 
-    bool ul_ack; 
-    bool ul_ack_available = decode_phich(&ul_ack); 
-    
-    /***** Uplink Processing + Transmission *******/
-    
-    /* Generate SR if required*/
-    set_uci_sr();
-
-    /* Check if we have UL grant. ul_phy_grant will be overwritten by new grant */
-    ul_grant_available = decode_pdcch_ul(&ul_mac_grant);
-
-    /* Generate CQI reports if required, note that in case both aperiodic
-       and periodic ones present, only aperiodic is sent (36.213 section 7.2) */
-    if (ul_grant_available && ul_mac_grant.has_cqi_request) {
-      set_uci_aperiodic_cqi();
-    } else {
-      set_uci_periodic_cqi();
-    }
-
-    /* Send UL grant or HARQ information (from PHICH) to MAC */
-    if (ul_grant_available         && ul_ack_available)  {    
-      phy->mac->new_grant_ul_ack(ul_mac_grant, ul_ack, &ul_action);      
-    } else if (ul_grant_available  && !ul_ack_available) {
-      phy->mac->new_grant_ul(ul_mac_grant, &ul_action);
-    } else if (!ul_grant_available && ul_ack_available)  {    
-      phy->mac->harq_recv(tti, ul_ack, &ul_action);        
-    }
-
-    /* Set UL CFO before transmission */  
-    srslte_ue_ul_set_cfo(&ue_ul, cfo);
   }
   
+  // Decode PHICH 
+  bool ul_ack; 
+  bool ul_ack_available = decode_phich(&ul_ack); 
+
+  /***** Uplink Processing + Transmission *******/
+  
+  /* Generate SR if required*/
+  set_uci_sr();
+
+  /* Check if we have UL grant. ul_phy_grant will be overwritten by new grant */
+  ul_grant_available = decode_pdcch_ul(&ul_mac_grant);
+
+  /* Generate CQI reports if required, note that in case both aperiodic
+      and periodic ones present, only aperiodic is sent (36.213 section 7.2) */
+  if (ul_grant_available && ul_mac_grant.has_cqi_request) {
+    set_uci_aperiodic_cqi();
+  } else {
+    set_uci_periodic_cqi();
+  }
+
+  /* Send UL grant or HARQ information (from PHICH) to MAC */
+  if (ul_grant_available         && ul_ack_available)  {    
+    phy->mac->new_grant_ul_ack(ul_mac_grant, ul_ack, &ul_action);      
+  } else if (ul_grant_available  && !ul_ack_available) {
+    phy->mac->new_grant_ul(ul_mac_grant, &ul_action);
+  } else if (!ul_grant_available && ul_ack_available)  {    
+    phy->mac->harq_recv(tti, ul_ack, &ul_action);        
+  }
+
+  /* Set UL CFO before transmission */  
+  srslte_ue_ul_set_cfo(&ue_ul, cfo);
+
   /* Transmit PUSCH, PUCCH or SRS */
   bool signal_ready = false; 
   if (ul_action.tx_enabled) {
@@ -604,6 +604,7 @@ void phch_worker::set_uci_sr()
   uci_data.scheduling_request = false; 
   if (phy->sr_enabled) {
     uint32_t sr_tx_tti = (tti+4)%10240;
+    Info("SR enabled sr_tx_tti=%d, I_sr=%d\n", sr_tx_tti, I_sr);
     // Get I_sr parameter   
     if (srslte_ue_ul_sr_send_tti(I_sr, sr_tx_tti)) {
       Info("PUCCH: SR transmission at TTI=%d\n", sr_tx_tti);

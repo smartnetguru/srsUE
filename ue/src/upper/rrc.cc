@@ -830,6 +830,7 @@ void rrc::rrc_connection_release() {
     drb_up = false;
     state  = RRC_STATE_IDLE;
     set_phy_default();
+    set_mac_default();
     phy->reset();
     mac->reset();
     rlc->reset();
@@ -1105,7 +1106,6 @@ void rrc::apply_mac_config_dedicated(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *mac_cnfg
   // Set Default MAC main configuration (9.2.2)
   LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT default_cfg;
   bzero(&default_cfg, sizeof(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT));
-  default_cfg.ulsch_cnfg_present            = true; 
   default_cfg.ulsch_cnfg.max_harq_tx        = LIBLTE_RRC_MAX_HARQ_TX_N5;
   default_cfg.ulsch_cnfg.periodic_bsr_timer = LIBLTE_RRC_PERIODIC_BSR_TIMER_INFINITY;
   default_cfg.ulsch_cnfg.retx_bsr_timer     = LIBLTE_RRC_RETRANSMISSION_BSR_TIMER_SF2560;  
@@ -1363,6 +1363,10 @@ void rrc::set_phy_default()
 void rrc::set_mac_default()
 {
   apply_mac_config_dedicated(NULL, true);
+  LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT sr_cfg; 
+  bzero(&sr_cfg, sizeof(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT));
+  sr_cfg.setup_present = false; 
+  mac->set_config_sr(&sr_cfg);
 }
 
 void rrc::set_rrc_default() {
