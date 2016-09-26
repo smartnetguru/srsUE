@@ -1096,6 +1096,9 @@ void rrc::apply_phy_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT
 
   phy->set_config_dedicated(current_cfg);
 
+  rrc_log->info("SR config-present=%d, config-setup=%d, current_cfg-present=%d, setup=%d\n", 
+    phy_cnfg->sched_request_cnfg_present, phy_cnfg->sched_request_cnfg.setup_present, current_cfg->sched_request_cnfg.setup_present);
+
   // Apply changes to PHY
   phy->configure_ul_params();
 
