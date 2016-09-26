@@ -90,14 +90,10 @@ void ra_proc::read_params() {
   configIndex               = mac_cfg->prach_config_index;
   preambleIndex             = 0; // pass when called from higher layers for non-contention based RA
   maskIndex                 = 0; // same 
-  nof_preambles             = mac_cfg->rach.num_ra_preambles; 
-  if (!nof_preambles || nof_preambles > 64) {
-    nof_preambles = 64; 
-  }
+  nof_preambles             = liblte_rrc_number_of_ra_preambles_num[mac_cfg->rach.num_ra_preambles]; 
   if (mac_cfg->rach.preambles_group_a_cnfg.present) {
-    nof_groupA_preambles      = liblte_rrc_size_of_ra_preambles_group_a_num[mac_cfg->rach.preambles_group_a_cnfg.size_of_ra];
+    nof_groupA_preambles    = liblte_rrc_size_of_ra_preambles_group_a_num[mac_cfg->rach.preambles_group_a_cnfg.size_of_ra];
   } else {
-    nof_groupA_preambles    = 0; 
     nof_groupA_preambles    = nof_preambles;
   }
 
@@ -226,9 +222,21 @@ void ra_proc::step_resource_selection() {
       sel_group = last_msg3_group; 
     }
     if (sel_group == RA_GROUP_A) {
-      sel_preamble = preambleTransmissionCounter%(nof_groupA_preambles-1);
+      if (nof_groupA_preambles) {
+        sel_preamble = preambleTransmissionCounter%nof_groupA_preambles;
+      } else {
+        rError("Selected group preamble A but nof_groupA_preambles=0\n");
+        state = RA_PROBLEM;
+        return; 
+      }
     } else {
-      sel_preamble = nof_groupA_preambles + rand()%(nof_groupB_preambles-1);
+      if (nof_groupB_preambles) {
+        sel_preamble = nof_groupA_preambles + rand()%nof_groupB_preambles;
+      } else {
+        rError("Selected group preamble B but nof_groupA_preambles=0\n");
+        state = RA_PROBLEM;
+        return; 
+      }
     }
     sel_maskIndex = 0;           
   }
