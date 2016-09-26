@@ -353,119 +353,52 @@ private:
     }
   }
   
-  
+    
   void apply_sib2_configs()
   {
-    if(srsue::RRC_STATE_WAIT_FOR_CON_SETUP != state){
-      log_h->error("State must be RRC_STATE_WAIT_FOR_CON_SETUP to handle SIB2.\n");
-      return;
-    }
-
-    // RACH-CONFIGCOMMON
-    if (sib2.rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.present) {
-      mac->set_param(srsue::mac_interface_params::RA_NOFGROUPAPREAMBLES,
-                    liblte_rrc_message_size_group_a_num[sib2.rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.size_of_ra]);
-      mac->set_param(srsue::mac_interface_params::RA_MESSAGESIZEA,
-                    liblte_rrc_message_size_group_a_num[sib2.rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.msg_size]);
-      mac->set_param(srsue::mac_interface_params::RA_MESSAGEPOWEROFFSETB,
-                    liblte_rrc_message_power_offset_group_b_num[sib2.rr_config_common_sib.rach_cnfg.preambles_group_a_cnfg.msg_pwr_offset_group_b]);
-    }
-    mac->set_param(srsue::mac_interface_params::RA_NOFPREAMBLES,
-                  liblte_rrc_number_of_ra_preambles_num[sib2.rr_config_common_sib.rach_cnfg.num_ra_preambles]);
-    mac->set_param(srsue::mac_interface_params::RA_POWERRAMPINGSTEP,
-                  liblte_rrc_power_ramping_step_num[sib2.rr_config_common_sib.rach_cnfg.pwr_ramping_step]);
-    mac->set_param(srsue::mac_interface_params::RA_INITRECEIVEDPOWER,
-                  liblte_rrc_preamble_initial_received_target_power_num[sib2.rr_config_common_sib.rach_cnfg.preamble_init_rx_target_pwr]);
-    mac->set_param(srsue::mac_interface_params::RA_PREAMBLETRANSMAX,
-                  liblte_rrc_preamble_trans_max_num[sib2.rr_config_common_sib.rach_cnfg.preamble_trans_max]);
-    mac->set_param(srsue::mac_interface_params::RA_RESPONSEWINDOW,
-                  liblte_rrc_ra_response_window_size_num[sib2.rr_config_common_sib.rach_cnfg.ra_resp_win_size]);
-    mac->set_param(srsue::mac_interface_params::RA_CONTENTIONTIMER,
-                  liblte_rrc_mac_contention_resolution_timer_num[sib2.rr_config_common_sib.rach_cnfg.mac_con_res_timer]);
-    mac->set_param(srsue::mac_interface_params::HARQ_MAXMSG3TX,
-                  sib2.rr_config_common_sib.rach_cnfg.max_harq_msg3_tx);
-
-    log_h->info("Set RACH ConfigCommon: MaxTx=%d, NofPreambles=%d, ResponseWindow=%d, ContentionResolutionTimer=%d ms\n",
-          liblte_rrc_preamble_trans_max_num[sib2.rr_config_common_sib.rach_cnfg.preamble_trans_max], 
+    
+    // Apply RACH timeAlginmentTimer configuration 
+    srsue::mac_interface_rrc::mac_cfg_t cfg; 
+    mac->get_config(&cfg);
+    cfg.main.time_alignment_timer = sib2.time_alignment_timer; 
+    memcpy(&cfg.rach, &sib2.rr_config_common_sib.rach_cnfg, sizeof(LIBLTE_RRC_RACH_CONFIG_COMMON_STRUCT)); 
+    cfg.prach_config_index = sib2.rr_config_common_sib.prach_cnfg.root_sequence_index; 
+    mac->set_config(&cfg);
+    
+    log_h->info("Set RACH ConfigCommon: NofPreambles=%d, ResponseWindow=%d, ContentionResolutionTimer=%d ms\n",
           liblte_rrc_number_of_ra_preambles_num[sib2.rr_config_common_sib.rach_cnfg.num_ra_preambles],
           liblte_rrc_ra_response_window_size_num[sib2.rr_config_common_sib.rach_cnfg.ra_resp_win_size],
           liblte_rrc_mac_contention_resolution_timer_num[sib2.rr_config_common_sib.rach_cnfg.mac_con_res_timer]);
 
-    // PDSCH ConfigCommon
-    phy->set_param(srsue::phy_interface_params::PDSCH_RSPOWER,
-                  sib2.rr_config_common_sib.pdsch_cnfg.rs_power);
-    phy->set_param(srsue::phy_interface_params::PDSCH_PB,
-                  sib2.rr_config_common_sib.pdsch_cnfg.p_b);
+    // Apply PHY RR Config Common
+    srsue::phy_interface_rrc::phy_cfg_common_t common; 
+    memcpy(&common.pdsch_cnfg,  &sib2.rr_config_common_sib.pdsch_cnfg,  sizeof(LIBLTE_RRC_PDSCH_CONFIG_COMMON_STRUCT));
+    memcpy(&common.pusch_cnfg,  &sib2.rr_config_common_sib.pusch_cnfg,  sizeof(LIBLTE_RRC_PUSCH_CONFIG_COMMON_STRUCT));
+    memcpy(&common.pucch_cnfg,  &sib2.rr_config_common_sib.pucch_cnfg,  sizeof(LIBLTE_RRC_PUCCH_CONFIG_COMMON_STRUCT));
+    memcpy(&common.ul_pwr_ctrl, &sib2.rr_config_common_sib.ul_pwr_ctrl, sizeof(LIBLTE_RRC_UL_POWER_CONTROL_COMMON_STRUCT));
+    memcpy(&common.prach_cnfg,  &sib2.rr_config_common_sib.prach_cnfg,  sizeof(LIBLTE_RRC_PRACH_CONFIG_SIB_STRUCT));
+    if (sib2.rr_config_common_sib.srs_ul_cnfg.present) {
+      memcpy(&common.srs_ul_cnfg,  &sib2.rr_config_common_sib.srs_ul_cnfg, sizeof(LIBLTE_RRC_SRS_UL_CONFIG_COMMON_STRUCT));
+    } else {
+      // default is release
+      common.srs_ul_cnfg.present = false; 
+    }
+    phy->set_config_common(&common);
 
-    // PUSCH ConfigCommon
-    phy->set_param(srsue::phy_interface_params::PUSCH_EN_64QAM, 0); // This will be set after attach
-    phy->set_param(srsue::phy_interface_params::PUSCH_HOPPING_OFFSET,
-                  sib2.rr_config_common_sib.pusch_cnfg.pusch_hopping_offset);
-    phy->set_param(srsue::phy_interface_params::PUSCH_HOPPING_N_SB,
-                  sib2.rr_config_common_sib.pusch_cnfg.n_sb);
-    phy->set_param(srsue::phy_interface_params::PUSCH_HOPPING_INTRA_SF,
-                  sib2.rr_config_common_sib.pusch_cnfg.hopping_mode == LIBLTE_RRC_HOPPING_MODE_INTRA_AND_INTER_SUBFRAME?1:0);
-    phy->set_param(srsue::phy_interface_params::DMRS_GROUP_HOPPING_EN,
-                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.group_hopping_enabled?1:0);
-    phy->set_param(srsue::phy_interface_params::DMRS_SEQUENCE_HOPPING_EN,
-                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.sequence_hopping_enabled?1:0);
-    phy->set_param(srsue::phy_interface_params::PUSCH_RS_CYCLIC_SHIFT,
-                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.cyclic_shift);
-    phy->set_param(srsue::phy_interface_params::PUSCH_RS_GROUP_ASSIGNMENT,
-                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.group_assignment_pusch);
+    phy->configure_ul_params();
 
     log_h->info("Set PUSCH ConfigCommon: HopOffset=%d, RSGroup=%d, RSNcs=%d, N_sb=%d\n",
-      sib2.rr_config_common_sib.pusch_cnfg.pusch_hopping_offset,
-      sib2.rr_config_common_sib.pusch_cnfg.ul_rs.group_assignment_pusch,
-      sib2.rr_config_common_sib.pusch_cnfg.ul_rs.cyclic_shift,
-      sib2.rr_config_common_sib.pusch_cnfg.n_sb);
-
-    // PUCCH ConfigCommon
-    phy->set_param(srsue::phy_interface_params::PUCCH_DELTA_SHIFT,
-                  liblte_rrc_delta_pucch_shift_num[sib2.rr_config_common_sib.pucch_cnfg.delta_pucch_shift]);
-    phy->set_param(srsue::phy_interface_params::PUCCH_CYCLIC_SHIFT,
-                  sib2.rr_config_common_sib.pucch_cnfg.n_cs_an);
-    phy->set_param(srsue::phy_interface_params::PUCCH_N_PUCCH_1,
-                  sib2.rr_config_common_sib.pucch_cnfg.n1_pucch_an);
-    phy->set_param(srsue::phy_interface_params::PUCCH_N_RB_2,
-                  sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
+                  sib2.rr_config_common_sib.pusch_cnfg.pusch_hopping_offset,
+                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.group_assignment_pusch,
+                  sib2.rr_config_common_sib.pusch_cnfg.ul_rs.cyclic_shift,
+                  sib2.rr_config_common_sib.pusch_cnfg.n_sb);
 
     log_h->info("Set PUCCH ConfigCommon: DeltaShift=%d, CyclicShift=%d, N1=%d, NRB=%d\n",
-          liblte_rrc_delta_pucch_shift_num[sib2.rr_config_common_sib.pucch_cnfg.delta_pucch_shift],
-          sib2.rr_config_common_sib.pucch_cnfg.n_cs_an,
-          sib2.rr_config_common_sib.pucch_cnfg.n1_pucch_an,
-          sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
-
-    // UL Power control config ConfigCommon
-      phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_NOMINAL_PUSCH, sib2.rr_config_common_sib.ul_pwr_ctrl.p0_nominal_pusch);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_ALPHA, 
-                  round(10*liblte_rrc_ul_power_control_alpha_num[sib2.rr_config_common_sib.ul_pwr_ctrl.alpha]));
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_P0_NOMINAL_PUCCH, sib2.rr_config_common_sib.ul_pwr_ctrl.p0_nominal_pucch);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_PUCCH_F1, 
-                  liblte_rrc_delta_f_pucch_format_1_num[sib2.rr_config_common_sib.ul_pwr_ctrl.delta_flist_pucch.format_1]);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_PUCCH_F1B, 
-                  liblte_rrc_delta_f_pucch_format_1b_num[sib2.rr_config_common_sib.ul_pwr_ctrl.delta_flist_pucch.format_1b]);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_PUCCH_F2, 
-                  liblte_rrc_delta_f_pucch_format_2_num[sib2.rr_config_common_sib.ul_pwr_ctrl.delta_flist_pucch.format_2]);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_PUCCH_F2A, 
-                  liblte_rrc_delta_f_pucch_format_2a_num[sib2.rr_config_common_sib.ul_pwr_ctrl.delta_flist_pucch.format_2a]);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_PUCCH_F2B, 
-                  liblte_rrc_delta_f_pucch_format_2b_num[sib2.rr_config_common_sib.ul_pwr_ctrl.delta_flist_pucch.format_2b]);
-    phy->set_param(srsue::phy_interface_params::PWRCTRL_DELTA_MSG3, sib2.rr_config_common_sib.ul_pwr_ctrl.delta_preamble_msg3);
-
+                  liblte_rrc_delta_pucch_shift_num[sib2.rr_config_common_sib.pucch_cnfg.delta_pucch_shift],
+                  sib2.rr_config_common_sib.pucch_cnfg.n_cs_an,
+                  sib2.rr_config_common_sib.pucch_cnfg.n1_pucch_an,
+                  sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
     
-    // PRACH Configcommon
-    phy->set_param(srsue::phy_interface_params::PRACH_ROOT_SEQ_IDX,
-                  sib2.rr_config_common_sib.prach_cnfg.root_sequence_index);
-    phy->set_param(srsue::phy_interface_params::PRACH_HIGH_SPEED_FLAG,
-                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?1:0);
-    phy->set_param(srsue::phy_interface_params::PRACH_FREQ_OFFSET,
-                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_freq_offset);
-    phy->set_param(srsue::phy_interface_params::PRACH_ZC_CONFIG,
-                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.zero_correlation_zone_config);
-    phy->set_param(srsue::phy_interface_params::PRACH_CONFIG_INDEX,
-                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_config_index);
-
     log_h->info("Set PRACH ConfigCommon: SeqIdx=%d, HS=%d, FreqOffset=%d, ZC=%d, ConfigIndex=%d\n",
                   sib2.rr_config_common_sib.prach_cnfg.root_sequence_index,
                   sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?1:0,
@@ -473,24 +406,14 @@ private:
                   sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.zero_correlation_zone_config,
                   sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_config_index);
 
-    // SRS ConfigCommon
-    if (sib2.rr_config_common_sib.srs_ul_cnfg.present) {
-      phy->set_param(srsue::phy_interface_params::SRS_CS_BWCFG, sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg);
-      phy->set_param(srsue::phy_interface_params::SRS_CS_SFCFG, sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg);
-      phy->set_param(srsue::phy_interface_params::SRS_CS_ACKNACKSIMUL, sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
-    }
-
     log_h->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%d\n",
                   sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg,
                   sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg,
                   sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
     
-    phy->configure_ul_params();
   }
-
-
-  
 };
+
 
 
 // Create classes
@@ -535,7 +458,7 @@ int main(int argc, char *argv[])
     my_radio.set_tx_adv(prog_args.time_adv);
   }
   
-  my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, 2);
+  my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, NULL);
   my_mac.init(&my_phy, &rlc, &my_tester, &log_out);
   rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);  
   my_tester.init(&my_phy, &my_mac, &rlc, &log_out, prog_args.ip_address);
