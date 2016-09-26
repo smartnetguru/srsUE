@@ -212,7 +212,7 @@ void ra_proc::step_resource_selection() {
   } else {
     // Preamble is chosen by MAC UE
     if (!msg3_transmitted) {
-      if (nof_groupB_preambles > 0) { // Check also messageSizeGroupA and pathloss (Pcmax,deltaPreamble and powerOffset)
+      if (nof_groupB_preambles > 0 && new_ra_msg_len > messageSizeGroupA) { // Check also pathloss (Pcmax,deltaPreamble and powerOffset)
         sel_group = RA_GROUP_B; 
       } else {
         sel_group = RA_GROUP_A; 
@@ -241,8 +241,8 @@ void ra_proc::step_resource_selection() {
     sel_maskIndex = 0;           
   }
   
-  rDebug("Selected preambleIndex=%d maskIndex=%d nof_GroupApreambles=%d\n", 
-        sel_preamble, sel_maskIndex,nof_groupA_preambles);
+  rDebug("Selected preambleIndex=%d maskIndex=%d GroupA=%d, GroupB=%d\n", 
+        sel_preamble, sel_maskIndex,nof_groupA_preambles, nof_groupB_preambles);
   state = PREAMBLE_TRANSMISSION;
 }
 
@@ -519,10 +519,11 @@ void ra_proc::step(uint32_t tti_)
   }
 }
 
-void ra_proc::start_mac_order()
+void ra_proc::start_mac_order(uint32_t msg_len_bits)
 {
   if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = false;
+    new_ra_msg_len = msg_len_bits; 
     state = INITIALIZATION;    
     rInfo("Starting PRACH by MAC order\n");
   }
