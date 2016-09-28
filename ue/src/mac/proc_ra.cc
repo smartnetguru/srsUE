@@ -90,14 +90,10 @@ void ra_proc::read_params() {
   configIndex               = mac_cfg->prach_config_index;
   preambleIndex             = 0; // pass when called from higher layers for non-contention based RA
   maskIndex                 = 0; // same 
-  nof_preambles             = mac_cfg->rach.num_ra_preambles; 
-  if (!nof_preambles || nof_preambles > 64) {
-    nof_preambles = 64; 
-  }
+  nof_preambles             = liblte_rrc_number_of_ra_preambles_num[mac_cfg->rach.num_ra_preambles]; 
   if (mac_cfg->rach.preambles_group_a_cnfg.present) {
-    nof_groupA_preambles      = liblte_rrc_size_of_ra_preambles_group_a_num[mac_cfg->rach.preambles_group_a_cnfg.size_of_ra];
+    nof_groupA_preambles    = liblte_rrc_size_of_ra_preambles_group_a_num[mac_cfg->rach.preambles_group_a_cnfg.size_of_ra];
   } else {
-    nof_groupA_preambles    = 0; 
     nof_groupA_preambles    = nof_preambles;
   }
 
@@ -216,7 +212,7 @@ void ra_proc::step_resource_selection() {
   } else {
     // Preamble is chosen by MAC UE
     if (!msg3_transmitted) {
-      if (nof_groupB_preambles > 0) { // Check also messageSizeGroupA and pathloss (Pcmax,deltaPreamble and powerOffset)
+      if (nof_groupB_preambles > 0 && new_ra_msg_len > messageSizeGroupA) { // Check also pathloss (Pcmax,deltaPreamble and powerOffset)
         sel_group = RA_GROUP_B; 
       } else {
         sel_group = RA_GROUP_A; 
@@ -226,15 +222,27 @@ void ra_proc::step_resource_selection() {
       sel_group = last_msg3_group; 
     }
     if (sel_group == RA_GROUP_A) {
-      sel_preamble = preambleTransmissionCounter%(nof_groupA_preambles-1);
+      if (nof_groupA_preambles) {
+        sel_preamble = preambleTransmissionCounter%nof_groupA_preambles;
+      } else {
+        rError("Selected group preamble A but nof_groupA_preambles=0\n");
+        state = RA_PROBLEM;
+        return; 
+      }
     } else {
-      sel_preamble = nof_groupA_preambles + rand()%(nof_groupB_preambles-1);
+      if (nof_groupB_preambles) {
+        sel_preamble = nof_groupA_preambles + rand()%nof_groupB_preambles;
+      } else {
+        rError("Selected group preamble B but nof_groupA_preambles=0\n");
+        state = RA_PROBLEM;
+        return; 
+      }
     }
     sel_maskIndex = 0;           
   }
   
-  rDebug("Selected preambleIndex=%d maskIndex=%d nof_GroupApreambles=%d\n", 
-        sel_preamble, sel_maskIndex,nof_groupA_preambles);
+  rDebug("Selected preambleIndex=%d maskIndex=%d GroupA=%d, GroupB=%d\n", 
+        sel_preamble, sel_maskIndex,nof_groupA_preambles, nof_groupB_preambles);
   state = PREAMBLE_TRANSMISSION;
 }
 
@@ -511,10 +519,11 @@ void ra_proc::step(uint32_t tti_)
   }
 }
 
-void ra_proc::start_mac_order()
+void ra_proc::start_mac_order(uint32_t msg_len_bits)
 {
   if (state == IDLE || state == COMPLETION_DONE || state == RA_PROBLEM) {
     started_by_pdcch = false;
+    new_ra_msg_len = msg_len_bits; 
     state = INITIALIZATION;    
     rInfo("Starting PRACH by MAC order\n");
   }

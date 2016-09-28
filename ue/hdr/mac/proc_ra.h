@@ -83,7 +83,7 @@ class ra_proc : public srslte::timer_callback
               demux *demux_unit);
     void reset();
     void start_pdcch_order();
-    void start_mac_order();
+    void start_mac_order(uint32_t msg_len_bits = 56);
     void step(uint32_t tti);
     bool is_successful(); 
     bool is_response_error(); 
@@ -133,6 +133,7 @@ private:
     uint32_t contentionResolutionTimer; 
     uint32_t maskIndex; 
     int      preambleIndex;    
+    uint32_t new_ra_msg_len; 
     
     // Internal variables
     uint32_t preambleTransmissionCounter; 
