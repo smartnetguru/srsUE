@@ -1084,20 +1084,23 @@ void rrc::apply_phy_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT
     current_cfg->pdsch_cnfg_ded = LIBLTE_RRC_PDSCH_CONFIG_P_A_DB_0; 
   }
 
-  rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d, SRS-ConfigIndex=%d, SRS-bw=%s, SRS-Nrcc=%d, SRS-hop=%s, SRS-Ncs=%s\n",
+  if (phy_cnfg->sched_request_cnfg_present) {
+    rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d\n",
                 current_cfg->sched_request_cnfg.sr_pucch_resource_idx,
                 current_cfg->sched_request_cnfg.sr_cnfg_idx,
-                liblte_rrc_dsr_trans_max_num[current_cfg->sched_request_cnfg.dsr_trans_max],
+                liblte_rrc_dsr_trans_max_num[current_cfg->sched_request_cnfg.dsr_trans_max]);
+  }
+  
+  if (current_cfg->srs_ul_cnfg_ded_present) {
+    rrc_log->info("Set PHY config ded: SRS-ConfigIndex=%d, SRS-bw=%s, SRS-Nrcc=%d, SRS-hop=%s, SRS-Ncs=%s\n",
                 current_cfg->srs_ul_cnfg_ded.srs_cnfg_idx,
                 liblte_rrc_srs_bandwidth_text[current_cfg->srs_ul_cnfg_ded.srs_bandwidth],
                 current_cfg->srs_ul_cnfg_ded.freq_domain_pos,
                 liblte_rrc_srs_hopping_bandwidth_text[current_cfg->srs_ul_cnfg_ded.srs_hopping_bandwidth],
                 liblte_rrc_cyclic_shift_text[current_cfg->srs_ul_cnfg_ded.cyclic_shift]);
-
+  }
+  
   phy->set_config_dedicated(current_cfg);
-
-  rrc_log->info("SR config-present=%d, config-setup=%d, current_cfg-present=%d, setup=%d\n", 
-    phy_cnfg->sched_request_cnfg_present, phy_cnfg->sched_request_cnfg.setup_present, current_cfg->sched_request_cnfg.setup_present);
 
   // Apply changes to PHY
   phy->configure_ul_params();
