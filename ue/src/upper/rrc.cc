@@ -973,17 +973,17 @@ void rrc::apply_sib2_configs()
                 sib2.rr_config_common_sib.pucch_cnfg.n1_pucch_an,
                 sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
   
-  rrc_log->info("Set PRACH ConfigCommon: SeqIdx=%d, HS=%d, FreqOffset=%d, ZC=%d, ConfigIndex=%d\n",
+  rrc_log->info("Set PRACH ConfigCommon: SeqIdx=%d, HS=%s, FreqOffset=%d, ZC=%d, ConfigIndex=%d\n",
                  sib2.rr_config_common_sib.prach_cnfg.root_sequence_index,
-                 sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?1:0,
+                 sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?"yes":"no",
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_freq_offset,
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.zero_correlation_zone_config,
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_config_index);
 
-  rrc_log->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%d\n",
-                 sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg,
-                 sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg,
-                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
+  rrc_log->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%s\n",
+                 liblte_rrc_srs_bw_config_num[sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg],
+                 liblte_rrc_srs_subfr_config_num[sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg],
+                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx?"yes":"no");
 
   mac_timers->get(t301)->set(this, liblte_rrc_t301_num[sib2.ue_timers_and_constants.t301]);
   mac_timers->get(t310)->set(this, liblte_rrc_t310_num[sib2.ue_timers_and_constants.t310]);
