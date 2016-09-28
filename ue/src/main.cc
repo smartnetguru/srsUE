@@ -331,7 +331,6 @@ int main(int argc, char *argv[])
 
   cout << "---  Software Radio Systems LTE UE  ---" << endl << endl;
 
-  bzero(&args, sizeof(all_args_t));
   parse_args(&args, argc, argv);
   if(!ue->init(&args)) {
     exit(1);
