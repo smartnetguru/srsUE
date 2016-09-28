@@ -53,9 +53,6 @@ public:
     pdu_is_ul      = false; 
     buffer_tx      = NULL; 
     total_sdu_len  = 0; 
-    for (int i=0;i<max_subheaders;i++) {
-      subheaders[i].parent = this; 
-    }
   }
   
   void fprint(FILE *stream) {
@@ -173,6 +170,7 @@ private:
     last_sdu_idx   = -1;
     reset();
     for (int i=0;i<max_subheaders;i++) {
+      subheaders[i].parent = this; 
       subheaders[i].init();
     }
   }
@@ -231,6 +229,7 @@ public:
   uint64_t get_con_res_id();
   uint8_t  get_ta_cmd();
   uint8_t  get_phr();
+  uint32_t get_bsr(uint32_t buff_size[4]);
   
   // Writing functions
   void     write_subheader(uint8_t** ptr, bool is_last);

@@ -31,6 +31,13 @@
 #include "common/pdu.h"
 #include "srslte/srslte.h"
 
+// Table 6.1.3.1-1 Buffer size levels for BSR 
+static uint32_t btable[64] = {
+  0, 5, 10, 12, 14, 17, 19, 22, 26, 31, 36, 42, 49, 57, 67, 78, 91, 107, 125, 146, 171, 200, 234, 274, 321, 376, 440, 515, 603, 706, 826, 967, 1132, 
+  1326, 1552, 1817, 2127, 2490, 2915, 3413, 3995, 4667, 5476, 6411, 7505, 8787, 10287, 12043, 14099, 16507, 19325, 22624, 26487, 31009, 36304, 
+  42502, 49759, 58255, 68201, 79846, 93479, 109439, 128125, 150000};
+
+
 
 namespace srslte {
    
@@ -389,6 +396,26 @@ uint8_t sch_subh::get_phr()
     return 0;
   }
 }
+
+uint32_t sch_subh::get_bsr(uint32_t buff_size[4])
+{
+  uint32_t nonzero_lcg = 0;
+  if (ce_type()==LONG_BSR) {
+    buff_size[0] = (payload[0]&0xFC) >> 2;
+    buff_size[1] = (payload[0]&0x03) << 4 | (payload[1]&0xF0) >> 4;
+    buff_size[2] = (payload[1]&0x0F) << 4 | (payload[1]&0xC0) >> 6;
+    buff_size[3] = (payload[2]&0x3F); 
+  } else {
+    uint32_t nonzero_lcg     = (payload[0]&0xc0) >> 6;
+    buff_size[nonzero_lcg%4] =  payload[0]&0x3f;
+  }
+  for (int i=0;i<4;i++) {
+    if (buff_size[i]) {
+      buff_size[i] = btable[buff_size[i]%64];
+    }
+  }
+}
+
 uint8_t sch_subh::get_ta_cmd()
 {
   if (payload) {
@@ -521,7 +548,6 @@ int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, read_pdu_interfa
     lcid = lcid_;
     
     payload = ((sch_pdu*)parent)->get_current_sdu_ptr();
-    
     // Copy data and get final number of bytes written to the MAC PDU 
     int sdu_sz = sdu_itf->read_pdu(lcid, payload, requested_bytes);
     
@@ -624,14 +650,6 @@ void sch_subh::read_payload(uint8_t** ptr)
   *ptr += nof_bytes;
 }
 
-
-
-// Table 6.1.3.1-1 Buffer size levels for BSR 
-uint32_t btable[61] = {
-  10, 12, 14, 17, 19, 22, 26, 31, 36, 42, 49, 57, 67, 78, 91, 107, 125, 146, 171, 200, 234, 274, 321, 376, 440, 515, 603, 706, 826, 967, 1132, 
-  1326, 1552, 1817, 2127, 2490, 2915, 3413, 3995, 4667, 5476, 6411, 7505, 8787, 10287, 12043, 14099, 16507, 19325, 22624, 26487, 31009, 36304, 
-  42502, 49759, 58255, 68201, 79846, 93479, 109439, 128125};
-
 uint8_t sch_subh::buff_size_table(uint32_t buffer_size) {
   if (buffer_size == 0) {
     return 0; 
@@ -639,7 +657,7 @@ uint8_t sch_subh::buff_size_table(uint32_t buffer_size) {
     return 63;
   } else {
     for (int i=0;i<61;i++) {
-      if (buffer_size < btable[i]) {
+      if (buffer_size < btable[i+2]) {
         return 1+i; 
       }      
     }

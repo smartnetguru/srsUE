@@ -741,6 +741,9 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
          grant->mcs.tbs/8, grant->mcs.mod, grant->mcs.idx, rv,
          uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",
          timestr);
+  
+  printf("PUSCH %d bytes: ", grant->mcs.tbs/8);
+  srslte_vec_fprint_byte(stdout, payload, grant->mcs.tbs/8);
 
   // Store metrics
   ul_metrics.mcs   = grant->mcs.idx;

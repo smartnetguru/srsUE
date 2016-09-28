@@ -238,10 +238,22 @@ public:
         mac->bcch_stop_rx();
         apply_sib2_configs();
         
-        // Send Msg3 
         srsue::byte_buffer_t *sdu = pool->allocate(); 
-        sprintf((char*) sdu->msg, "Hello world\n");
-        sdu->N_bytes = strlen((const char*) sdu->msg);
+        assert(sdu); 
+        
+        // Send Msg3 
+        sdu->N_bytes = 10; 
+        for (int i=0;i<sdu->N_bytes;i++) {
+          sdu->msg[i] = i+1; 
+        }
+        uint64_t uecri = 0; 
+        uint8_t *ue_cri_ptr = (uint8_t*) &uecri;
+        uint32_t nbytes = 6;
+        for (int i=0;i<nbytes;i++) {
+          ue_cri_ptr[nbytes-i-1] = sdu->msg[i];
+        }
+        log_h->info("Setting UE contention resolution ID: %d\n", uecri);        
+        mac->set_contention_id(uecri);
         
         rlc->write_sdu(0, sdu);
 
@@ -297,6 +309,7 @@ private:
   srsue::rrc_state_t state; 
   LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_1_STRUCT sib1;
   LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT sib2;
+  bool read_enable;
 
   
   // Determine SI messages scheduling as in 36.331 5.2.3 Acquisition of an SI message
@@ -305,6 +318,7 @@ private:
   }
     
   int init_tuntap(char *ip_address) {
+    read_enable = false; 
     tun_fd = setup_if_addr(ip_address);
     if (tun_fd<0) {
       fprintf(stderr, "Error setting up IP %s\n", ip_address);
@@ -312,7 +326,6 @@ private:
     }
     
     printf("Created tun/tap interface at IP %s\n", ip_address);
-
     return 0; 
   }
   
@@ -325,10 +338,10 @@ private:
     log_h->info("TUN/TAP reader thread running\n");
 
     while(running) {
-      N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET);
-      log_h->info("Read %d bytes from TUN fd=%d\n", N_bytes, tun_fd);
-      if(N_bytes > 0)
+      N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET);      
+      if(N_bytes > 0 && read_enable)
       {
+        log_h->info("Read %d bytes from TUN fd=%d\n", N_bytes, tun_fd);
         pdu->N_bytes = idx + N_bytes;
         ip_pkt       = (struct iphdr*)pdu->msg;
 

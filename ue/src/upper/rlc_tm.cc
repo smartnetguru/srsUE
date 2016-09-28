@@ -99,7 +99,6 @@ int rlc_tm::read_pdu(uint8_t *payload, uint32_t nof_bytes)
     log->error("UL %s PDU size larger than MAC opportunity\n", rb_id_text[lcid]);
     return 0;
   }
-
   byte_buffer_t *buf;
   ul_queue.read(&buf);
   pdu_size = buf->N_bytes;

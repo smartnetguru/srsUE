@@ -77,7 +77,7 @@ void rlc_um::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
     log->info("%s configured in %s mode: "
               "t_reordering=%d ms, rx_sn_field_length=%u bits, tx_sn_field_length=%u bits\n",
               rb_id_text[lcid], liblte_rrc_rlc_mode_text[cnfg->rlc_mode],
-              liblte_rrc_t_reordering_num[t_reordering],
+              t_reordering,
               rlc_umd_sn_size_num[rx_sn_field_length],
               rlc_umd_sn_size_num[tx_sn_field_length]);
     break;
