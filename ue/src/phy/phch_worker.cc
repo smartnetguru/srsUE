@@ -856,12 +856,14 @@ void phch_worker::set_ul_params(bool pregen_disabled)
   
   /* PUCCH configuration */  
   bzero(&pucch_cfg, sizeof(srslte_pucch_cfg_t));
-  pucch_cfg.delta_pucch_shift  = liblte_rrc_delta_pucch_shift_num[common->pucch_cnfg.delta_pucch_shift];
+  pucch_cfg.delta_pucch_shift  = liblte_rrc_delta_pucch_shift_num[common->pucch_cnfg.delta_pucch_shift%LIBLTE_RRC_DELTA_PUCCH_SHIFT_N_ITEMS];
   pucch_cfg.N_cs               = common->pucch_cnfg.n_cs_an;
   pucch_cfg.n_rb_2             = common->pucch_cnfg.n_rb_cqi;
   pucch_cfg.srs_configured     = dedicated->srs_ul_cnfg_ded.setup_present;
-  pucch_cfg.srs_cs_subf_cfg    = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg];
-  pucch_cfg.srs_simul_ack      = common->srs_ul_cnfg.ack_nack_simul_tx;
+  if (pucch_cfg.srs_configured) {
+    pucch_cfg.srs_cs_subf_cfg    = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg%LIBLTE_RRC_SRS_SUBFR_CONFIG_N_ITEMS];
+    pucch_cfg.srs_simul_ack      = common->srs_ul_cnfg.ack_nack_simul_tx;
+  }
   
   /* PUCCH Scheduling configuration */
   bzero(&pucch_sched, sizeof(srslte_pucch_sched_t));
@@ -876,25 +878,27 @@ void phch_worker::set_ul_params(bool pregen_disabled)
   /* SRS Configuration */
   bzero(&srs_cfg, sizeof(srslte_refsignal_srs_cfg_t));
   srs_cfg.configured           = dedicated->srs_ul_cnfg_ded.setup_present;
-  srs_cfg.subframe_config      = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg];
-  srs_cfg.bw_cfg               = liblte_rrc_srs_bw_config_num[common->srs_ul_cnfg.bw_cnfg];
-  srs_cfg.I_srs                = dedicated->srs_ul_cnfg_ded.srs_cnfg_idx;
-  srs_cfg.B                    = dedicated->srs_ul_cnfg_ded.srs_bandwidth;
-  srs_cfg.b_hop                = dedicated->srs_ul_cnfg_ded.srs_hopping_bandwidth;
-  srs_cfg.n_rrc                = dedicated->srs_ul_cnfg_ded.freq_domain_pos;
-  srs_cfg.k_tc                 = dedicated->srs_ul_cnfg_ded.tx_comb;
-  srs_cfg.n_srs                = dedicated->srs_ul_cnfg_ded.cyclic_shift;
-
+  if (pucch_cfg.srs_configured) {
+    srs_cfg.subframe_config      = liblte_rrc_srs_subfr_config_num[common->srs_ul_cnfg.subfr_cnfg%LIBLTE_RRC_SRS_SUBFR_CONFIG_N_ITEMS];
+    srs_cfg.bw_cfg               = liblte_rrc_srs_bw_config_num[common->srs_ul_cnfg.bw_cnfg%LIBLTE_RRC_SRS_BW_CONFIG_N_ITEMS];
+    srs_cfg.I_srs                = dedicated->srs_ul_cnfg_ded.srs_cnfg_idx;
+    srs_cfg.B                    = dedicated->srs_ul_cnfg_ded.srs_bandwidth;
+    srs_cfg.b_hop                = dedicated->srs_ul_cnfg_ded.srs_hopping_bandwidth;
+    srs_cfg.n_rrc                = dedicated->srs_ul_cnfg_ded.freq_domain_pos;
+    srs_cfg.k_tc                 = dedicated->srs_ul_cnfg_ded.tx_comb;
+    srs_cfg.n_srs                = dedicated->srs_ul_cnfg_ded.cyclic_shift;
+  }
+  
   /* UL power control configuration */
   bzero(&power_ctrl, sizeof(srslte_ue_ul_powerctrl_t));
   power_ctrl.p0_nominal_pusch  = common->ul_pwr_ctrl.p0_nominal_pusch;
-  power_ctrl.alpha             = liblte_rrc_ul_power_control_alpha_num[common->ul_pwr_ctrl.alpha];
+  power_ctrl.alpha             = liblte_rrc_ul_power_control_alpha_num[common->ul_pwr_ctrl.alpha%LIBLTE_RRC_UL_POWER_CONTROL_ALPHA_N_ITEMS];
   power_ctrl.p0_nominal_pucch  = common->ul_pwr_ctrl.p0_nominal_pucch;
-  power_ctrl.delta_f_pucch[0]  = liblte_rrc_delta_f_pucch_format_1_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1];
-  power_ctrl.delta_f_pucch[1]  = liblte_rrc_delta_f_pucch_format_1b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1b];
-  power_ctrl.delta_f_pucch[2]  = liblte_rrc_delta_f_pucch_format_2_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2];
-  power_ctrl.delta_f_pucch[3]  = liblte_rrc_delta_f_pucch_format_2a_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2a];
-  power_ctrl.delta_f_pucch[4]  = liblte_rrc_delta_f_pucch_format_2b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2b];
+  power_ctrl.delta_f_pucch[0]  = liblte_rrc_delta_f_pucch_format_1_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1%LIBLTE_RRC_DELTA_F_PUCCH_FORMAT_1_N_ITEMS];
+  power_ctrl.delta_f_pucch[1]  = liblte_rrc_delta_f_pucch_format_1b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_1b%LIBLTE_RRC_DELTA_F_PUCCH_FORMAT_1B_N_ITEMS];
+  power_ctrl.delta_f_pucch[2]  = liblte_rrc_delta_f_pucch_format_2_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2%LIBLTE_RRC_DELTA_F_PUCCH_FORMAT_2_N_ITEMS];
+  power_ctrl.delta_f_pucch[3]  = liblte_rrc_delta_f_pucch_format_2a_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2a%LIBLTE_RRC_DELTA_F_PUCCH_FORMAT_2A_N_ITEMS];
+  power_ctrl.delta_f_pucch[4]  = liblte_rrc_delta_f_pucch_format_2b_num[common->ul_pwr_ctrl.delta_flist_pucch.format_2b%LIBLTE_RRC_DELTA_F_PUCCH_FORMAT_2B_N_ITEMS];
   
   power_ctrl.delta_preamble_msg3 = common->ul_pwr_ctrl.delta_preamble_msg3;
   
