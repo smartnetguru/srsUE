@@ -75,7 +75,6 @@ void sr_proc::step(uint32_t tti)
 {
   if (initiated) {
     if (is_pending_sr) {
-      Info("SR is pending, mac setup present=%d\n", mac_cfg->sr.setup_present);
       if (mac_cfg->sr.setup_present) {
         if (sr_counter < dsr_transmax) {
           if (sr_counter == 0 || need_tx(tti)) {
