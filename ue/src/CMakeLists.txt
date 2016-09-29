@@ -32,3 +32,14 @@ target_link_libraries(ue    srsue_upper
                             lte
                             ${CMAKE_THREAD_LIBS_INIT}
                             ${Boost_LIBRARIES})
+
+
+########################################################################
+# Option to run command after build (useful for remote builds)
+########################################################################
+if (NOT ${BUILD_CMD} STREQUAL "")
+  message(STATUS "Added custom post-build command: ${BUILD_CMD}")
+  add_custom_command(TARGET ue POST_BUILD COMMAND ${BUILD_CMD})
+else(NOT ${BUILD_CMD} STREQUAL "")
+  message(STATUS "No post-build command defined")
+endif (NOT ${BUILD_CMD} STREQUAL "")
