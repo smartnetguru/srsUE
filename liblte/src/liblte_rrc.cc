@@ -78,6 +78,46 @@
 LIBLTE_BIT_MSG_STRUCT global_msg;
 
 /*******************************************************************************
+                              HELPERS
+*******************************************************************************/
+
+/*********************************************************************
+    Description: Simply consume non-critical extensions for rel > r8
+*********************************************************************/
+void liblte_rrc_consume_noncrit_extension(uint8 **ie_ptr)
+{
+  uint32 i;
+  uint32 elem_flags;
+  uint32 elem_len;
+
+  uint8 n_elems = liblte_bits_2_value(ie_ptr, 7) + 1;
+  for(i=0; i<n_elems; i++)
+  {
+    elem_flags |= (liblte_bits_2_value(ie_ptr, 1) << i);
+  }
+  for(i=0; i<n_elems; i++)
+  {
+    if(elem_flags & 0x1)
+    {
+      if(0 == liblte_bits_2_value(ie_ptr, 1))
+      {
+          elem_len = liblte_bits_2_value(ie_ptr, 7);
+      }else{
+          if(0 == liblte_bits_2_value(ie_ptr, 1))
+          {
+              elem_len = liblte_bits_2_value(ie_ptr, 14);
+          }else{
+              // FIXME: Unlikely to have more than 16K of octets
+              elem_len = 0;
+          }
+      }
+      liblte_bits_2_value(ie_ptr, 8*elem_len);
+    }
+    elem_flags = elem_flags >> 1;
+  }
+}
+
+/*******************************************************************************
                               INFORMATION ELEMENT FUNCTIONS
 *******************************************************************************/
 
@@ -5800,12 +5840,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_logical_channel_config_ie(uint8             
                                                               LIBLTE_RRC_LOGICAL_CHANNEL_CONFIG_STRUCT  *log_chan_cnfg)
 {
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
+    bool              ext;
 
     if(ie_ptr        != NULL &&
        log_chan_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1); // FIXME: Handle extension
+        ext = liblte_bits_2_value(ie_ptr, 1); // FIXME: Handle extension
 
         // Optional indicator
         log_chan_cnfg->ul_specific_params_present = liblte_bits_2_value(ie_ptr, 1);
@@ -5823,6 +5864,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_logical_channel_config_ie(uint8             
             {
                 log_chan_cnfg->ul_specific_params.log_chan_group = liblte_bits_2_value(ie_ptr, 2);
             }
+        }
+
+        // Consume non-critical extensions
+        if(ext)
+        {
+          liblte_rrc_consume_noncrit_extension(ie_ptr);
         }
 
         err = LIBLTE_SUCCESS;
@@ -6108,6 +6155,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_mac_main_config_ie(uint8                    
                 // DL Pathloss Change
                 mac_main_cnfg->phr_cnfg.dl_pathloss_change = (LIBLTE_RRC_DL_PATHLOSS_CHANGE_ENUM)liblte_bits_2_value(ie_ptr, 2);
             }
+        }
+
+        // Consume non-critical extensions
+        if(ext)
+        {
+          liblte_rrc_consume_noncrit_extension(ie_ptr);
         }
 
         err = LIBLTE_SUCCESS;
@@ -6544,6 +6597,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_physical_config_dedicated_ie(uint8          
         if(phy_cnfg_ded->sched_request_cnfg_present)
         {
             liblte_rrc_unpack_scheduling_request_config_ie(ie_ptr, &phy_cnfg_ded->sched_request_cnfg);
+        }
+
+        // Consume non-critical extensions
+        if(ext)
+        {
+          liblte_rrc_consume_noncrit_extension(ie_ptr);
         }
 
         err = LIBLTE_SUCCESS;
@@ -7543,6 +7602,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
     uint32            i;
     bool              ext;
+    bool              srb_ext;
+    bool              drb_ext;
     bool              srb_to_add_mod_list_present;
     bool              drb_to_add_mod_list_present;
     bool              drb_to_release_list_present;
@@ -7568,7 +7629,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             for(i=0; i<rr_cnfg->srb_to_add_mod_list_size; i++)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                srb_ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // Optional indicators
                 rr_cnfg->srb_to_add_mod_list[i].rlc_cnfg_present = liblte_bits_2_value(ie_ptr, 1);
@@ -7602,6 +7663,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
                         liblte_rrc_unpack_logical_channel_config_ie(ie_ptr, &rr_cnfg->srb_to_add_mod_list[i].lc_explicit_cnfg);
                     }
                 }
+
+                // Consume non-critical extensions
+                if(srb_ext)
+                {
+                  liblte_rrc_consume_noncrit_extension(ie_ptr);
+                }
             }
         }
 
@@ -7612,7 +7679,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             for(i=0; i<rr_cnfg->drb_to_add_mod_list_size; i++)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                drb_ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // Optional indicators
                 rr_cnfg->drb_to_add_mod_list[i].eps_bearer_id_present = liblte_bits_2_value(ie_ptr, 1);
@@ -7653,6 +7720,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
                 {
                     liblte_rrc_unpack_logical_channel_config_ie(ie_ptr, &rr_cnfg->drb_to_add_mod_list[i].lc_cnfg);
                 }
+
+                // Consume non-critical extensions
+                if(drb_ext)
+                {
+                  liblte_rrc_consume_noncrit_extension(ie_ptr);
+                }
             }
         }
 
@@ -7688,7 +7761,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             liblte_rrc_unpack_physical_config_dedicated_ie(ie_ptr, &rr_cnfg->phy_cnfg_ded);
         }
 
-        // Extension
+        // Extension (FIXME: only handling r9 extensions)
         if(ext)
         {
             // Optional indicators
@@ -11307,7 +11380,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_setup_msg(LIBLTE_BIT_MSG_STRU
         liblte_rrc_unpack_rrc_transaction_identifier_ie(&msg_ptr,
                                                         &con_setup->rrc_transaction_id);
 
-        // Extension choice
+        // Critical extension indicator
         liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
