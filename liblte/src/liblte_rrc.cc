@@ -61,6 +61,9 @@
 
 #include "liblte_rrc.h"
 
+#include <stdlib.h>
+#include <stdarg.h>
+
 /*******************************************************************************
                               DEFINES
 *******************************************************************************/
@@ -80,6 +83,34 @@ LIBLTE_BIT_MSG_STRUCT global_msg;
 /*******************************************************************************
                               HELPERS
 *******************************************************************************/
+
+/*********************************************************************
+    Functions for external logging 
+*********************************************************************/
+static log_handler_t log_handler; 
+static void *callback_ctx = NULL; 
+
+void liblte_rrc_log_register_handler(void *ctx, log_handler_t handler) {
+  log_handler  = handler; 
+  callback_ctx = ctx; 
+}
+
+static void liblte_rrc_log_print(const char *format, ...) {
+  va_list   args;
+  va_start(args, format);
+  if (log_handler) {
+    char *args_msg = NULL;
+    if(vasprintf(&args_msg, format, args) > 0) {
+      log_handler(callback_ctx, args_msg);
+    }
+    if (args_msg) {
+      free(args_msg); 
+    }
+  } else {
+    vprintf(format, args);
+  }
+  va_end(args);
+}
 
 /*********************************************************************
     Description: Simply consume non-critical extensions for rel > r8
@@ -117,7 +148,7 @@ void liblte_rrc_consume_noncrit_extension(bool ext, const char *func_name, uint8
       elem_flags = elem_flags >> 1;
     }
     if (func_name) {
-      printf("\nWarning: Detected an extension in RRC function: %s\n\n", func_name);
+      liblte_rrc_log_print("Detected an extension in RRC function: %s\n", func_name);
     }
   }
 }
@@ -125,7 +156,7 @@ void liblte_rrc_consume_noncrit_extension(bool ext, const char *func_name, uint8
 void liblte_rrc_warning_not_handled(bool opt, const char *func_name) 
 {
   if (opt) {
-    printf("\nWarning: Detected an unhandled feature in RRC function: %s\n\n", func_name?func_name:"Unknown");
+    liblte_rrc_log_print("Unhandled feature in RRC function: %s\n\n", func_name?func_name:"Unknown");
   }
 }
 

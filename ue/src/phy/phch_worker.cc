@@ -618,7 +618,7 @@ void phch_worker::set_uci_periodic_cqi()
   int cqi_fixed     = phy->args->cqi_fixed;
   int cqi_max       = phy->args->cqi_max;
   
-  if ((period_cqi.configured || rar_cqi_request) && rnti_is_set) {
+  if (period_cqi.configured && rnti_is_set) {
     if (srslte_cqi_send(period_cqi.pmi_idx, (tti+4)%10240)) {
       srslte_cqi_value_t cqi_report;
       if (period_cqi.format_is_subband) {

@@ -43,6 +43,20 @@ rrc::rrc()
   ,drb_up(false)
 {}
 
+static void liblte_rrc_handler(void *ctx, char *str) {
+  rrc *r = (rrc*) ctx; 
+  r->liblte_rrc_log(str);
+}
+
+void rrc::liblte_rrc_log(char* str)
+{
+  if (rrc_log) {
+    rrc_log->warning("[ASN]: %s\n", str);
+  } else {
+    printf("[ASN]: %s\n", str);
+  }
+}
+
 void rrc::init(phy_interface_rrc     *phy_,
                mac_interface_rrc     *mac_,
                rlc_interface_rrc     *rlc_,
@@ -63,6 +77,9 @@ void rrc::init(phy_interface_rrc     *phy_,
   mac_timers = mac_timers_;
 
   transaction_id = 0;
+  
+  // Register logging handler with liblte_rrc
+  liblte_rrc_log_register_handler(this, liblte_rrc_handler);
   
   // Set default values for all layers 
   set_rrc_default();
@@ -1084,6 +1101,20 @@ void rrc::apply_phy_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT
     current_cfg->pdsch_cnfg_ded = LIBLTE_RRC_PDSCH_CONFIG_P_A_DB_0; 
   }
 
+  if (phy_cnfg->cqi_report_cnfg_present) {
+    if (phy_cnfg->cqi_report_cnfg.report_periodic_present) {
+      rrc_log->info("Set cqi-PUCCH-ResourceIndex=%d, cqi-pmi-ConfigIndex=%d, cqi-FormatIndicatorPeriodic=%s\n", 
+        current_cfg->cqi_report_cnfg.report_periodic.pucch_resource_idx, 
+        current_cfg->cqi_report_cnfg.report_periodic.pmi_cnfg_idx, 
+        liblte_rrc_cqi_format_indicator_periodic_text[current_cfg->cqi_report_cnfg.report_periodic.format_ind_periodic]); 
+    } 
+    if (phy_cnfg->cqi_report_cnfg.report_mode_aperiodic_present) {
+      rrc_log->info("Set cqi-ReportModeAperiodic=%s\n", 
+                    liblte_rrc_cqi_report_mode_aperiodic_text[current_cfg->cqi_report_cnfg.report_mode_aperiodic]); 
+    } 
+    
+  }
+  
   if (phy_cnfg->sched_request_cnfg_present) {
     rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d\n",
                 current_cfg->sched_request_cnfg.sr_pucch_resource_idx,
