@@ -113,8 +113,7 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
     
-  
-  ul_dl_factor = phy->get_radio()->get_tx_freq()/phy->get_radio()->get_rx_freq();
+  ul_dl_factor = phy->get_radio()->get_rx_freq()/phy->get_radio()->get_tx_freq();
   
   cell_initiated = true; 
   
@@ -744,6 +743,7 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
   // Store metrics
   ul_metrics.mcs   = grant->mcs.idx;
   ul_metrics.power = tx_power;
+  phy->set_ul_metrics(ul_metrics);
 }
 
 void phch_worker::encode_pucch()
@@ -1057,7 +1057,6 @@ void phch_worker::update_measurements()
     dl_metrics.turbo_iters = srslte_pdsch_last_noi(&ue_dl.pdsch);
     phy->set_dl_metrics(dl_metrics);
     
-    phy->set_ul_metrics(ul_metrics);
   }
 }
 

@@ -1157,19 +1157,22 @@ void rrc::apply_mac_config_dedicated(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *mac_cnfg
     {
       if(mac_cnfg->ulsch_cnfg.max_harq_tx_present) {
         default_cfg.ulsch_cnfg.max_harq_tx = mac_cnfg->ulsch_cnfg.max_harq_tx;
+        default_cfg.ulsch_cnfg.max_harq_tx_present = true; 
       }
       if(mac_cnfg->ulsch_cnfg.periodic_bsr_timer_present) {
         default_cfg.ulsch_cnfg.periodic_bsr_timer = mac_cnfg->ulsch_cnfg.periodic_bsr_timer;
+        default_cfg.ulsch_cnfg.periodic_bsr_timer_present = true; 
       }
       default_cfg.ulsch_cnfg.retx_bsr_timer = mac_cnfg->ulsch_cnfg.retx_bsr_timer;
       default_cfg.ulsch_cnfg.tti_bundling   = mac_cnfg->ulsch_cnfg.tti_bundling;
     }
     if(mac_cnfg->drx_cnfg_present) {
       memcpy(&default_cfg.drx_cnfg, &mac_cnfg->drx_cnfg, sizeof(LIBLTE_RRC_DRX_CONFIG_STRUCT));
+      default_cfg.drx_cnfg_present = true; 
     }
-    if(mac_cnfg->phr_cnfg_present)
-    {
+    if(mac_cnfg->phr_cnfg_present) {
       memcpy(&default_cfg.phr_cnfg, &mac_cnfg->phr_cnfg, sizeof(LIBLTE_RRC_PHR_CONFIG_STRUCT)); 
+      default_cfg.phr_cnfg_present = true; 
     }
     default_cfg.time_alignment_timer = mac_cnfg->time_alignment_timer;
   }
@@ -1181,6 +1184,12 @@ void rrc::apply_mac_config_dedicated(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *mac_cnfg
                 liblte_rrc_max_harq_tx_num[default_cfg.ulsch_cnfg.max_harq_tx],
                 liblte_rrc_retransmission_bsr_timer_num[default_cfg.ulsch_cnfg.retx_bsr_timer],
                 liblte_rrc_periodic_bsr_timer_num[default_cfg.ulsch_cnfg.periodic_bsr_timer]);
+  if (default_cfg.phr_cnfg_present) {
+    rrc_log->info("Set MAC PHR config: periodicPHR-Timer=%d, prohibitPHR-Timer=%d, dl-PathlossChange=%d\n",
+      liblte_rrc_periodic_phr_timer_num[default_cfg.phr_cnfg.periodic_phr_timer],
+      liblte_rrc_prohibit_phr_timer_num[default_cfg.phr_cnfg.prohibit_phr_timer],
+      liblte_rrc_dl_pathloss_change_num[default_cfg.phr_cnfg.dl_pathloss_change]);
+  }
 }
 
 void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg) {   
