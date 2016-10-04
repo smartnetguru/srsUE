@@ -113,7 +113,7 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
     
-  ul_dl_factor = phy->get_radio()->get_rx_freq()/phy->get_radio()->get_tx_freq();
+  ul_dl_factor = 1;//phy->get_radio()->get_tx_freq()/phy->get_radio()->get_rx_freq();
   
   cell_initiated = true; 
   
@@ -455,6 +455,9 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
               srslte_pdsch_last_noi(&ue_dl.pdsch),
               timestr);
 
+        //printf("tti=%d, cfo=%f\n", tti, cfo*15000);
+        //srslte_vec_save_file("pdsch", signal_buffer, sizeof(cf_t)*SRSLTE_SF_LEN_PRB(cell.nof_prb));
+        
         // Store metrics
         dl_metrics.mcs    = grant->mcs.idx;
         
@@ -556,7 +559,7 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
   }
   
   /* Limit UL modulation if not supported by the UE or disabled by higher layers */
-  if (!phy->args->attach_enable_64qam && !phy->config->enable_64qam) {
+  if (!phy->config->enable_64qam) {
     if (grant->phy_grant.ul.mcs.mod == SRSLTE_MOD_64QAM) {
       grant->phy_grant.ul.mcs.mod = SRSLTE_MOD_16QAM;
       grant->phy_grant.ul.Qm      = 4;
@@ -707,7 +710,7 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
   if (srslte_ue_ul_cfg_grant(&ue_ul, grant, (tti+4)%10240, rv, current_tx_nb)) {
     Error("Configuring UL grant\n");
   }
-    
+  
   if (srslte_ue_ul_pusch_encode_rnti_softbuffer(&ue_ul, 
                                                 payload, uci_data, 
                                                 softbuffer,
@@ -733,12 +736,14 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
   snprintf(timestr, 64, ", total_time=%4d us", (int) logtime_start[0].tv_usec);
 #endif
 
-  Info("PUSCH: tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s%s\n", 
+  Info("PUSCH: tti_tx=%d, n_prb=%d, rb_start=%d, tbs=%d, mod=%d, mcs=%d, rv_idx=%d, ack=%s, cfo=%.1f Hz%s\n", 
          (tti+4)%10240,
          grant->L_prb, grant->n_prb[0], 
          grant->mcs.tbs/8, grant->mcs.mod, grant->mcs.idx, rv,
          uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",
-         timestr);
+         cfo*15000, timestr);
+  
+  //srslte_vec_save_file("pusch_tx", signal_buffer, sizeof(cf_t)*SRSLTE_SF_LEN_PRB(cell.nof_prb));
 
   // Store metrics
   ul_metrics.mcs   = grant->mcs.idx;
@@ -779,10 +784,10 @@ void phch_worker::encode_pucch()
   float tx_power = srslte_ue_ul_pucch_power(&ue_ul, phy->pathloss, ue_ul.last_pucch_format, uci_data.uci_cqi_len, uci_data.uci_ack_len);
   float gain = set_power(tx_power);  
   
-  Info("PUCCH: power=%.2f dBm, tti_tx=%d, n_cce=%3d, ack=%s, sr=%s, shortened=%s%s\n", 
+  Info("PUCCH: power=%.2f dBm, tti_tx=%d, n_cce=%3d, ack=%s, sr=%s, cfo=%.1f KHz%s\n", 
          tx_power, (tti+4)%10240, 
          last_dl_pdcch_ncce, uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",uci_data.scheduling_request?"yes":"no", 
-         ue_ul.pucch.shortened?"yes":"no", timestr);        
+         cfo*15000, timestr);        
   }   
   
   if (uci_data.scheduling_request) {
