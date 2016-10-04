@@ -275,7 +275,7 @@ void nas::parse_attach_accept(uint32_t lcid, byte_buffer_t *pdu)
     }
     else
     {
-      nas_log->error("Not handling IPV6 or IPV4V6");
+      nas_log->error("Not handling IPV6 or IPV4V6\n");
       pool->deallocate(pdu);
       return;
     }
