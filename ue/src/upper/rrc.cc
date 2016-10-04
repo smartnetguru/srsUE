@@ -650,7 +650,7 @@ void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
   info->ue_capability_rat[0].rat_type = LIBLTE_RRC_RAT_TYPE_EUTRA;
 
   LIBLTE_RRC_UE_EUTRA_CAPABILITY_STRUCT *cap = &info->ue_capability_rat[0].eutra_capability;
-  cap->access_stratum_release = LIBLTE_RRC_ACCESS_STRATUM_RELEASE_REL9;
+  cap->access_stratum_release = LIBLTE_RRC_ACCESS_STRATUM_RELEASE_REL8;
   cap->ue_category = SRSUE_UE_CATEGORY;
 
   cap->pdcp_params.max_rohc_ctxts_present = false;
