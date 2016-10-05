@@ -4011,7 +4011,7 @@ LIBLTE_ERROR_ENUM liblte_mme_unpack_eps_quality_of_service_ie(uint8             
         {
             qos->br_present     = false;
             qos->br_ext_present = false;
-        }else if((*ie_ptr)[1] == 5){
+        }else if((*ie_ptr)[0] == 5){
             qos->br_present     = true;
             qos->br_ext_present = false;
         }else{
