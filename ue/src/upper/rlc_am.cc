@@ -220,7 +220,7 @@ int rlc_am::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   boost::lock_guard<boost::mutex> lock(mutex);
 
-  log->info("MAC opportunity - %d bytes\n", nof_bytes);
+  log->debug("MAC opportunity - %d bytes\n", nof_bytes);
 
   // Tx STATUS if requested
   if(do_status && !status_prohibited())
@@ -499,6 +499,10 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   }
 
   byte_buffer_t *pdu = pool->allocate();
+  if (!pdu) {
+    log->console("Fatal Error: Could not allocate PDU in build_data_pdu()\n");
+    exit(-1);
+  }
   rlc_amd_pdu_header_t header;
   header.dc   = RLC_DC_FIELD_DATA_PDU;
   header.rf   = 0;
@@ -641,6 +645,11 @@ void rlc_am::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes, rlc_amd_pdu_h
   // Write to rx window
   rlc_amd_rx_pdu_t pdu;
   pdu.buf = pool->allocate();
+  if (!pdu.buf) {
+    log->console("Fatal Error: Could not allocate PDU in handle_data_pdu()\n");
+    exit(-1);
+  }
+
   memcpy(pdu.buf->msg, payload, nof_bytes);
   pdu.buf->N_bytes  = nof_bytes;
   pdu.header        = header;
@@ -843,9 +852,13 @@ void rlc_am::handle_control_pdu(uint8_t *payload, uint32_t nof_bytes)
 
 void rlc_am::reassemble_rx_sdus()
 {
-  if(!rx_sdu)
+  if(!rx_sdu) {
     rx_sdu = pool->allocate();
-
+    if (!rx_sdu) {
+      log->console("Fatal Error: Could not allocate PDU in reassemble_rx_sdus() (1)\n");
+      exit(-1);
+    }
+  }
   // Iterate through rx_window, assembling and delivering SDUs
   while(rx_window.end() != rx_window.find(vr_r))
   {
@@ -861,6 +874,11 @@ void rlc_am::reassemble_rx_sdus()
       rx_sdu->timestamp = bpt::microsec_clock::local_time();
       pdcp->write_pdu(lcid, rx_sdu);
       rx_sdu = pool->allocate();
+      if (!rx_sdu) {
+        log->console("Fatal Error: Could not allocate PDU in reassemble_rx_sdus() (2)\n");
+      exit(-1);
+      }
+
     }
 
     // Handle last segment
