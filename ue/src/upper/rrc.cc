@@ -349,7 +349,8 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 void rrc::max_retx_attempted()
 {
   //TODO: Handle the radio link failure
-  radio_link_failure();
+  rrc_log->warning("Max RLC reTx attempted\n");
+  //radio_link_failure();
 }
 
 /*******************************************************************************
@@ -869,9 +870,11 @@ void rrc::test_con_restablishment()
 void rrc::radio_link_failure() {
   // TODO: Generate and store failure report 
   
+  rrc_log->warning("Detected Radio-Link Failure\n");
+  rrc_log->console("Warning: Detected Radio-Link Failure\n");
   if (state != RRC_STATE_RRC_CONNECTED) {
     rrc_connection_release();
-  } else {
+  } else {    
     send_con_restablish_request();
   }
 }
