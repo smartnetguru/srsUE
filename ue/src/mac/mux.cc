@@ -250,22 +250,24 @@ bool mux::allocate_sdu(uint32_t lcid, srslte::sch_pdu* pdu_msg, int max_sdu_sz, 
     if (sdu_len > sdu_space) {
       sdu_len = sdu_space;
     }        
-    if (pdu_msg->new_subh()) { // there is space for a new subheader
-      int sdu_len2 = sdu_len; 
-      sdu_len = pdu_msg->get()->set_sdu(lcid, sdu_len, rlc);
-      if (sdu_len > 0) { // new SDU could be added
-        if (sdu_sz) {
-          *sdu_sz = sdu_len; 
+    if (sdu_len > MIN_RLC_SDU_LEN) {
+      if (pdu_msg->new_subh()) { // there is space for a new subheader
+        int sdu_len2 = sdu_len; 
+        sdu_len = pdu_msg->get()->set_sdu(lcid, sdu_len, rlc);
+        if (sdu_len > 0) { // new SDU could be added
+          if (sdu_sz) {
+            *sdu_sz = sdu_len; 
+          }
+          
+          Info("SDU:    rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
+                 buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
+          return true;               
+        } else {
+          Warning("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
+               buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
+          pdu_msg->del_subh();
         }
-        
-        Info("SDU:    rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
-                buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
-        return true;               
-      } else {
-        Warning("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
-              buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
-        pdu_msg->del_subh();
-      }
+      } 
     }
   }
   return false; 
