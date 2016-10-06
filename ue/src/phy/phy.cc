@@ -57,24 +57,24 @@ phy::phy() : workers_pool(MAX_WORKERS),
 {
 }
 
-void phy::set_default_args()
+void phy::set_default_args(phy_args_t *args)
 {
-  args.ul_pwr_ctrl_en      = false; 
-  args.prach_gain          = -1;
-  args.cqi_max             = -1; 
-  args.cqi_fixed           = -1; 
-  args.snr_ema_coeff       = 0.1; 
-  args.snr_estim_alg       = "refs";
-  args.pdsch_max_its       = 4; 
-  args.attach_enable_64qam = false; 
-  args.nof_phy_threads     = DEFAULT_WORKERS;
-  args.equalizer_mode      = "mmse"; 
-  args.cfo_integer_enabled = false; 
-  args.cfo_correct_tol_hz  = 50; 
-  args.time_correct_period = 5; 
-  args.sfo_correct_disable = false; 
-  args.sss_algorithm       = "full"; 
-  args.estimator_fil_w     = 0.1; 
+  args->ul_pwr_ctrl_en      = false; 
+  args->prach_gain          = -1;
+  args->cqi_max             = -1; 
+  args->cqi_fixed           = -1; 
+  args->snr_ema_coeff       = 0.1; 
+  args->snr_estim_alg       = "refs";
+  args->pdsch_max_its       = 4; 
+  args->attach_enable_64qam = false; 
+  args->nof_phy_threads     = DEFAULT_WORKERS;
+  args->equalizer_mode      = "mmse"; 
+  args->cfo_integer_enabled = false; 
+  args->cfo_correct_tol_hz  = 50; 
+  args->time_correct_period = 5; 
+  args->sfo_correct_disable = false; 
+  args->sss_algorithm       = "full"; 
+  args->estimator_fil_w     = 0.1; 
 }
 
 bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phy *rrc, 
@@ -88,20 +88,21 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
   radio_handler = radio_handler_;
   
   if (!phy_args) {
-    set_default_args();
+    args = new phy_args_t; 
+    set_default_args(args);
   } else {
-    memcpy(&args, phy_args, sizeof(phy_args_t));
+    args = phy_args;
   }
   
-  nof_workers = args.nof_phy_threads; 
+  nof_workers = args->nof_phy_threads; 
   
   // Add workers to workers pool and start threads
   for (int i=0;i<nof_workers;i++) {
     workers[i].set_common(&workers_common);
     workers_pool.init_worker(i, &workers[i], WORKERS_THREAD_PRIO);    
   }
-  prach_buffer.init(&config.common.prach_cnfg, &args, log_h);
-  workers_common.init(&config, &args, log_h, radio_handler, mac);
+  prach_buffer.init(&config.common.prach_cnfg, args, log_h);
+  workers_common.init(&config, args, log_h, radio_handler, mac);
   
   // Warning this must be initialized after all workers have been added to the pool
   sf_recv.init(radio_handler, mac, rrc, &prach_buffer, &workers_pool, &workers_common, log_h, SF_RECV_THREAD_PRIO);
