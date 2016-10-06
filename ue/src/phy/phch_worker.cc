@@ -63,8 +63,6 @@ phch_worker::phch_worker() : tr_exec(10240)
   pregen_enabled  = false; 
   trace_enabled   = false; 
   
-  ul_dl_factor = 1; 
-  
   reset();  
 }
 
@@ -113,8 +111,6 @@ bool phch_worker::init_cell(srslte_cell_t cell_)
   srslte_ue_ul_set_normalization(&ue_ul, true);
   srslte_ue_ul_set_cfo_enable(&ue_ul, true);
     
-  ul_dl_factor = 1;//phy->get_radio()->get_tx_freq()/phy->get_radio()->get_rx_freq();
-  
   cell_initiated = true; 
   
   return true; 
@@ -144,7 +140,7 @@ void phch_worker::set_tti(uint32_t tti_, uint32_t tx_tti_)
 
 void phch_worker::set_cfo(float cfo_)
 {
-  cfo = cfo_*ul_dl_factor;
+  cfo = cfo_;
 }
 
 void phch_worker::set_sample_offset(float sample_offset)
