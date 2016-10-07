@@ -259,14 +259,12 @@ bool mux::allocate_sdu(uint32_t lcid, srslte::sch_pdu* pdu_msg, int max_sdu_sz, 
             *sdu_sz = sdu_len; 
           }
           
-          Debug("Allocated SDU lcid=%d nbytes=%d, buffer_state=%d, grant_size=%d, remaining_size=%d\n", 
-                 lcid, sdu_len, buffer_state, pdu_msg->get_pdu_len(), pdu_msg->rem_size());
+          Info("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
+                 buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
           return true;               
         } else {
-          Debug("Could not add SDU rem_size=%d, sdu_len_available=%d, sdu_len_read=%d\n",
-               pdu_msg->rem_size(),
-               sdu_len2,
-               sdu_len);
+          Warning("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
+               buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
           pdu_msg->del_subh();
         }
       } 

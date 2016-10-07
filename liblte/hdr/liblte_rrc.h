@@ -71,6 +71,10 @@
 
 static const uint8 liblte_rrc_test_fill[8] = {1,0,1,0,0,1,0,1};
 
+typedef void (*log_handler_t)(void *ctx, char *str);
+
+void liblte_rrc_log_register_handler(void *ctx, log_handler_t handler); 
+
 /*******************************************************************************
                               INFORMATION ELEMENT DECLARATIONS
 *******************************************************************************/

@@ -61,6 +61,9 @@
 
 #include "liblte_rrc.h"
 
+#include <stdlib.h>
+#include <stdarg.h>
+
 /*******************************************************************************
                               DEFINES
 *******************************************************************************/
@@ -76,6 +79,86 @@
 *******************************************************************************/
 
 LIBLTE_BIT_MSG_STRUCT global_msg;
+
+/*******************************************************************************
+                              HELPERS
+*******************************************************************************/
+
+/*********************************************************************
+    Functions for external logging 
+*********************************************************************/
+static log_handler_t log_handler; 
+static void *callback_ctx = NULL; 
+
+void liblte_rrc_log_register_handler(void *ctx, log_handler_t handler) {
+  log_handler  = handler; 
+  callback_ctx = ctx; 
+}
+
+static void liblte_rrc_log_print(const char *format, ...) {
+  va_list   args;
+  va_start(args, format);
+  if (log_handler) {
+    char *args_msg = NULL;
+    if(vasprintf(&args_msg, format, args) > 0) {
+      log_handler(callback_ctx, args_msg);
+    }
+    if (args_msg) {
+      free(args_msg); 
+    }
+  } else {
+    vprintf(format, args);
+  }
+  va_end(args);
+}
+
+/*********************************************************************
+    Description: Simply consume non-critical extensions for rel > r8
+*********************************************************************/
+void liblte_rrc_consume_noncrit_extension(bool ext, const char *func_name, uint8 **ie_ptr)
+{
+  uint32 i=0;
+  uint32 elem_flags=0;
+  uint32 elem_len=0;
+
+  if (ext) {
+    uint8 n_elems = liblte_bits_2_value(ie_ptr, 7) + 1;
+    for(i=0; i<n_elems; i++)
+    {
+      elem_flags |= (liblte_bits_2_value(ie_ptr, 1) << i);
+    }
+    for(i=0; i<n_elems; i++)
+    {
+      if(elem_flags & 0x1)
+      {
+        if(0 == liblte_bits_2_value(ie_ptr, 1))
+        {
+            elem_len = liblte_bits_2_value(ie_ptr, 7);
+        }else{
+            if(0 == liblte_bits_2_value(ie_ptr, 1))
+            {
+                elem_len = liblte_bits_2_value(ie_ptr, 14);
+            }else{
+                // FIXME: Unlikely to have more than 16K of octets
+                elem_len = 0;
+            }
+        }
+        liblte_bits_2_value(ie_ptr, 8*elem_len);
+      }
+      elem_flags = elem_flags >> 1;
+    }
+    if (func_name) {
+      liblte_rrc_log_print("Detected an extension in RRC function: %s\n", func_name);
+    }
+  }
+}
+
+void liblte_rrc_warning_not_handled(bool opt, const char *func_name) 
+{
+  if (opt) {
+    liblte_rrc_log_print("Unhandled feature in RRC function: %s\n\n", func_name?func_name:"Unknown");
+  }
+}
 
 /*******************************************************************************
                               INFORMATION ELEMENT FUNCTIONS
@@ -162,13 +245,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_mbsfn_area_info_ie(uint8                    
                                                        LIBLTE_RRC_MBSFN_AREA_INFO_STRUCT  *mbsfn_area_info)
 {
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
-    bool              ext_ind;
+    bool              ext;
 
     if(ie_ptr          != NULL &&
        mbsfn_area_info != NULL)
     {
         // Extension indicator
-        ext_ind = liblte_bits_2_value(ie_ptr, 1);
+        ext = liblte_bits_2_value(ie_ptr, 1);
 
         mbsfn_area_info->mbsfn_area_id_r9            = liblte_bits_2_value(ie_ptr, 8);
         mbsfn_area_info->non_mbsfn_region_length     = (LIBLTE_RRC_NON_MBSFN_REGION_LENGTH_ENUM)liblte_bits_2_value(ie_ptr, 1);
@@ -179,6 +262,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_mbsfn_area_info_ie(uint8                    
         mbsfn_area_info->sf_alloc_info_r9            = liblte_bits_2_value(ie_ptr, 6);
         mbsfn_area_info->signalling_mcs_r9           = (LIBLTE_RRC_MCCH_SIGNALLING_MCS_ENUM)liblte_bits_2_value(ie_ptr, 2);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -463,10 +548,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_filter_coefficient_ie(uint8                 
        filter_coeff != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         *filter_coeff = (LIBLTE_RRC_FILTER_COEFFICIENT_ENUM)liblte_bits_2_value(ie_ptr, 4);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -601,7 +688,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_other_config_ie(uint8                       
        other_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Optional indicator
         other_cnfg->report_proximity_cnfg_present = liblte_bits_2_value(ie_ptr, 1);
@@ -622,6 +709,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_other_config_ie(uint8                       
                 other_cnfg->report_proximity_cnfg.report_proximity_ind_utra = (LIBLTE_RRC_REPORT_PROXIMITY_INDICATION_UTRA_R9_ENUM)liblte_bits_2_value(ie_ptr, 1);
             }
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -702,10 +791,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rat_type_ie(uint8                    **ie_pt
        rat_type != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         *rat_type = (LIBLTE_RRC_RAT_TYPE_ENUM)liblte_bits_2_value(ie_ptr, 3);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -835,6 +926,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_pdcp_params_ie(LIBLTE_RRC_PDCP_PARAMS_STRUCT  
         {
             liblte_value_2_bits(pdcp_params->max_rohc_ctxts, ie_ptr, 4);
         }
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -851,7 +943,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pdcp_params_ie(uint8                        
        pdcp_params != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Max ROHC CTXTS default?
         pdcp_params->max_rohc_ctxts_present = liblte_bits_2_value(ie_ptr, 1);
@@ -866,6 +958,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pdcp_params_ie(uint8                        
         {
             pdcp_params->max_rohc_ctxts = (LIBLTE_RRC_MAX_ROHC_CTXTS_ENUM)liblte_bits_2_value(ie_ptr, 4);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -1128,7 +1222,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_eutra_capability_ie(uint8                
         ue_eutra_capability->feature_group_indicator_present = liblte_bits_2_value(ie_ptr, 1);
 
         // Option indicator - nonCriticalExtension
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Option indicator - access stratum release enum
         liblte_bits_2_value(ie_ptr, 1);
@@ -1143,6 +1237,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_eutra_capability_ie(uint8                
           ue_eutra_capability->feature_group_indicator = liblte_bits_2_value(ie_ptr, 32);
         liblte_rrc_unpack_inter_rat_params_ie(ie_ptr, &ue_eutra_capability->inter_rat_params);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -1191,7 +1287,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_timers_and_constants_ie(uint8            
        ue_timers_and_constants != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         ue_timers_and_constants->t300 = (LIBLTE_RRC_T300_ENUM)liblte_bits_2_value(ie_ptr, 3);
         ue_timers_and_constants->t301 = (LIBLTE_RRC_T301_ENUM)liblte_bits_2_value(ie_ptr, 3);
@@ -1200,6 +1296,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_timers_and_constants_ie(uint8            
         ue_timers_and_constants->t311 = (LIBLTE_RRC_T311_ENUM)liblte_bits_2_value(ie_ptr, 3);
         ue_timers_and_constants->n311 = (LIBLTE_RRC_N311_ENUM)liblte_bits_2_value(ie_ptr, 3);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -1429,7 +1527,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_meas_config_ie(LIBLTE_RRC_MEAS_CONFIG_STRUCT  
             // Time To Trigger SF
             liblte_rrc_pack_speed_state_scale_factors_ie(&meas_cnfg->speed_state_params.time_to_trig_sf, ie_ptr);
         }
-
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -1448,7 +1546,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_meas_config_ie(uint8                        
        meas_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Optional indicators
         meas_obj_to_remove_present                  = liblte_bits_2_value(ie_ptr, 1);
@@ -5800,12 +5898,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_logical_channel_config_ie(uint8             
                                                               LIBLTE_RRC_LOGICAL_CHANNEL_CONFIG_STRUCT  *log_chan_cnfg)
 {
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
+    bool              ext;
 
     if(ie_ptr        != NULL &&
        log_chan_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1); // FIXME: Handle extension
+        ext = liblte_bits_2_value(ie_ptr, 1); // FIXME: Handle extension
 
         // Optional indicator
         log_chan_cnfg->ul_specific_params_present = liblte_bits_2_value(ie_ptr, 1);
@@ -5824,6 +5923,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_logical_channel_config_ie(uint8             
                 log_chan_cnfg->ul_specific_params.log_chan_group = liblte_bits_2_value(ie_ptr, 2);
             }
         }
+
+        // Consume non-critical extensions
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -6110,6 +6212,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_mac_main_config_ie(uint8                    
             }
         }
 
+        // Consume non-critical extensions
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+
         err = LIBLTE_SUCCESS;
     }
 
@@ -6194,7 +6299,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pdcp_config_ie(uint8                        
        pdcp_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Optional indicators
         pdcp_cnfg->discard_timer_present                 = liblte_bits_2_value(ie_ptr, 1);
@@ -6224,7 +6329,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pdcp_config_ie(uint8                        
         if(pdcp_cnfg->hdr_compression_rohc)
         {
             // Extension indicator
-            liblte_bits_2_value(ie_ptr, 1);
+            bool ext2 = liblte_bits_2_value(ie_ptr, 1);
 
             // Max CID
             pdcp_cnfg->hdr_compression_max_cid = liblte_bits_2_value(ie_ptr, 14) + 1;
@@ -6239,7 +6344,11 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pdcp_config_ie(uint8                        
             pdcp_cnfg->hdr_compression_profile_0102 = liblte_bits_2_value(ie_ptr, 1);
             pdcp_cnfg->hdr_compression_profile_0103 = liblte_bits_2_value(ie_ptr, 1);
             pdcp_cnfg->hdr_compression_profile_0104 = liblte_bits_2_value(ie_ptr, 1);
+            
+            liblte_rrc_consume_noncrit_extension(ext2, __func__, ie_ptr);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -6545,6 +6654,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_physical_config_dedicated_ie(uint8          
         {
             liblte_rrc_unpack_scheduling_request_config_ie(ie_ptr, &phy_cnfg_ded->sched_request_cnfg);
         }
+
+        // Consume non-critical extensions
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -7028,7 +7140,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rach_config_common_ie(uint8                 
        rach_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Preamble Info
         rach_cnfg->preambles_group_a_cnfg.present = liblte_bits_2_value(ie_ptr, 1);
@@ -7036,11 +7148,14 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rach_config_common_ie(uint8                 
         if(true == rach_cnfg->preambles_group_a_cnfg.present)
         {
             // Extension indicator
-            liblte_bits_2_value(ie_ptr, 1);
+            bool ext2 = liblte_bits_2_value(ie_ptr, 1);
 
             rach_cnfg->preambles_group_a_cnfg.size_of_ra             = (LIBLTE_RRC_SIZE_OF_RA_PREAMBLES_GROUP_A_ENUM)liblte_bits_2_value(ie_ptr, 4);
             rach_cnfg->preambles_group_a_cnfg.msg_size               = (LIBLTE_RRC_MESSAGE_SIZE_GROUP_A_ENUM)liblte_bits_2_value(ie_ptr, 2);
             rach_cnfg->preambles_group_a_cnfg.msg_pwr_offset_group_b = (LIBLTE_RRC_MESSAGE_POWER_OFFSET_GROUP_B_ENUM)liblte_bits_2_value(ie_ptr, 3);
+            
+            liblte_rrc_consume_noncrit_extension(ext2, __func__, ie_ptr);
+            
         }else{
             rach_cnfg->preambles_group_a_cnfg.size_of_ra = (LIBLTE_RRC_SIZE_OF_RA_PREAMBLES_GROUP_A_ENUM)rach_cnfg->num_ra_preambles;
         }
@@ -7056,6 +7171,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rach_config_common_ie(uint8                 
 
         rach_cnfg->max_harq_msg3_tx = liblte_bits_2_value(ie_ptr, 3) + 1;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -7156,7 +7273,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_common_sib_ie(uint8               
        rr_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         liblte_rrc_unpack_rach_config_common_ie(ie_ptr, &rr_cnfg->rach_cnfg);
 
@@ -7177,6 +7294,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_common_sib_ie(uint8               
         // UL CP Length
         rr_cnfg->ul_cp_length = (LIBLTE_RRC_UL_CP_LENGTH_ENUM)liblte_bits_2_value(ie_ptr, 1);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -7275,7 +7394,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_common_ie(uint8                   
        rr_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Optional indicators
         rr_cnfg->rach_cnfg_present   = liblte_bits_2_value(ie_ptr, 1);
@@ -7345,6 +7464,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_common_ie(uint8                   
         // UL CP Length
         rr_cnfg->ul_cp_length = (LIBLTE_RRC_UL_CP_LENGTH_ENUM)liblte_bits_2_value(ie_ptr, 1);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -7543,6 +7664,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
     LIBLTE_ERROR_ENUM err = LIBLTE_ERROR_INVALID_INPUTS;
     uint32            i;
     bool              ext;
+    bool              srb_ext;
+    bool              drb_ext;
     bool              srb_to_add_mod_list_present;
     bool              drb_to_add_mod_list_present;
     bool              drb_to_release_list_present;
@@ -7568,7 +7691,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             for(i=0; i<rr_cnfg->srb_to_add_mod_list_size; i++)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                srb_ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // Optional indicators
                 rr_cnfg->srb_to_add_mod_list[i].rlc_cnfg_present = liblte_bits_2_value(ie_ptr, 1);
@@ -7602,6 +7725,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
                         liblte_rrc_unpack_logical_channel_config_ie(ie_ptr, &rr_cnfg->srb_to_add_mod_list[i].lc_explicit_cnfg);
                     }
                 }
+
+                // Consume non-critical extensions
+                liblte_rrc_consume_noncrit_extension(srb_ext, __func__, ie_ptr);
             }
         }
 
@@ -7612,7 +7738,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             for(i=0; i<rr_cnfg->drb_to_add_mod_list_size; i++)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                drb_ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // Optional indicators
                 rr_cnfg->drb_to_add_mod_list[i].eps_bearer_id_present = liblte_bits_2_value(ie_ptr, 1);
@@ -7653,6 +7779,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
                 {
                     liblte_rrc_unpack_logical_channel_config_ie(ie_ptr, &rr_cnfg->drb_to_add_mod_list[i].lc_cnfg);
                 }
+
+                // Consume non-critical extensions
+                liblte_rrc_consume_noncrit_extension(drb_ext, __func__, ie_ptr);
             }
         }
 
@@ -7688,7 +7817,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
             liblte_rrc_unpack_physical_config_dedicated_ie(ie_ptr, &rr_cnfg->phy_cnfg_ded);
         }
 
-        // Extension
+        // Extension (FIXME: only handling r9 extensions)
+#if 0
         if(ext)
         {
             // Optional indicators
@@ -7700,6 +7830,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rr_config_dedicated_ie(uint8                
                 liblte_rrc_unpack_rlf_timers_and_constants_ie(ie_ptr, &rr_cnfg->rlf_timers_and_constants);
             }
         }
+#endif 
+        // Modified by ismael, just skip extensions 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -7793,7 +7926,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rlc_config_ie(uint8                        *
        rlc_cnfg != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         // Mode Choice
         rlc_cnfg->rlc_mode = (LIBLTE_RRC_RLC_MODE_ENUM)liblte_bits_2_value(ie_ptr, 2);
@@ -7849,6 +7982,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rlc_config_ie(uint8                        *
             rlc_cnfg->dl_um_uni_rlc.t_reordering = (LIBLTE_RRC_T_REORDERING_ENUM)liblte_bits_2_value(ie_ptr, 5);
         }
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -8251,7 +8386,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sps_config_ie(uint8                        *
             if(sps_cnfg->sps_cnfg_dl.setup_present)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                bool ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // SPS Interval DL
                 sps_cnfg->sps_cnfg_dl.sps_interval_dl = (LIBLTE_RRC_SPS_INTERVAL_DL_ENUM)liblte_bits_2_value(ie_ptr, 4);
@@ -8265,6 +8400,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sps_config_ie(uint8                        *
                 {
                     sps_cnfg->sps_cnfg_dl.n1_pucch_an_persistent_list[i] = liblte_bits_2_value(ie_ptr, 11);
                 }
+                
+                liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
             }
         }
 
@@ -8275,7 +8412,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sps_config_ie(uint8                        *
             if(sps_cnfg->sps_cnfg_ul.setup_present)
             {
                 // Extension indicator
-                liblte_bits_2_value(ie_ptr, 1);
+                bool ext = liblte_bits_2_value(ie_ptr, 1);
 
                 // Optional indicators
                 sps_cnfg->sps_cnfg_ul.p0_persistent_present      = liblte_bits_2_value(ie_ptr, 1);
@@ -8302,6 +8439,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sps_config_ie(uint8                        *
                 {
                     sps_cnfg->sps_cnfg_ul.two_intervals_cnfg = (LIBLTE_RRC_TWO_INTERVALS_CONFIG_ENUM)liblte_bits_2_value(ie_ptr, 1);
                 }
+                
+                liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
             }
         }
 
@@ -8494,11 +8633,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ul_antenna_info_ie(uint8                    
        ul_ant_info != NULL)
     {
         // Extension indicator
-        liblte_bits_2_value(ie_ptr, 1);
+        bool ext = liblte_bits_2_value(ie_ptr, 1);
 
         ul_ant_info->ul_tx_mode              = (LIBLTE_RRC_UL_TRANSMISSION_MODE_R10_ENUM)liblte_bits_2_value(ie_ptr, 3);
         ul_ant_info->four_ant_port_activated = liblte_bits_2_value(ie_ptr, 1);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -8842,10 +8983,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_2_ie(uint8              
         liblte_rrc_unpack_time_alignment_timer_ie(ie_ptr, &sib2->time_alignment_timer);
 
         // Extensions
-        if(true == ext_ind)
-        {
-            // FIXME
-        }
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -9031,10 +9169,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_3_ie(uint8              
         }
 
         // Extensions
-        if(true == ext_ind)
-        {
-            // FIXME
-        }
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -9161,10 +9296,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_4_ie(uint8              
         }
 
         // Extension
-        if(true == ext_ind)
-        {
-            // FIXME
-        }
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -9343,6 +9475,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_5_ie(uint8              
                 sib5->inter_freq_carrier_freq_list[i].inter_freq_black_cell_list_size = 0;
             }
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -9519,6 +9653,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_6_ie(uint8              
         {
             liblte_rrc_unpack_speed_state_scale_factors_ie(ie_ptr, &sib6->t_resel_utra_sf);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -9654,6 +9791,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_7_ie(uint8              
         }else{
             sib7->carrier_freqs_info_list_size = 0;
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -9876,7 +10015,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_8_ie(uint8              
                 for(i=0; i<sib8->cell_resel_params_hrpd.band_class_list_size; i++)
                 {
                     // Extension indicator
-                    liblte_bits_2_value(ie_ptr, 1);
+                    bool ext = liblte_bits_2_value(ie_ptr, 1);
 
                     // Optional indicator
                     sib8->cell_resel_params_hrpd.band_class_list[i].cell_resel_prio_present = liblte_bits_2_value(ie_ptr, 1);
@@ -9888,6 +10027,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_8_ie(uint8              
                     }
                     sib8->cell_resel_params_hrpd.band_class_list[i].thresh_x_high = liblte_bits_2_value(ie_ptr, 6);
                     sib8->cell_resel_params_hrpd.band_class_list[i].thresh_x_low  = liblte_bits_2_value(ie_ptr, 6);
+                    
+                    liblte_rrc_consume_noncrit_extension(ext, __func__, ie_ptr);
+                    
                 }
 
                 sib8->cell_resel_params_hrpd.neigh_cell_list_size = liblte_bits_2_value(ie_ptr, 4) + 1;
@@ -9944,7 +10086,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_8_ie(uint8              
                 for(i=0; i<sib8->cell_resel_params_1xrtt.band_class_list_size; i++)
                 {
                     // Extension indicator
-                    liblte_bits_2_value(ie_ptr, 1);
+                    bool ext2 = liblte_bits_2_value(ie_ptr, 1);
 
                     // Optional indicator
                     sib8->cell_resel_params_1xrtt.band_class_list[i].cell_resel_prio_present = liblte_bits_2_value(ie_ptr, 1);
@@ -9956,6 +10098,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_8_ie(uint8              
                     }
                     sib8->cell_resel_params_1xrtt.band_class_list[i].thresh_x_high = liblte_bits_2_value(ie_ptr, 6);
                     sib8->cell_resel_params_1xrtt.band_class_list[i].thresh_x_low  = liblte_bits_2_value(ie_ptr, 6);
+                    
+                    liblte_rrc_consume_noncrit_extension(ext2, __func__, ie_ptr);
                 }
 
                 sib8->cell_resel_params_1xrtt.neigh_cell_list_size = liblte_bits_2_value(ie_ptr, 4) + 1;
@@ -9987,6 +10131,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_8_ie(uint8              
             sib8->cell_resel_params_1xrtt_present = false;
         }
 
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -10089,6 +10235,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_13_ie(uint8             
         }
         liblte_rrc_unpack_mbsfn_notification_config_ie(ie_ptr, &sib13->mbms_notification_config);
 
+        liblte_rrc_consume_noncrit_extension(ext_ind, __func__, ie_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -10155,13 +10303,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ul_information_transfer_msg(LIBLTE_BIT_MSG_S
        ul_info_transfer != NULL)
     {
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Dedicated info type choice
         ul_info_transfer->dedicated_info_type = (LIBLTE_RRC_UL_INFORMATION_TRANSFER_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 2);
@@ -10175,6 +10323,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ul_information_transfer_msg(LIBLTE_BIT_MSG_S
                                                          &ul_info_transfer->dedicated_info);
         }
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -10259,19 +10409,21 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_information_request_msg(LIBLTE_BIT_MSG_ST
                                                         &ue_info_req->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // RACH report required
         ue_info_req->rach_report_req = liblte_bits_2_value(&msg_ptr, 1);
 
         // RLF report required
         ue_info_req->rlf_report_req = liblte_bits_2_value(&msg_ptr, 1);
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -10367,13 +10519,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_capability_information_msg(LIBLTE_BIT_MSG
                                                         &ue_capability_info->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 3);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         ue_capability_info->N_ue_caps = liblte_bits_2_value(&msg_ptr, 4);
         for(i=0; i<ue_capability_info->N_ue_caps; i++)
@@ -10398,6 +10550,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_capability_information_msg(LIBLTE_BIT_MSG
 
             liblte_rrc_unpack_ue_eutra_capability_ie(&msg_ptr, &ue_capability_info->ue_capability_rat[i].eutra_capability);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -10467,19 +10621,21 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ue_capability_enquiry_msg(LIBLTE_BIT_MSG_STR
                                                       &ue_cap_enquiry->rrc_transaction_id);
 
       // Extension choice
-      liblte_bits_2_value(&msg_ptr, 1);
+      bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
       // C1 choice
       liblte_bits_2_value(&msg_ptr, 2);
 
       // Optional indicator
-      liblte_bits_2_value(&msg_ptr, 1);
+      liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
       ue_cap_enquiry->N_ue_cap_reqs = liblte_bits_2_value(&msg_ptr, 3) + 1;
       for(i=0; i<ue_cap_enquiry->N_ue_cap_reqs; i++)
       {
         liblte_rrc_unpack_rat_type_ie(&msg_ptr, &ue_cap_enquiry->ue_capability_request[i]);
       }
+      
+      liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
       err = LIBLTE_SUCCESS;
   }
@@ -10685,10 +10841,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_block_type_1_msg(LIBLTE_BIT_MSG_STR
         sib1->system_info_value_tag = liblte_bits_2_value(&msg_ptr, 5);
 
         // Non Critical Extension
-        if(true == non_crit_ext_opt)
-        {
-            // FIXME
-        }
+        liblte_rrc_consume_noncrit_extension(non_crit_ext_opt, __func__, &msg_ptr);
 
         // N_bits_used
         *N_bits_used = msg_ptr - (msg->msg);
@@ -10927,6 +11080,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_sys_info_msg(LIBLTE_BIT_MSG_STRUCT          
                     break;
                 }
             }
+            
+            liblte_rrc_consume_noncrit_extension(non_crit_ext_opt, __func__, &msg_ptr);
+                    
         }else{
             printf("ERROR: Not handling critical extensions in system information message\n");
         }
@@ -10984,10 +11140,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_security_mode_failure_msg(LIBLTE_BIT_MSG_STR
                                                         &security_mode_failure->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
+
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -11044,11 +11202,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_security_mode_complete_msg(LIBLTE_BIT_MSG_ST
                                                         &security_mode_complete->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11113,21 +11273,25 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_security_mode_command_msg(LIBLTE_BIT_MSG_STR
                                                         &security_mode_cmd->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Extension indicator
-        liblte_bits_2_value(&msg_ptr, 1);
-
+        bool ext2 = liblte_bits_2_value(&msg_ptr, 1);
+       
+        liblte_rrc_consume_noncrit_extension(ext2, __func__, &msg_ptr);
+        
         // Security Algorithms Config
         liblte_rrc_unpack_security_algorithm_config_ie(&msg_ptr,
                                                        &security_mode_cmd->sec_algs);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11213,15 +11377,15 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_setup_complete_msg(LIBLTE_BIT
                                                         &con_setup_complete->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicators
         con_setup_complete->registered_mme_present = liblte_bits_2_value(&msg_ptr, 1);
-        liblte_bits_2_value(&msg_ptr, 1);
-
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
+        
         // Selected PLMN identity
         con_setup_complete->selected_plmn_id = liblte_bits_2_value(&msg_ptr, 3) + 1;
 
@@ -11248,6 +11412,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_setup_complete_msg(LIBLTE_BIT
         liblte_rrc_unpack_dedicated_info_nas_ie(&msg_ptr,
                                                 &con_setup_complete->dedicated_info_nas);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11307,18 +11473,20 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_setup_msg(LIBLTE_BIT_MSG_STRU
         liblte_rrc_unpack_rrc_transaction_identifier_ie(&msg_ptr,
                                                         &con_setup->rrc_transaction_id);
 
-        // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        // Critical extension indicator
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 3);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Radio Resource Config Dedicated
         liblte_rrc_unpack_rr_config_dedicated_ie(&msg_ptr, &con_setup->rr_cnfg);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11346,32 +11514,32 @@ LIBLTE_ERROR_ENUM liblte_rrc_pack_rrc_connection_request_msg(LIBLTE_RRC_CONNECTI
         // Extension choice
         liblte_value_2_bits(ext, &msg_ptr, 1);
 
-        if(!ext)
+        // UE Identity Type
+        liblte_value_2_bits(con_req->ue_id_type, &msg_ptr, 1);
+
+        // UE Identity
+        if(LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI == con_req->ue_id_type)
         {
-            // UE Identity Type
-            liblte_value_2_bits(con_req->ue_id_type, &msg_ptr, 1);
-
-            // UE Identity
-            if(LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI == con_req->ue_id_type)
-            {
-                liblte_rrc_pack_s_tmsi_ie((LIBLTE_RRC_S_TMSI_STRUCT *)&con_req->ue_id,
-                                          &msg_ptr);
-            }else{ // LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE == con_req->ue_id_type
-                liblte_value_2_bits((uint32)(con_req->ue_id.random >> 32), &msg_ptr, 8);
-                liblte_value_2_bits((uint32)(con_req->ue_id.random), &msg_ptr, 32);
-            }
-
-            // Establishment Cause
-            liblte_value_2_bits(con_req->cause, &msg_ptr, 3);
-
-            // Spare
-            liblte_value_2_bits(0, &msg_ptr, 1);
-
-            // Fill in the number of bits used
-            msg->N_bits = msg_ptr - msg->msg;
-
-            err = LIBLTE_SUCCESS;
+            liblte_rrc_pack_s_tmsi_ie((LIBLTE_RRC_S_TMSI_STRUCT *)&con_req->ue_id,
+                                      &msg_ptr);
+        }else{ // LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE == con_req->ue_id_type
+            liblte_value_2_bits((uint32)(con_req->ue_id.random >> 32), &msg_ptr, 8);
+            liblte_value_2_bits((uint32)(con_req->ue_id.random), &msg_ptr, 32);
         }
+
+        // Establishment Cause
+        liblte_value_2_bits(con_req->cause, &msg_ptr, 3);
+
+        // Spare
+        liblte_value_2_bits(0, &msg_ptr, 1);
+
+        // Fill in the number of bits used
+        msg->N_bits = msg_ptr - msg->msg;
+
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
+        err = LIBLTE_SUCCESS;
+      
     }
 
     return(err);
@@ -11386,26 +11554,27 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_request_msg(LIBLTE_BIT_MSG_ST
        con_req != NULL)
     {
         // Extension Choice
-        if(!liblte_bits_2_value(&msg_ptr, 1))
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
+        
+        // UE Identity Type
+        con_req->ue_id_type = (LIBLTE_RRC_CON_REQ_UE_ID_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
+
+        // UE Identity
+        if(LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI == con_req->ue_id_type)
         {
-            // UE Identity Type
-            con_req->ue_id_type = (LIBLTE_RRC_CON_REQ_UE_ID_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
-
-            // UE Identity
-            if(LIBLTE_RRC_CON_REQ_UE_ID_TYPE_S_TMSI == con_req->ue_id_type)
-            {
-                liblte_rrc_unpack_s_tmsi_ie(&msg_ptr,
-                                            (LIBLTE_RRC_S_TMSI_STRUCT *)&con_req->ue_id);
-            }else{ // LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE == con_req->ue_id_type
-                con_req->ue_id.random  = (uint64)liblte_bits_2_value(&msg_ptr, 8) << 32;
-                con_req->ue_id.random |= liblte_bits_2_value(&msg_ptr, 32);
-            }
-
-            // Establishment Cause
-            con_req->cause = (LIBLTE_RRC_CON_REQ_EST_CAUSE_ENUM)liblte_bits_2_value(&msg_ptr, 3);
-
-            err = LIBLTE_SUCCESS;
+            liblte_rrc_unpack_s_tmsi_ie(&msg_ptr,
+                                        (LIBLTE_RRC_S_TMSI_STRUCT *)&con_req->ue_id);
+        }else{ // LIBLTE_RRC_CON_REQ_UE_ID_TYPE_RANDOM_VALUE == con_req->ue_id_type
+            con_req->ue_id.random  = (uint64)liblte_bits_2_value(&msg_ptr, 8) << 32;
+            con_req->ue_id.random |= liblte_bits_2_value(&msg_ptr, 32);
         }
+
+        // Establishment Cause
+        con_req->cause = (LIBLTE_RRC_CON_REQ_EST_CAUSE_ENUM)liblte_bits_2_value(&msg_ptr, 3);
+
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
+        err = LIBLTE_SUCCESS;
     }
 
     return(err);
@@ -11467,19 +11636,21 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_release_msg(LIBLTE_BIT_MSG_ST
                                                         &con_release->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicators
-        liblte_bits_2_value(&msg_ptr, 1);
-        liblte_bits_2_value(&msg_ptr, 1);
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Release cause
         con_release->release_cause = (LIBLTE_RRC_RELEASE_CAUSE_ENUM)liblte_bits_2_value(&msg_ptr, 2);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11532,17 +11703,19 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reject_msg(LIBLTE_BIT_MSG_STR
        con_rej != NULL)
     {
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Wait Time
         con_rej->wait_time = liblte_bits_2_value(&msg_ptr, 4);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11602,18 +11775,19 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reestablishment_request_msg(L
        con_reest_req != NULL)
     {
         // Extension Choice
-        if(!liblte_bits_2_value(&msg_ptr, 1))
-        {
-            // UE Identity
-            liblte_rrc_unpack_c_rnti_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
-            liblte_rrc_unpack_phys_cell_id_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
-            liblte_rrc_unpack_short_mac_i_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
+        
+        // UE Identity
+        liblte_rrc_unpack_c_rnti_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
+        liblte_rrc_unpack_phys_cell_id_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
+        liblte_rrc_unpack_short_mac_i_ie(&msg_ptr, (uint16 *)&con_reest_req->ue_id);
 
-            // Reestablishment Cause
-            con_reest_req->cause = (LIBLTE_RRC_CON_REEST_REQ_CAUSE_ENUM)liblte_bits_2_value(&msg_ptr, 2);
+        // Reestablishment Cause
+        con_reest_req->cause = (LIBLTE_RRC_CON_REEST_REQ_CAUSE_ENUM)liblte_bits_2_value(&msg_ptr, 2);
 
-            err = LIBLTE_SUCCESS;
-        }
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
+        err = LIBLTE_SUCCESS;
     }
 
     return(err);
@@ -11660,11 +11834,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reestablishment_reject_msg(LI
        con_reest_rej != NULL)
     {
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11720,11 +11896,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reestablishment_complete_msg(
                                                         &con_reest_complete->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11788,13 +11966,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reestablishment_msg(LIBLTE_BI
                                                         &con_reest->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 3);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Radio Resource Config Dedicated
         liblte_rrc_unpack_rr_config_dedicated_ie(&msg_ptr, &con_reest->rr_cnfg);
@@ -11802,6 +11980,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reestablishment_msg(LIBLTE_BI
         // Next Hop Chaining Count
         liblte_rrc_unpack_next_hop_chaining_count_ie(&msg_ptr, &con_reest->next_hop_chaining_count);
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11857,11 +12037,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reconfiguration_complete_msg(
                                                         &con_reconfig_complete->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -11995,7 +12177,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reconfiguration_msg(LIBLTE_BI
         liblte_rrc_unpack_rrc_transaction_identifier_ie(&msg_ptr, &con_reconfig->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 3);
@@ -12006,7 +12188,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reconfiguration_msg(LIBLTE_BI
         ded_info_nas_list_present           = liblte_bits_2_value(&msg_ptr, 1);
         con_reconfig->rr_cnfg_ded_present   = liblte_bits_2_value(&msg_ptr, 1);
         con_reconfig->sec_cnfg_ho_present   = liblte_bits_2_value(&msg_ptr, 1);
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Meas Config
         if(con_reconfig->meas_cnfg_present)
@@ -12042,7 +12224,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reconfiguration_msg(LIBLTE_BI
         if(con_reconfig->sec_cnfg_ho_present)
         {
             // Extension indicator
-            liblte_bits_2_value(&msg_ptr, 1);
+            bool ext2 = liblte_bits_2_value(&msg_ptr, 1);
 
             // Handover Type
             con_reconfig->sec_cnfg_ho.ho_type = (LIBLTE_RRC_HANDOVER_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
@@ -12073,7 +12255,11 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rrc_connection_reconfiguration_msg(LIBLTE_BI
                     con_reconfig->sec_cnfg_ho.inter_rat.nas_sec_param_to_eutra[i] = liblte_bits_2_value(&msg_ptr, 8);
                 }
             }
+            
+            liblte_rrc_consume_noncrit_extension(ext2, __func__, &msg_ptr);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -12134,15 +12320,17 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_rn_reconfiguration_complete_msg(LIBLTE_BIT_M
                                                         &rn_reconfig_complete->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicators
-        liblte_bits_2_value(&msg_ptr, 1);
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -12223,19 +12411,19 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_proximity_indication_msg(LIBLTE_BIT_MSG_STRU
        proximity_ind != NULL)
     {
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Proximity indication type
         proximity_ind->type = (LIBLTE_RRC_PROXIMITY_INDICATION_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
 
         // Carrier frequency type extension indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Carrier frequency type
         proximity_ind->carrier_freq_type = (LIBLTE_RRC_PROXIMITY_INDICATION_CARRIER_FREQ_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
@@ -12249,6 +12437,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_proximity_indication_msg(LIBLTE_BIT_MSG_STRU
             liblte_rrc_unpack_arfcn_value_utra_ie(&msg_ptr,
                                                   &proximity_ind->carrier_freq);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -12385,12 +12575,12 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_paging_msg(LIBLTE_BIT_MSG_STRUCT    *msg,
             for(i=0; i<page->paging_record_list_size; i++)
             {
                 // Extension indicator
-                liblte_bits_2_value(&msg_ptr, 1);
+                bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
                 // Paging UE identity
                 {
                     // Extension indicator
-                    liblte_bits_2_value(&msg_ptr, 1);
+                    bool ext2 = liblte_bits_2_value(&msg_ptr, 1);
 
                     page->paging_record_list[i].ue_identity.ue_identity_type = (LIBLTE_RRC_PAGING_UE_IDENTITY_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 1);
                     if(LIBLTE_RRC_PAGING_UE_IDENTITY_TYPE_S_TMSI == page->paging_record_list[i].ue_identity.ue_identity_type)
@@ -12404,9 +12594,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_paging_msg(LIBLTE_BIT_MSG_STRUCT    *msg,
                             page->paging_record_list[i].ue_identity.imsi[j] = liblte_bits_2_value(&msg_ptr, 4);
                         }
                     }
+                    
+                    liblte_rrc_consume_noncrit_extension(ext2, __func__, &msg_ptr);
                 }
 
                 page->paging_record_list[i].cn_domain = (LIBLTE_RRC_CN_DOMAIN_ENUM)liblte_bits_2_value(&msg_ptr, 1);
+                
+                liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
             }
         }
 
@@ -12429,6 +12623,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_paging_msg(LIBLTE_BIT_MSG_STRUCT    *msg,
             if(page->non_crit_ext.late_non_crit_ext_present)
             {
                 // FIXME
+                printf("Warning late non-crit-extension not handled in paging message\n");
             }
 
             if(page->non_crit_ext.non_crit_ext_present)
@@ -12445,6 +12640,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_paging_msg(LIBLTE_BIT_MSG_STRUCT    *msg,
                 if(page->non_crit_ext.non_crit_ext.non_crit_ext_present)
                 {
                     // FIXME
+                    printf("Warning non-crit-extension not handled in paging message\n");
                 }
             }
         }
@@ -12578,13 +12774,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_dl_information_transfer_msg(LIBLTE_BIT_MSG_S
                                                         &dl_info_transfer->rrc_transaction_id);
 
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // C1 choice
         liblte_bits_2_value(&msg_ptr, 2);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         // Dedicated info type choice
         dl_info_transfer->dedicated_info_type = (LIBLTE_RRC_DL_INFORMATION_TRANSFER_TYPE_ENUM)liblte_bits_2_value(&msg_ptr, 2);
@@ -12597,6 +12793,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_dl_information_transfer_msg(LIBLTE_BIT_MSG_S
             liblte_rrc_unpack_dedicated_info_cdma2000_ie(&msg_ptr,
                                                          &dl_info_transfer->dedicated_info);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
 
         err = LIBLTE_SUCCESS;
     }
@@ -12656,11 +12854,13 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_csfb_parameters_request_cdma2000_msg(LIBLTE_
        csfb_params_req_cdma2000 != NULL)
     {
         // Extension choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        bool ext = liblte_bits_2_value(&msg_ptr, 1);
 
         // Optional indicator
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
         err = LIBLTE_SUCCESS;
     }
 
@@ -12842,6 +13042,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_bcch_dlsch_msg(LIBLTE_BIT_MSG_STRUCT        
                                                      bcch_dlsch_msg);
             }
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
     }
 
     return(err);
@@ -12894,7 +13096,7 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_pcch_msg(LIBLTE_BIT_MSG_STRUCT      *msg,
        pcch_msg != NULL)
     {
         // Paging choice
-        liblte_bits_2_value(&msg_ptr, 1);
+        liblte_rrc_warning_not_handled(liblte_bits_2_value(&msg_ptr, 1), __func__);;
 
         if((msg->N_bits-(msg_ptr-msg->msg)) <= (LIBLTE_MAX_MSG_SIZE_BITS - 1))
         {
@@ -12992,6 +13194,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_dl_ccch_msg(LIBLTE_BIT_MSG_STRUCT         *m
             err = liblte_rrc_unpack_rrc_connection_setup_msg(&global_msg,
                                                              (LIBLTE_RRC_CONNECTION_SETUP_STRUCT *)&dl_ccch_msg->msg);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
     }
 
     return(err);
@@ -13143,6 +13347,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_dl_dcch_msg(LIBLTE_BIT_MSG_STRUCT         *m
 //            err = liblte_rrc_unpack_rn_reconfiguration_msg(&global_msg,
 //                                                           (LIBLTE_RRC_RN_RECONFIGURATION_STRUCT *)&dl_dcch_msg->msg);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
     }
 
     return(err);
@@ -13221,6 +13427,8 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ul_ccch_msg(LIBLTE_BIT_MSG_STRUCT         *m
             err = liblte_rrc_unpack_rrc_connection_request_msg(&global_msg,
                                                                (LIBLTE_RRC_CONNECTION_REQUEST_STRUCT *)&ul_ccch_msg->msg);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
     }
 
     return(err);
@@ -13381,6 +13589,9 @@ LIBLTE_ERROR_ENUM liblte_rrc_unpack_ul_dcch_msg(LIBLTE_BIT_MSG_STRUCT         *m
             err = liblte_rrc_unpack_rn_reconfiguration_complete_msg(&global_msg,
                                                                     (LIBLTE_RRC_RN_RECONFIGURATION_COMPLETE_STRUCT *)&ul_dcch_msg->msg);
         }
+        
+        liblte_rrc_consume_noncrit_extension(ext, __func__, &msg_ptr);
+        
     }
 
     return(err);

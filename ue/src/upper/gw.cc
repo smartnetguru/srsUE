@@ -264,6 +264,7 @@ void gw::run_thread()
         }
       } else {
         gw_log->error("Could not allocate a PDU\n");
+        gw_log->console("GW could not allocate a PDU\n");
         break;        
       }
     }

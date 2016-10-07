@@ -86,6 +86,7 @@ public:
   void timer_expired(uint32_t timeout_id);
 
   void test_con_restablishment(); 
+  void liblte_rrc_log(char* str);
   
 private:
   buffer_pool          *pool;

@@ -53,7 +53,7 @@ bool radio::init(char *args, char *devname)
   // We distinguish by device family, maybe we should calibrate per device
   if (strstr(srslte_rf_name(&rf_device), "uhd")) {
     burst_preamble_sec = uhd_default_burst_preamble_sec;
-  } else if (strstr(srslte_rf_name(&rf_device), "bladeRF")) {
+  } else if (strstr(srslte_rf_name(&rf_device), "bladerf")) {
     burst_preamble_sec = blade_default_burst_preamble_sec;
   } else {
     printf("\nWarning burst preamble is not calibrated for device %s. Set a value manually\n\n", srslte_rf_name(&rf_device));
@@ -332,7 +332,7 @@ void radio::set_tx_srate(float srate)
         printf("\nWarning TX/RX time offset for sampling rate %.0f KHz not calibrated. Using interpolated value\n\n", cur_tx_srate);
         nsamples = cur_tx_srate*(uhd_default_tx_adv_samples * (1/cur_tx_srate) + uhd_default_tx_adv_offset_sec);        
       }                
-    } else if (!strcmp(srslte_rf_name(&rf_device), "bladeRF")) {
+    } else if (!strcmp(srslte_rf_name(&rf_device), "bladerf")) {
       
       double srate_khz = round(cur_tx_srate/1e3);
       if (srate_khz == 1.92e3) {

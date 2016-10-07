@@ -43,6 +43,20 @@ rrc::rrc()
   ,drb_up(false)
 {}
 
+static void liblte_rrc_handler(void *ctx, char *str) {
+  rrc *r = (rrc*) ctx; 
+  r->liblte_rrc_log(str);
+}
+
+void rrc::liblte_rrc_log(char* str)
+{
+  if (rrc_log) {
+    rrc_log->warning("[ASN]: %s\n", str);
+  } else {
+    printf("[ASN]: %s\n", str);
+  }
+}
+
 void rrc::init(phy_interface_rrc     *phy_,
                mac_interface_rrc     *mac_,
                rlc_interface_rrc     *rlc_,
@@ -63,6 +77,9 @@ void rrc::init(phy_interface_rrc     *phy_,
   mac_timers = mac_timers_;
 
   transaction_id = 0;
+  
+  // Register logging handler with liblte_rrc
+  liblte_rrc_log_register_handler(this, liblte_rrc_handler);
   
   // Set default values for all layers 
   set_rrc_default();
@@ -332,7 +349,8 @@ void rrc::write_pdu_pcch(byte_buffer_t *pdu)
 void rrc::max_retx_attempted()
 {
   //TODO: Handle the radio link failure
-  radio_link_failure();
+  rrc_log->warning("Max RLC reTx attempted\n");
+  //radio_link_failure();
 }
 
 /*******************************************************************************
@@ -617,7 +635,8 @@ void rrc::send_rrc_con_reconfig_complete(uint32_t lcid, byte_buffer_t *pdu)
 
 void rrc::enable_capabilities()
 {
-  phy->set_config_64qam_en(true);  
+  //printf("Not enabling 64QAM\n");
+  //phy->set_config_64qam_en(true);  
 }
 
 void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
@@ -633,7 +652,7 @@ void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
   info->ue_capability_rat[0].rat_type = LIBLTE_RRC_RAT_TYPE_EUTRA;
 
   LIBLTE_RRC_UE_EUTRA_CAPABILITY_STRUCT *cap = &info->ue_capability_rat[0].eutra_capability;
-  cap->access_stratum_release = LIBLTE_RRC_ACCESS_STRATUM_RELEASE_REL9;
+  cap->access_stratum_release = LIBLTE_RRC_ACCESS_STRATUM_RELEASE_REL8;
   cap->ue_category = SRSUE_UE_CATEGORY;
 
   cap->pdcp_params.max_rohc_ctxts_present = false;
@@ -851,9 +870,11 @@ void rrc::test_con_restablishment()
 void rrc::radio_link_failure() {
   // TODO: Generate and store failure report 
   
+  rrc_log->warning("Detected Radio-Link Failure\n");
+  rrc_log->console("Warning: Detected Radio-Link Failure\n");
   if (state != RRC_STATE_RRC_CONNECTED) {
     rrc_connection_release();
-  } else {
+  } else {    
     send_con_restablish_request();
   }
 }
@@ -973,17 +994,17 @@ void rrc::apply_sib2_configs()
                 sib2.rr_config_common_sib.pucch_cnfg.n1_pucch_an,
                 sib2.rr_config_common_sib.pucch_cnfg.n_rb_cqi);
   
-  rrc_log->info("Set PRACH ConfigCommon: SeqIdx=%d, HS=%d, FreqOffset=%d, ZC=%d, ConfigIndex=%d\n",
+  rrc_log->info("Set PRACH ConfigCommon: SeqIdx=%d, HS=%s, FreqOffset=%d, ZC=%d, ConfigIndex=%d\n",
                  sib2.rr_config_common_sib.prach_cnfg.root_sequence_index,
-                 sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?1:0,
+                 sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.high_speed_flag?"yes":"no",
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_freq_offset,
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.zero_correlation_zone_config,
                  sib2.rr_config_common_sib.prach_cnfg.prach_cnfg_info.prach_config_index);
 
-  rrc_log->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%d\n",
-                 sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg,
-                 sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg,
-                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx);
+  rrc_log->info("Set SRS ConfigCommon: BW-Configuration=%d, SF-Configuration=%d, ACKNACK=%s\n",
+                 liblte_rrc_srs_bw_config_num[sib2.rr_config_common_sib.srs_ul_cnfg.bw_cnfg],
+                 liblte_rrc_srs_subfr_config_num[sib2.rr_config_common_sib.srs_ul_cnfg.subfr_cnfg],
+                 sib2.rr_config_common_sib.srs_ul_cnfg.ack_nack_simul_tx?"yes":"no");
 
   mac_timers->get(t301)->set(this, liblte_rrc_t301_num[sib2.ue_timers_and_constants.t301]);
   mac_timers->get(t310)->set(this, liblte_rrc_t310_num[sib2.ue_timers_and_constants.t310]);
@@ -1084,20 +1105,37 @@ void rrc::apply_phy_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT
     current_cfg->pdsch_cnfg_ded = LIBLTE_RRC_PDSCH_CONFIG_P_A_DB_0; 
   }
 
-  rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d, SRS-ConfigIndex=%d, SRS-bw=%s, SRS-Nrcc=%d, SRS-hop=%s, SRS-Ncs=%s\n",
+  if (phy_cnfg->cqi_report_cnfg_present) {
+    if (phy_cnfg->cqi_report_cnfg.report_periodic_present) {
+      rrc_log->info("Set cqi-PUCCH-ResourceIndex=%d, cqi-pmi-ConfigIndex=%d, cqi-FormatIndicatorPeriodic=%s\n", 
+        current_cfg->cqi_report_cnfg.report_periodic.pucch_resource_idx, 
+        current_cfg->cqi_report_cnfg.report_periodic.pmi_cnfg_idx, 
+        liblte_rrc_cqi_format_indicator_periodic_text[current_cfg->cqi_report_cnfg.report_periodic.format_ind_periodic]); 
+    } 
+    if (phy_cnfg->cqi_report_cnfg.report_mode_aperiodic_present) {
+      rrc_log->info("Set cqi-ReportModeAperiodic=%s\n", 
+                    liblte_rrc_cqi_report_mode_aperiodic_text[current_cfg->cqi_report_cnfg.report_mode_aperiodic]); 
+    } 
+    
+  }
+  
+  if (phy_cnfg->sched_request_cnfg_present) {
+    rrc_log->info("Set PHY config ded: SR-n_pucch=%d, SR-ConfigIndex=%d, SR-TransMax=%d\n",
                 current_cfg->sched_request_cnfg.sr_pucch_resource_idx,
                 current_cfg->sched_request_cnfg.sr_cnfg_idx,
-                liblte_rrc_dsr_trans_max_num[current_cfg->sched_request_cnfg.dsr_trans_max],
+                liblte_rrc_dsr_trans_max_num[current_cfg->sched_request_cnfg.dsr_trans_max]);
+  }
+  
+  if (current_cfg->srs_ul_cnfg_ded_present) {
+    rrc_log->info("Set PHY config ded: SRS-ConfigIndex=%d, SRS-bw=%s, SRS-Nrcc=%d, SRS-hop=%s, SRS-Ncs=%s\n",
                 current_cfg->srs_ul_cnfg_ded.srs_cnfg_idx,
                 liblte_rrc_srs_bandwidth_text[current_cfg->srs_ul_cnfg_ded.srs_bandwidth],
                 current_cfg->srs_ul_cnfg_ded.freq_domain_pos,
                 liblte_rrc_srs_hopping_bandwidth_text[current_cfg->srs_ul_cnfg_ded.srs_hopping_bandwidth],
                 liblte_rrc_cyclic_shift_text[current_cfg->srs_ul_cnfg_ded.cyclic_shift]);
-
+  }
+  
   phy->set_config_dedicated(current_cfg);
-
-  rrc_log->info("SR config-present=%d, config-setup=%d, current_cfg-present=%d, setup=%d\n", 
-    phy_cnfg->sched_request_cnfg_present, phy_cnfg->sched_request_cnfg.setup_present, current_cfg->sched_request_cnfg.setup_present);
 
   // Apply changes to PHY
   phy->configure_ul_params();
@@ -1123,19 +1161,22 @@ void rrc::apply_mac_config_dedicated(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *mac_cnfg
     {
       if(mac_cnfg->ulsch_cnfg.max_harq_tx_present) {
         default_cfg.ulsch_cnfg.max_harq_tx = mac_cnfg->ulsch_cnfg.max_harq_tx;
+        default_cfg.ulsch_cnfg.max_harq_tx_present = true; 
       }
       if(mac_cnfg->ulsch_cnfg.periodic_bsr_timer_present) {
         default_cfg.ulsch_cnfg.periodic_bsr_timer = mac_cnfg->ulsch_cnfg.periodic_bsr_timer;
+        default_cfg.ulsch_cnfg.periodic_bsr_timer_present = true; 
       }
       default_cfg.ulsch_cnfg.retx_bsr_timer = mac_cnfg->ulsch_cnfg.retx_bsr_timer;
       default_cfg.ulsch_cnfg.tti_bundling   = mac_cnfg->ulsch_cnfg.tti_bundling;
     }
     if(mac_cnfg->drx_cnfg_present) {
       memcpy(&default_cfg.drx_cnfg, &mac_cnfg->drx_cnfg, sizeof(LIBLTE_RRC_DRX_CONFIG_STRUCT));
+      default_cfg.drx_cnfg_present = true; 
     }
-    if(mac_cnfg->phr_cnfg_present)
-    {
+    if(mac_cnfg->phr_cnfg_present) {
       memcpy(&default_cfg.phr_cnfg, &mac_cnfg->phr_cnfg, sizeof(LIBLTE_RRC_PHR_CONFIG_STRUCT)); 
+      default_cfg.phr_cnfg_present = true; 
     }
     default_cfg.time_alignment_timer = mac_cnfg->time_alignment_timer;
   }
@@ -1147,6 +1188,12 @@ void rrc::apply_mac_config_dedicated(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT *mac_cnfg
                 liblte_rrc_max_harq_tx_num[default_cfg.ulsch_cnfg.max_harq_tx],
                 liblte_rrc_retransmission_bsr_timer_num[default_cfg.ulsch_cnfg.retx_bsr_timer],
                 liblte_rrc_periodic_bsr_timer_num[default_cfg.ulsch_cnfg.periodic_bsr_timer]);
+  if (default_cfg.phr_cnfg_present) {
+    rrc_log->info("Set MAC PHR config: periodicPHR-Timer=%d, prohibitPHR-Timer=%d, dl-PathlossChange=%d\n",
+      liblte_rrc_periodic_phr_timer_num[default_cfg.phr_cnfg.periodic_phr_timer],
+      liblte_rrc_prohibit_phr_timer_num[default_cfg.phr_cnfg.prohibit_phr_timer],
+      liblte_rrc_dl_pathloss_change_num[default_cfg.phr_cnfg.dl_pathloss_change]);
+  }
 }
 
 void rrc::apply_rr_config_dedicated(LIBLTE_RRC_RR_CONFIG_DEDICATED_STRUCT *cnfg) {   
