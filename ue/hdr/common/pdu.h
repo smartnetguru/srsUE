@@ -212,6 +212,9 @@ public:
     SDU        = 0
   } cetype; 
   
+  // Size of MAC CEs
+  const static int MAC_CE_CONTRES_LEN = 6; 
+
   // Reading functions
   bool     is_sdu();
   cetype   ce_type();

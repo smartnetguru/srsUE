@@ -376,7 +376,7 @@ uint16_t sch_subh::get_c_rnti()
   if (payload) {
     return (uint16_t) payload[0] | payload[1]<<8;
   } else {
-    return 0;
+    return (uint16_t) w_payload_ce[0] | w_payload_ce[1]<<8;
   }
 }
 uint64_t sch_subh::get_con_res_id()
@@ -385,6 +385,8 @@ uint64_t sch_subh::get_con_res_id()
     return ((uint64_t) payload[5]) | (((uint64_t) payload[4])<<8) | (((uint64_t) payload[3])<<16) | (((uint64_t) payload[2])<<24) |
            (((uint64_t) payload[1])<<32) | (((uint64_t) payload[0])<<40);                
   } else {
+    return ((uint64_t) w_payload_ce[5]) | (((uint64_t) w_payload_ce[4])<<8) | (((uint64_t) w_payload_ce[3])<<16) | (((uint64_t) w_payload_ce[2])<<24) |
+           (((uint64_t) w_payload_ce[1])<<32) | (((uint64_t) w_payload_ce[0])<<40);                
     return 0; 
   }
 }
@@ -393,26 +395,30 @@ uint8_t sch_subh::get_phr()
   if (payload) {
     return (uint8_t) payload[0]&0x3f;
   } else {
-    return 0;
+    return (uint8_t) w_payload_ce[0]&0x3f;
   }
 }
 
 uint32_t sch_subh::get_bsr(uint32_t buff_size[4])
 {
-  uint32_t nonzero_lcg = 0;
-  if (ce_type()==LONG_BSR) {
-    buff_size[0] = (payload[0]&0xFC) >> 2;
-    buff_size[1] = (payload[0]&0x03) << 4 | (payload[1]&0xF0) >> 4;
-    buff_size[2] = (payload[1]&0x0F) << 4 | (payload[1]&0xC0) >> 6;
-    buff_size[3] = (payload[2]&0x3F); 
-  } else {
-    uint32_t nonzero_lcg     = (payload[0]&0xc0) >> 6;
-    buff_size[nonzero_lcg%4] =  payload[0]&0x3f;
-  }
-  for (int i=0;i<4;i++) {
-    if (buff_size[i]) {
-      buff_size[i] = btable[buff_size[i]%64];
+  if (payload) {
+    uint32_t nonzero_lcg = 0;
+    if (ce_type()==LONG_BSR) {
+      buff_size[0] = (payload[0]&0xFC) >> 2;
+      buff_size[1] = (payload[0]&0x03) << 4 | (payload[1]&0xF0) >> 4;
+      buff_size[2] = (payload[1]&0x0F) << 4 | (payload[1]&0xC0) >> 6;
+      buff_size[3] = (payload[2]&0x3F); 
+    } else {
+      uint32_t nonzero_lcg     = (payload[0]&0xc0) >> 6;
+      buff_size[nonzero_lcg%4] =  payload[0]&0x3f;
     }
+    for (int i=0;i<4;i++) {
+      if (buff_size[i]) {
+        buff_size[i] = btable[buff_size[i]%64];
+      }
+    }
+  } else {
+    return 0; 
   }
 }
 
@@ -502,7 +508,7 @@ bool sch_subh::set_c_rnti(uint16_t crnti)
 bool sch_subh::set_con_res_id(uint64_t con_res_id)
 {
   if (((sch_pdu*)parent)->has_space_ce(6)) {
-    w_payload_ce[0] = (uint8_t) ((con_res_id&0xff0000000000)>>48);
+    w_payload_ce[0] = (uint8_t) ((con_res_id&0xff0000000000)>>40);
     w_payload_ce[1] = (uint8_t) ((con_res_id&0x00ff00000000)>>32);
     w_payload_ce[2] = (uint8_t) ((con_res_id&0x0000ff000000)>>24);
     w_payload_ce[3] = (uint8_t) ((con_res_id&0x000000ff0000)>>16);
