@@ -156,6 +156,7 @@ private:
     
   bool init_(srslte::radio *radio_handler, mac_interface_phy *mac, srslte::log *log_h, bool do_agc, uint32_t nof_workers);
   void set_default_args(phy_args_t *args);
+  bool check_args(phy_args_t *args); 
 
 };
 

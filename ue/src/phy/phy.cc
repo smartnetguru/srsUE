@@ -77,6 +77,23 @@ void phy::set_default_args(phy_args_t *args)
   args->estimator_fil_w     = 0.1; 
 }
 
+bool phy::check_args(phy_args_t *args) 
+{
+  if (args->nof_phy_threads > 3) {
+    log_h->console("Error in PHY args: nof_phy_threads must be 1, 2 or 3\n");
+    return false; 
+  }
+  if (args->estimator_fil_w > 1.0) {
+    log_h->console("Error in PHY args: estimator_fil_w must be 0<=w<=1\n");
+    return false; 
+  }
+  if (args->snr_ema_coeff > 1.0) {
+    log_h->console("Error in PHY args: snr_ema_coeff must be 0<=w<=1\n");
+    return false; 
+  }
+  return true; 
+}
+
 bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interface_phy *rrc, 
                srslte::log *log_h_, phy_args_t *phy_args)
 {
@@ -92,6 +109,10 @@ bool phy::init(srslte::radio* radio_handler_, mac_interface_phy *mac, rrc_interf
     set_default_args(args);
   } else {
     args = phy_args;
+  }
+  
+  if (!check_args(args)) {
+    return false; 
   }
   
   nof_workers = args->nof_phy_threads; 
