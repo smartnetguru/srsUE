@@ -31,7 +31,7 @@
 
 using namespace std;
 
-namespace srsue{
+namespace srslte{
 
 logger::logger()
   :buffer(LOG_BUFFER_SIZE)

@@ -40,7 +40,7 @@
 #include <common/log.h>
 #include "logger.h"
 
-namespace srsue {
+namespace srslte {
 
 class log_filter : public srslte::log
 {

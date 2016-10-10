@@ -276,7 +276,7 @@ public:
           log_h->error("TUN/TAP write failure n=%d, nof_bytes=%d\n", n, sdu->N_bytes);
           return; 
         }
-        log_h->info("Wrote %d bytes to TUN fd=%d\n", sdu->N_bytes, tun_fd);      
+        log_h->console("Wrote %d bytes to TUN fd=%d\n", sdu->N_bytes, tun_fd);      
         pool->deallocate(sdu);
       break;
       case 0:
@@ -318,7 +318,7 @@ private:
   }
     
   int init_tuntap(char *ip_address) {
-    read_enable = false; 
+    read_enable = true; 
     tun_fd = setup_if_addr(ip_address);
     if (tun_fd<0) {
       fprintf(stderr, "Error setting up IP %s\n", ip_address);
@@ -341,7 +341,7 @@ private:
       N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET);      
       if(N_bytes > 0 && read_enable)
       {
-        log_h->info("Read %d bytes from TUN fd=%d\n", N_bytes, tun_fd);
+        log_h->console("Read %d bytes from TUN fd=%d\n", N_bytes, tun_fd);
         pdu->N_bytes = idx + N_bytes;
         ip_pkt       = (struct iphdr*)pdu->msg;
 

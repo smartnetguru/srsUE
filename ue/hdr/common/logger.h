@@ -42,7 +42,7 @@
 #include <boost/thread/condition.hpp>
 #include <boost/circular_buffer.hpp>
 
-namespace srsue {
+namespace srslte {
 
 typedef boost::shared_ptr<std::string> str_ptr;
 
