@@ -292,6 +292,18 @@ public:
         cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE5;   
         rlc->add_bearer(LCID, &cfg);
 
+        LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT dedicated; 
+        bzero(&dedicated, sizeof(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT));
+        dedicated.pusch_cnfg_ded.beta_offset_ack_idx = 5;
+        dedicated.pusch_cnfg_ded.beta_offset_ri_idx  = 12;
+        dedicated.pusch_cnfg_ded.beta_offset_cqi_idx = 15;
+        dedicated.pusch_cnfg_ded_present = true; 
+        dedicated.sched_request_cnfg.dsr_trans_max = LIBLTE_RRC_DSR_TRANS_MAX_N4; 
+        dedicated.sched_request_cnfg.sr_pucch_resource_idx = 0;
+        dedicated.sched_request_cnfg.sr_cnfg_idx = 35; 
+        dedicated.sched_request_cnfg_present = true; 
+        phy->set_config_dedicated(&dedicated);
+        mac->set_config_sr(&dedicated.sched_request_cnfg);
       break;
       default:
         log_h->error("Received message for lcid=%d\n", lcid);
