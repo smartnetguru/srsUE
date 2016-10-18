@@ -16,14 +16,15 @@
 #include "common/threads.h"
 #include "common/common.h"
 #include "common/buffer_pool.h"
-#include "common/log_stdout.h"
+#include "common/logger.h"
+#include "common/log_filter.h"
 #include "upper/rlc.h"
 #include "upper/rrc.h"
 #include "radio/radio.h"
 
 #define START_TUNTAP
 #define USE_RADIO
-
+#define PRINT_GW 0
 
 /**********************************************************************
  *  Program arguments processing
@@ -40,7 +41,7 @@ typedef struct {
   std::string ip_address;
 }prog_args_t;
 
-uint32_t srsapps_verbose = 0; 
+uint32_t srsapps_verbose = 1; 
 
 prog_args_t prog_args; 
 
@@ -270,13 +271,14 @@ public:
     int n=0;
     switch(lcid) {
       case LCID:
-        srslte_vec_fprint_byte(stdout, sdu->msg, sdu->N_bytes);
         n = write(tun_fd, sdu->msg, sdu->N_bytes);
         if (n != sdu->N_bytes) {
           log_h->error("TUN/TAP write failure n=%d, nof_bytes=%d\n", n, sdu->N_bytes);
           return; 
         }
-        log_h->console("Wrote %d bytes to TUN fd=%d\n", sdu->N_bytes, tun_fd);      
+        log_h->info_hex(sdu->msg, sdu->N_bytes, 
+                        "Wrote %d bytes to TUN/TAP\n", 
+                        sdu->N_bytes);      
         pool->deallocate(sdu);
       break;
       case 0:
@@ -341,10 +343,13 @@ private:
       N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET);      
       if(N_bytes > 0 && read_enable)
       {
-        log_h->console("Read %d bytes from TUN fd=%d\n", N_bytes, tun_fd);
         pdu->N_bytes = idx + N_bytes;
         ip_pkt       = (struct iphdr*)pdu->msg;
 
+        log_h->info_hex(pdu->msg, pdu->N_bytes, 
+                          "Read %d bytes from TUN/TAP\n", 
+                          N_bytes);
+                  
         // Check if entire packet was received
         if(ntohs(ip_pkt->tot_len) == pdu->N_bytes)
         {
@@ -430,7 +435,11 @@ private:
 
 
 // Create classes
-srslte::log_stdout log_out("ALL");
+srslte::logger logger;
+srslte::log_filter log_phy;
+srslte::log_filter log_mac;
+srslte::log_filter log_rlc;
+srslte::log_filter log_tester;
 srsue::phy my_phy;
 srsue::mac my_mac;
 srsue::rlc rlc;
@@ -444,17 +453,37 @@ int main(int argc, char *argv[])
   
   parse_args(&prog_args, argc, argv);
 
+  logger.init("/tmp/ip_test.log");
+  log_phy.init("PHY ", &logger, true);
+  log_mac.init("MAC ", &logger, true);
+  log_rlc.init("RLC ", &logger);
+  log_tester.init("TEST", &logger);
+  logger.log("\n\n");
+ 
   if (srsapps_verbose == 1) {
-    log_out.set_level(srslte::LOG_LEVEL_INFO);
-    log_out.set_hex_limit(100);
+    log_phy.set_level(srslte::LOG_LEVEL_INFO);
+    log_phy.set_hex_limit(100);
+    log_mac.set_level(srslte::LOG_LEVEL_INFO);
+    log_mac.set_hex_limit(100);
+    log_rlc.set_level(srslte::LOG_LEVEL_INFO);
+    log_rlc.set_hex_limit(100);
+    log_tester.set_level(srslte::LOG_LEVEL_INFO);
+    log_tester.set_hex_limit(100);
     printf("Log level info\n");
   }
   if (srsapps_verbose == 2) {
-    log_out.set_level(srslte::LOG_LEVEL_DEBUG);
-    log_out.set_hex_limit(100);
+    log_phy.set_level(srslte::LOG_LEVEL_DEBUG);
+    log_phy.set_hex_limit(100);
+    log_mac.set_level(srslte::LOG_LEVEL_DEBUG);
+    log_mac.set_hex_limit(100);
+    log_rlc.set_level(srslte::LOG_LEVEL_DEBUG);
+    log_rlc.set_hex_limit(100);
+    log_tester.set_level(srslte::LOG_LEVEL_DEBUG);
+    log_tester.set_hex_limit(100);
+    srslte_verbose = SRSLTE_VERBOSE_DEBUG;
     printf("Log level debug\n");
   }
-
+    
   // Init Radio and PHY
 #ifdef USE_RADIO
   my_radio.init();
@@ -471,15 +500,15 @@ int main(int argc, char *argv[])
     my_radio.set_tx_adv(prog_args.time_adv);
   }
   
-  my_phy.init(&my_radio, &my_mac, &my_tester, &log_out, NULL);
-  my_mac.init(&my_phy, &rlc, &my_tester, &log_out);
-  rlc.init(&my_tester, &my_tester, &my_tester, &log_out, &my_mac);  
-  my_tester.init(&my_phy, &my_mac, &rlc, &log_out, prog_args.ip_address);
+  my_phy.init(&my_radio, &my_mac, &my_tester, &log_phy, NULL);
+  my_mac.init(&my_phy, &rlc, &my_tester, &log_mac);
+  rlc.init(&my_tester, &my_tester, &my_tester, &log_rlc, &my_mac);  
+  my_tester.init(&my_phy, &my_mac, &rlc, &log_tester, prog_args.ip_address);
       
   bool running = true; 
   while(running) {
     if (my_tester.is_sib_received()) {
-      log_out.console("Main running\n");
+      printf("Main running\n");
       sleep(1);
     } else {
       my_tester.sib_search();

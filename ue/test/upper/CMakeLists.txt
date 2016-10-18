@@ -55,3 +55,14 @@ add_test(usim_test usim_test)
 add_executable(rrc_reconfig_test rrc_reconfig_test.cc)
 target_link_libraries(rrc_reconfig_test srsue_upper)
 add_test(rrc_reconfig_test rrc_reconfig_test)
+
+########################################################################
+# Option to run command after build (useful for remote builds)
+########################################################################
+if (NOT ${BUILD_CMD} STREQUAL "")
+  message(STATUS "Added custom post-build command: ${BUILD_CMD}")
+  add_custom_command(TARGET ip_test POST_BUILD COMMAND ${BUILD_CMD})
+else(NOT ${BUILD_CMD} STREQUAL "")
+  message(STATUS "No post-build command defined")
+endif (NOT ${BUILD_CMD} STREQUAL "")
+
