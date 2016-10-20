@@ -603,7 +603,7 @@ void phch_worker::set_uci_sr()
     uint32_t sr_tx_tti = (tti+4)%10240;
     // Get I_sr parameter   
     if (srslte_ue_ul_sr_send_tti(I_sr, sr_tx_tti)) {
-      Info("PUCCH: SR transmission at TTI=%d\n", sr_tx_tti);
+      Info("PUCCH: SR transmission at TTI=%d, I_sr=%d\n", sr_tx_tti, I_sr);
       uci_data.scheduling_request = true; 
       phy->sr_last_tx_tti = sr_tx_tti; 
       phy->sr_enabled = false;

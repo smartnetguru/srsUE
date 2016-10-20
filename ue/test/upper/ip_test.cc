@@ -291,6 +291,8 @@ public:
         cfg.dl_um_bi_rlc.t_reordering = LIBLTE_RRC_T_REORDERING_MS100; 
         cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE5;   
         rlc->add_bearer(LCID, &cfg);
+        
+        mac->setup_lcid(LCID, 0, 1, -1, 100000);
 
         LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT dedicated; 
         bzero(&dedicated, sizeof(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT));
@@ -301,9 +303,17 @@ public:
         dedicated.sched_request_cnfg.dsr_trans_max = LIBLTE_RRC_DSR_TRANS_MAX_N4; 
         dedicated.sched_request_cnfg.sr_pucch_resource_idx = 0;
         dedicated.sched_request_cnfg.sr_cnfg_idx = 35; 
+        dedicated.sched_request_cnfg.setup_present = true; 
         dedicated.sched_request_cnfg_present = true; 
         phy->set_config_dedicated(&dedicated);
-        mac->set_config_sr(&dedicated.sched_request_cnfg);
+        phy->configure_ul_params();
+        
+        srsue::mac_interface_rrc::mac_cfg_t mac_cfg; 
+        mac->get_config(&mac_cfg);
+        memcpy(&mac_cfg.sr, &dedicated.sched_request_cnfg, sizeof(LIBLTE_RRC_SCHEDULING_REQUEST_CONFIG_STRUCT));
+        mac_cfg.main.ulsch_cnfg.periodic_bsr_timer = LIBLTE_RRC_PERIODIC_BSR_TIMER_SF40;
+        mac->set_config(&mac_cfg);
+    
       break;
       default:
         log_h->error("Received message for lcid=%d\n", lcid);
@@ -516,7 +526,19 @@ int main(int argc, char *argv[])
   my_mac.init(&my_phy, &rlc, &my_tester, &log_mac);
   rlc.init(&my_tester, &my_tester, &my_tester, &log_rlc, &my_mac);  
   my_tester.init(&my_phy, &my_mac, &rlc, &log_tester, prog_args.ip_address);
-      
+  
+  // Set MAC defaults 
+  LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT default_cfg;
+  bzero(&default_cfg, sizeof(LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT));
+  default_cfg.ulsch_cnfg.max_harq_tx        = LIBLTE_RRC_MAX_HARQ_TX_N5;
+  default_cfg.ulsch_cnfg.periodic_bsr_timer = LIBLTE_RRC_PERIODIC_BSR_TIMER_INFINITY;
+  default_cfg.ulsch_cnfg.retx_bsr_timer     = LIBLTE_RRC_RETRANSMISSION_BSR_TIMER_SF2560;  
+  default_cfg.ulsch_cnfg.tti_bundling       = false;
+  default_cfg.drx_cnfg.setup_present        = false;
+  default_cfg.phr_cnfg.setup_present        = false;
+  default_cfg.time_alignment_timer          = LIBLTE_RRC_TIME_ALIGNMENT_TIMER_INFINITY; 
+  my_mac.set_config_main(&default_cfg);
+  
   bool running = true; 
   while(running) {
     if (my_tester.is_sib_received()) {

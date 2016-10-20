@@ -399,7 +399,7 @@ uint8_t sch_subh::get_phr()
   }
 }
 
-uint32_t sch_subh::get_bsr(uint32_t buff_size[4])
+int sch_subh::get_bsr(uint32_t buff_size[4])
 {
   if (payload) {
     uint32_t nonzero_lcg = 0;
@@ -417,8 +417,9 @@ uint32_t sch_subh::get_bsr(uint32_t buff_size[4])
         buff_size[i] = btable[buff_size[i]%64];
       }
     }
+    return nonzero_lcg;
   } else {
-    return 0; 
+    return -1; 
   }
 }
 

@@ -232,7 +232,7 @@ public:
   uint64_t get_con_res_id();
   uint8_t  get_ta_cmd();
   uint8_t  get_phr();
-  uint32_t get_bsr(uint32_t buff_size[4]);
+  int      get_bsr(uint32_t buff_size[4]);
   
   // Writing functions
   void     write_subheader(uint8_t** ptr, bool is_last);
