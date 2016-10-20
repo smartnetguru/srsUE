@@ -182,23 +182,31 @@ void rlc_am::write_sdu(byte_buffer_t *sdu)
 uint32_t rlc_am::get_buffer_state()
 {
   boost::lock_guard<boost::mutex> lock(mutex);
+  uint32_t n_bytes = 0;
+  uint32_t n_sdus  = 0;
 
   // Bytes needed for status report
   check_reordering_timeout();
-  if(do_status && !status_prohibited())
-    return prepare_status();
+  if(do_status && !status_prohibited()) {
+    n_bytes = prepare_status();
+    log->debug("Buffer state - status report: %d bytes\n", n_bytes);
+    return n_bytes;
+  }
 
   // Bytes needed for retx
   if(retx_queue.size() > 0) {
     rlc_amd_retx_t retx = retx_queue.front();
+    log->debug("Buffer state - retx - SN: %d, Segment: %s, %d:%d\n", retx.sn, retx.is_segment ? "true" : "false", retx.so_start, retx.so_end);
     if(tx_window.end() != tx_window.find(retx.sn)) {
-        return required_buffer_size(retx);
+        n_bytes = required_buffer_size(retx);
+        log->debug("Buffer state - retx: %d bytes\n", n_bytes);
+        return n_bytes;
     }
   }
 
   // Bytes needed for tx SDUs
-  uint32_t n_sdus  = tx_sdu_queue.size();
-  uint32_t n_bytes = tx_sdu_queue.size_bytes();
+  n_sdus  = tx_sdu_queue.size();
+  n_bytes = tx_sdu_queue.size_bytes();
   if(tx_sdu)
   {
     n_sdus++;
@@ -210,8 +218,10 @@ uint32_t rlc_am::get_buffer_state()
     n_bytes += ((n_sdus-1)*1.5)+0.5;
 
   // Room needed for fixed header?
-  if(n_bytes > 0)
+  if(n_bytes > 0) {
     n_bytes += 2;
+    log->debug("Buffer state - tx SDUs: %d bytes\n", n_bytes);
+  }
 
   return n_bytes;
 }
@@ -468,6 +478,8 @@ int rlc_am::build_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_retx_t r
     new_header.lsf = 1;
     if(rlc_am_end_aligned(old_header.fi))
       new_header.fi &= RLC_FI_FIELD_NOT_START_ALIGNED;   // segment is end aligned
+  } else if(retx_queue.front().so_end == retx.so_end) {
+    retx_queue.pop_front();
   } else {
     retx_queue.front().is_segment = true;
     retx_queue.front().so_start = retx.so_end;
@@ -817,7 +829,11 @@ void rlc_am::handle_control_pdu(uint8_t *payload, uint32_t nof_bytes)
             retx.is_segment = status.nacks[j].has_so;
             if(retx.is_segment) {
               retx.so_start = status.nacks[j].so_start;
-              retx.so_end   = status.nacks[j].so_end;
+              if(status.nacks[j].so_end == 0x7FFF) {
+                retx.so_end = tx_window.find(i)->second.buf->N_bytes;
+              }else{
+                retx.so_end   = status.nacks[j].so_end + 1;
+              }
             } else {
               retx.so_start = 0;
               retx.so_end   = tx_window.find(i)->second.buf->N_bytes;
@@ -1342,7 +1358,12 @@ std::string rlc_am_to_string(rlc_status_pdu_t *status)
     ss << ", NACK_SN = ";
     for(int i=0; i<status->N_nack; i++)
     {
-      ss << "[" << status->nacks[i].nack_sn << "]";
+      if(status->nacks[i].has_so) {
+        ss << "[" << status->nacks[i].nack_sn << " " << status->nacks[i].so_start \
+           << ":" << status->nacks[i].so_end << "]";
+      }else{
+        ss << "[" << status->nacks[i].nack_sn << "]";
+      }
     }
   }
   return ss.str();

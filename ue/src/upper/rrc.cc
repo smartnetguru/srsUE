@@ -1342,9 +1342,14 @@ void rrc::add_drb(LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT *drb_cnfg)
     rrc_log->error("Cannot add DRB - incomplete configuration\n");
     return;
   }
-
-  uint32_t lcid = RB_ID_SRB2 + drb_cnfg->drb_id;
-
+  uint32_t lcid = 0; 
+  if (drb_cnfg->lc_id_present) {
+    lcid = drb_cnfg->lc_id;
+  } else {
+    lcid = RB_ID_SRB2 + drb_cnfg->drb_id;
+    rrc_log->warning("LCID not present, using %d\n", lcid);
+  }
+  
   // Setup PDCP
   pdcp->add_bearer(lcid, &drb_cnfg->pdcp_cnfg);
   // TODO: setup PDCP security (using k_up_enc)
@@ -1359,16 +1364,17 @@ void rrc::add_drb(LIBLTE_RRC_DRB_TO_ADD_MOD_STRUCT *drb_cnfg)
   int      bucket_size_duration = -1;
   if(drb_cnfg->lc_cnfg.ul_specific_params_present)
   {
-    if(drb_cnfg->lc_cnfg.ul_specific_params.log_chan_group_present)
+    if(drb_cnfg->lc_cnfg.ul_specific_params.log_chan_group_present) {
       log_chan_group      = drb_cnfg->lc_cnfg.ul_specific_params.log_chan_group;
-
+    } else {
+      rrc_log->warning("LCG not present, setting to 0\n");
+    }
     priority              = drb_cnfg->lc_cnfg.ul_specific_params.priority;
     prioritized_bit_rate  = liblte_rrc_prioritized_bit_rate_num[drb_cnfg->lc_cnfg.ul_specific_params.prioritized_bit_rate];
     bucket_size_duration  = liblte_rrc_bucket_size_duration_num[drb_cnfg->lc_cnfg.ul_specific_params.bucket_size_duration];
-  }
-  //mac->setup_lcid(lcid, log_chan_group, priority, prioritized_bit_rate, bucket_size_duration);
-  mac->setup_lcid(lcid, 3, 2, prioritized_bit_rate, bucket_size_duration);
-
+  } 
+  mac->setup_lcid(lcid, log_chan_group, priority, prioritized_bit_rate, bucket_size_duration);
+  
   drbs[lcid] = *drb_cnfg;
   drb_up     = true;
   rrc_log->info("Added radio bearer %s\n", rb_id_text[lcid]);
