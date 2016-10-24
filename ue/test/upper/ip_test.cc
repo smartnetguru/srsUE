@@ -363,7 +363,7 @@ private:
     log_h->info("TUN/TAP reader thread running\n");
 
     while(running) {
-      N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET);      
+      N_bytes = read(tun_fd, &pdu->msg[idx], SRSUE_MAX_BUFFER_SIZE_BYTES-SRSUE_BUFFER_HEADER_OFFSET - idx);      
       if(N_bytes > 0 && read_enable)
       {
         pdu->N_bytes = idx + N_bytes;
@@ -498,7 +498,7 @@ int main(int argc, char *argv[])
   if (srsapps_verbose == 1) {
     log_phy.set_level(srslte::LOG_LEVEL_INFO);
     log_phy.set_hex_limit(100);
-    log_mac.set_level(srslte::LOG_LEVEL_INFO);
+    log_mac.set_level(srslte::LOG_LEVEL_DEBUG);
     log_mac.set_hex_limit(100);
     log_rlc.set_level(srslte::LOG_LEVEL_DEBUG);
     log_rlc.set_hex_limit(100);
