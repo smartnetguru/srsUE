@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "srslte/utils/debug.h"
 #include "mac/mac.h"
@@ -276,7 +277,7 @@ public:
           log_h->error("TUN/TAP write failure n=%d, nof_bytes=%d\n", n, sdu->N_bytes);
           return; 
         }
-        log_h->info_hex(sdu->msg, sdu->N_bytes, 
+        log_h->debug_hex(sdu->msg, sdu->N_bytes, 
                         "Wrote %d bytes to TUN/TAP\n", 
                         sdu->N_bytes);      
         pool->deallocate(sdu);
@@ -368,7 +369,7 @@ private:
         pdu->N_bytes = idx + N_bytes;
         ip_pkt       = (struct iphdr*)pdu->msg;
 
-        log_h->info_hex(pdu->msg, pdu->N_bytes, 
+        log_h->debug_hex(pdu->msg, pdu->N_bytes, 
                           "Read %d bytes from TUN/TAP\n", 
                           N_bytes);
                   
@@ -462,6 +463,7 @@ srslte::log_filter log_phy;
 srslte::log_filter log_mac;
 srslte::log_filter log_rlc;
 srslte::log_filter log_tester;
+srslte::mac_pcap   mac_pcap;
 srsue::phy my_phy;
 srsue::mac my_mac;
 srsue::rlc rlc;
@@ -470,12 +472,23 @@ srslte::radio my_radio;
 // Local classes for testing
 tester my_tester; 
 
+
+bool running = true; 
+
+void sig_int_handler(int signo)
+{
+  running = false;
+}
+
 int main(int argc, char *argv[])
 {
   
   parse_args(&prog_args, argc, argv);
 
-  logger.init("/tmp/ip_test.log");
+  // set to null to disable pcap 
+  const char *pcap_filename = "/tmp/ip_test.pcap"; 
+  
+  logger.init("/tmp/ip_test_ue.log");
   log_phy.init("PHY ", &logger, true);
   log_mac.init("MAC ", &logger, true);
   log_rlc.init("RLC ", &logger);
@@ -487,9 +500,9 @@ int main(int argc, char *argv[])
     log_phy.set_hex_limit(100);
     log_mac.set_level(srslte::LOG_LEVEL_INFO);
     log_mac.set_hex_limit(100);
-    log_rlc.set_level(srslte::LOG_LEVEL_INFO);
+    log_rlc.set_level(srslte::LOG_LEVEL_DEBUG);
     log_rlc.set_hex_limit(100);
-    log_tester.set_level(srslte::LOG_LEVEL_INFO);
+    log_tester.set_level(srslte::LOG_LEVEL_DEBUG);
     log_tester.set_hex_limit(100);
     printf("Log level info\n");
   }
@@ -521,11 +534,18 @@ int main(int argc, char *argv[])
     printf("Setting TA=%d samples\n",prog_args.time_adv); 
     my_radio.set_tx_adv(prog_args.time_adv);
   }
-  
+    
   my_phy.init(&my_radio, &my_mac, &my_tester, &log_phy, NULL);
   my_mac.init(&my_phy, &rlc, &my_tester, &log_mac);
   rlc.init(&my_tester, &my_tester, &my_tester, &log_rlc, &my_mac);  
   my_tester.init(&my_phy, &my_mac, &rlc, &log_tester, prog_args.ip_address);
+
+  
+  if (pcap_filename) {
+    mac_pcap.open(pcap_filename);
+    my_mac.start_pcap(&mac_pcap);
+    signal(SIGINT, sig_int_handler);     
+  }
   
   // Set MAC defaults 
   LIBLTE_RRC_MAC_MAIN_CONFIG_STRUCT default_cfg;
@@ -539,7 +559,6 @@ int main(int argc, char *argv[])
   default_cfg.time_alignment_timer          = LIBLTE_RRC_TIME_ALIGNMENT_TIMER_INFINITY; 
   my_mac.set_config_main(&default_cfg);
   
-  bool running = true; 
   while(running) {
     if (my_tester.is_sib_received()) {
       printf("Main running\n");
@@ -548,9 +567,15 @@ int main(int argc, char *argv[])
       my_tester.sib_search();
     }
   }
+  
+  if (pcap_filename) {
+    mac_pcap.close();
+  }
+  
   my_phy.stop();
   my_mac.stop();
 }
+
 
 
 
