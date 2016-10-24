@@ -92,9 +92,7 @@ void pdu_queue::push_pdu(uint32_t pid, uint32_t nof_bytes)
   
   if (pid < NOF_HARQ_PID) {    
     if (nof_bytes > 0) {
-      if (!pdu_q[pid].push(nof_bytes)) {
-        Warning("Full queue %d when pushing MAC PDU %d bytes\n", pid, nof_bytes);
-      }
+      callback->process_pdu((uint8_t*) pdu_q[pid].request(), nof_bytes);
     } else {
       Warning("Trying to push PDU with payload size zero\n");
     }
@@ -117,6 +115,7 @@ bool pdu_queue::process_pdus()
     do {
       buff = (uint8_t*) pdu_q[i].pop(&len);
       if (buff) {
+        printf("poped cnt=%d, i=%d\n", cnt, i);
         if (callback) {
           callback->process_pdu(buff, len);
         }
