@@ -57,7 +57,7 @@ namespace bpt = boost::posix_time;
                               TYPEDEFS
 *******************************************************************************/
 
-namespace srsue {
+namespace srslte {
 
 typedef enum{
   ERROR_NONE = 0,

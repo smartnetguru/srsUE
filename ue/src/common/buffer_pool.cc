@@ -28,7 +28,7 @@
 #include "common/buffer_pool.h"
 #include <stdio.h>
 
-namespace srsue{
+namespace srslte{
 
 buffer_pool* buffer_pool::instance = NULL;
 boost::mutex buffer_pool::instance_mutex;

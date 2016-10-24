@@ -29,6 +29,8 @@
 #include "liblte/hdr/liblte_security.h"
 #include "common/snow_3g.h"
 
+using namespace srslte;
+
 namespace srsue{
 
 /******************************************************************************

@@ -90,7 +90,7 @@ void gw::get_metrics(gw_metrics_t &m)
 /*******************************************************************************
   PDCP interface
 *******************************************************************************/
-void gw::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
+void gw::write_pdu(uint32_t lcid, srslte::byte_buffer_t *pdu)
 {
   gw_log->info_hex(pdu->msg, pdu->N_bytes, "DL PDU");
   gw_log->info("DL PDU. Stack latency: %ld us\n", pdu->get_latency_us());
@@ -112,7 +112,7 @@ void gw::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 /*******************************************************************************
   NAS interface
 *******************************************************************************/
-error_t gw::setup_if_addr(uint32_t ip_addr, char *err_str)
+srslte::error_t gw::setup_if_addr(uint32_t ip_addr, char *err_str)
 {
   if(!if_up)
   {
@@ -150,7 +150,7 @@ error_t gw::setup_if_addr(uint32_t ip_addr, char *err_str)
   return(ERROR_NONE);
 }
 
-error_t gw::init_if(char *err_str)
+srslte::error_t gw::init_if(char *err_str)
 {
     if(if_up)
     {

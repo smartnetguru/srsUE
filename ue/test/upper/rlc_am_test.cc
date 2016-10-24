@@ -31,6 +31,7 @@
 #define NBUFS 5
 
 using namespace srsue;
+using namespace srslte;
 
 class mac_dummy_timers
     :public srslte::mac_interface_timers

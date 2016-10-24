@@ -32,6 +32,8 @@
 #include "common/interfaces.h"
 #include "upper/pdcp_entity.h"
 
+using srslte::byte_buffer_t;
+
 namespace srsue {
 
 class pdcp

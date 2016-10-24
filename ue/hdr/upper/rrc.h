@@ -37,6 +37,8 @@
 
 #include <map>
 
+using srslte::byte_buffer_t;
+
 namespace srsue {
 
 // RRC states (3GPP 36.331 v10.0.0)
@@ -89,7 +91,7 @@ public:
   void liblte_rrc_log(char* str);
   
 private:
-  buffer_pool          *pool;
+  srslte::buffer_pool  *pool;
   srslte::log          *rrc_log;
   phy_interface_rrc    *phy;
   mac_interface_rrc    *mac;
@@ -98,7 +100,7 @@ private:
   nas_interface_rrc    *nas;
   usim_interface_rrc   *usim;
 
-  bit_buffer_t          bit_buf;
+  srslte::bit_buffer_t  bit_buf;
 
   boost::mutex          mutex;
   

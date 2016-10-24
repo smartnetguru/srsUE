@@ -33,6 +33,9 @@
 #include "common/interfaces.h"
 #include "common/security.h"
 
+using srslte::byte_buffer_t; 
+
+
 namespace srsue {
 
 /****************************************************************************
@@ -82,7 +85,7 @@ public:
   void write_pdu(byte_buffer_t *pdu);
 
 private:
-  buffer_pool        *pool;
+  srslte::buffer_pool        *pool;
   srslte::log        *log;
   rlc_interface_pdcp *rlc;
   rrc_interface_pdcp *rrc;

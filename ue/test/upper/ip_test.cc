@@ -131,7 +131,7 @@ public:
     }
 #endif
 
-    pool = srsue::buffer_pool::get_instance();
+    pool = srslte::buffer_pool::get_instance();
     
     // Start reader thread
     running=true; 
@@ -200,8 +200,8 @@ public:
 
   void release_pucch_srs() {}
   void ra_problem() {}
-  void write_pdu_bcch_bch(srsue::byte_buffer_t *pdu) {}
-  void write_pdu_bcch_dlsch(srsue::byte_buffer_t *pdu) 
+  void write_pdu_bcch_bch(srslte::byte_buffer_t *pdu) {}
+  void write_pdu_bcch_dlsch(srslte::byte_buffer_t *pdu) 
   {
     log_h->info_hex(pdu->msg, pdu->N_bytes, "BCCH DLSCH message received.");
     log_h->info("BCCH DLSCH message Stack latency: %ld us\n", pdu->get_latency_us());
@@ -240,7 +240,7 @@ public:
         mac->bcch_stop_rx();
         apply_sib2_configs();
         
-        srsue::byte_buffer_t *sdu = pool->allocate(); 
+        srslte::byte_buffer_t *sdu = pool->allocate(); 
         assert(sdu); 
         
         // Send Msg3 
@@ -262,12 +262,12 @@ public:
       }
     }
   }
-  void write_pdu_pcch(srsue::byte_buffer_t *sdu) {}
+  void write_pdu_pcch(srslte::byte_buffer_t *sdu) {}
   void max_retx_attempted(){}
   void in_sync() {};
   void out_of_sync() {};
 
-  void write_pdu(uint32_t lcid, srsue::byte_buffer_t *sdu)
+  void write_pdu(uint32_t lcid, srslte::byte_buffer_t *sdu)
   {
     int n=0;
     switch(lcid) {
@@ -326,11 +326,11 @@ private:
   int tun_fd;
   bool running; 
   srslte::log *log_h;
-  srsue::buffer_pool *pool;
+  srslte::buffer_pool *pool;
   srsue::rlc *rlc; 
   srsue::mac *mac; 
   srsue::phy *phy;  
-  srsue::bit_buffer_t bit_buf;
+  srslte::bit_buffer_t bit_buf;
   srsue::rrc_state_t state; 
   LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_1_STRUCT sib1;
   LIBLTE_RRC_SYS_INFO_BLOCK_TYPE_2_STRUCT sib2;
@@ -358,7 +358,7 @@ private:
     struct iphdr   *ip_pkt;
     uint32_t        idx = 0;
     int32_t         N_bytes;
-    srsue::byte_buffer_t  *pdu = pool->allocate();
+    srslte::byte_buffer_t  *pdu = pool->allocate();
 
     log_h->info("TUN/TAP reader thread running\n");
 

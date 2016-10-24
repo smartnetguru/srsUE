@@ -39,6 +39,8 @@
 #include <deque>
 #include <list>
 
+using srslte::byte_buffer_t; 
+
 namespace srsue {
 
 
@@ -94,14 +96,14 @@ public:
 
 private:
 
-  buffer_pool        *pool;
+  srslte::buffer_pool        *pool;
   srslte::log        *log;
   uint32_t            lcid;
   pdcp_interface_rlc *pdcp;
   rrc_interface_rlc  *rrc;
 
   // TX SDU buffers
-  msg_queue      tx_sdu_queue;
+  srslte::msg_queue      tx_sdu_queue;
   byte_buffer_t *tx_sdu;
 
   // PDU being resegmented

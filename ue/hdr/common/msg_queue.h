@@ -37,7 +37,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition.hpp>
 
-namespace srsue {
+namespace srslte {
 
 class msg_queue
 {

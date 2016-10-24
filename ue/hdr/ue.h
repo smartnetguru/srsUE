@@ -181,7 +181,7 @@ private:
   srslte::log_filter gw_log;
   srslte::log_filter usim_log;
 
-  srsue::buffer_pool *pool;
+  srslte::buffer_pool *pool;
 
   all_args_t       *args;
   bool              started;

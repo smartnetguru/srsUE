@@ -30,6 +30,7 @@
 
 #define NBUFS 5
 
+using namespace srslte;
 using namespace srsue;
 
 class mac_dummy_timers
