@@ -55,7 +55,7 @@ void sch_subh::fprint(FILE* stream)
   } else {
     if (parent->is_ul()) {
       switch(lcid) {
-        case C_RNTI:
+        case CRNTI:
           fprintf(stream, "C-RNTI CE\n");
           break;
         case PHR_REPORT:
@@ -342,7 +342,7 @@ uint32_t sch_subh::sizeof_ce(uint32_t lcid, bool is_ul)
     switch(lcid) {
       case PHR_REPORT: 
         return 1; 
-      case C_RNTI: 
+      case CRNTI: 
         return 2;
       case TRUNC_BSR: 
         return 1;
@@ -498,7 +498,7 @@ bool sch_subh::set_c_rnti(uint16_t crnti)
   if (((sch_pdu*)parent)->has_space_ce(2)) {
     w_payload_ce[0] = (uint8_t) (crnti&0xff00)>>8;
     w_payload_ce[1] = (uint8_t) (crnti&0x00ff);
-    lcid = C_RNTI;
+    lcid = CRNTI;
     ((sch_pdu*)parent)->update_space_ce(2);
     nof_bytes = 2; 
     return true; 

@@ -290,7 +290,7 @@ public:
         bzero(&cfg, sizeof(LIBLTE_RRC_RLC_CONFIG_STRUCT));
         cfg.rlc_mode = LIBLTE_RRC_RLC_MODE_UM_BI;
         cfg.dl_um_bi_rlc.t_reordering = LIBLTE_RRC_T_REORDERING_MS100; 
-        cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE5;   
+        cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE10;   
         rlc->add_bearer(LCID, &cfg);
         
         mac->setup_lcid(LCID, 0, 1, -1, 100000);
@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
     log_mac.set_level(srslte::LOG_LEVEL_DEBUG);
     log_mac.set_hex_limit(100);
     log_rlc.set_level(srslte::LOG_LEVEL_DEBUG);
-    log_rlc.set_hex_limit(100);
+    log_rlc.set_hex_limit(1000);
     log_tester.set_level(srslte::LOG_LEVEL_DEBUG);
     log_tester.set_hex_limit(100);
     printf("Log level info\n");

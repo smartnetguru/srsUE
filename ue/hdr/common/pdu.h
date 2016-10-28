@@ -201,7 +201,7 @@ public:
   
   typedef enum {
     PHR_REPORT = 26,
-    C_RNTI     = 27,
+    CRNTI      = 27,
     CON_RES_ID = 28,
     TRUNC_BSR  = 28,
     TA_CMD     = 29,
