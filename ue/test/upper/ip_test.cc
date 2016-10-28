@@ -291,6 +291,7 @@ public:
         cfg.rlc_mode = LIBLTE_RRC_RLC_MODE_UM_BI;
         cfg.dl_um_bi_rlc.t_reordering = LIBLTE_RRC_T_REORDERING_MS100; 
         cfg.dl_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE10;   
+        cfg.ul_um_bi_rlc.sn_field_len = LIBLTE_RRC_SN_FIELD_LENGTH_SIZE10;   
         rlc->add_bearer(LCID, &cfg);
         
         mac->setup_lcid(LCID, 0, 1, -1, 100000);
