@@ -15,7 +15,7 @@
  *
  * srsUE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICTXAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * A copy of the GNU Affero General Public License can be found in
@@ -46,6 +46,8 @@ rlc_um::rlc_um()
   
   vr_ur_in_rx_sdu = 0; 
   
+  mac_timers = NULL; 
+
   pdu_lost = false;
 }
 
@@ -349,7 +351,7 @@ void rlc_um::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   rlc_umd_pdu_header_t header;
   rlc_um_read_data_pdu_header(payload, nof_bytes, rx_sn_field_length, &header);
 
-  log->info_hex(payload, nof_bytes, "DL %s Rx data PDU SN: %d",
+  log->info_hex(payload, nof_bytes, "RX %s Rx data PDU SN: %d",
                 rb_id_text[lcid], header.sn);
 
   if(RX_MOD_BASE(header.sn) >= RX_MOD_BASE(vr_uh-rx_window_size) &&

@@ -15,7 +15,7 @@
  *
  * srsUE is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICRXAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * A copy of the GNU Affero General Public License can be found in
@@ -80,7 +80,7 @@ void rlc::get_metrics(rlc_metrics_t &m)
     m.dl_tput_mbps += (dl_tput_bytes[i]*8/(double)1e6)/secs;
     m.ul_tput_mbps += (ul_tput_bytes[i]*8/(double)1e6)/secs;    
     if(rlc_array[i].active()) {
-      rlc_log->info("LCID=%d, DL throughput: %4.6f Mbps. UL throughput: %4.6f Mbps.\n",
+      rlc_log->info("LCID=%d, TX throughput: %4.6f Mbps. RX throughput: %4.6f Mbps.\n",
                     i,
                     (dl_tput_bytes[i]*8/(double)1e6)/secs,
                     (ul_tput_bytes[i]*8/(double)1e6)/secs);
@@ -153,7 +153,7 @@ void rlc::write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes)
 
 void rlc::write_pdu_bcch_dlsch(uint8_t *payload, uint32_t nof_bytes)
 {
-  rlc_log->info_hex(payload, nof_bytes, "BCCH DLSCH message received.");
+  rlc_log->info_hex(payload, nof_bytes, "BCCH TXSCH message received.");
   dl_tput_bytes[0] += nof_bytes;
   byte_buffer_t *buf = pool->allocate();
   memcpy(buf->msg, payload, nof_bytes);
@@ -219,10 +219,10 @@ void rlc::add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
     case LIBLTE_RRC_RLC_MODE_UM_BI:
       rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
       break;
-    case LIBLTE_RRC_RLC_MODE_UM_UNI_UL:
+    case LIBLTE_RRC_RLC_MODE_UM_UNI_DL:
       rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
       break;
-    case LIBLTE_RRC_RLC_MODE_UM_UNI_DL:
+    case LIBLTE_RRC_RLC_MODE_UM_UNI_UL:
       rlc_array[lcid].init(RLC_MODE_UM, rlc_log, lcid, pdcp, rrc, mac_timers);
       break;
     default:

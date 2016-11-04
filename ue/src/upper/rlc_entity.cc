@@ -30,7 +30,8 @@ namespace srsue {
 
 rlc_entity::rlc_entity()
   :rlc(NULL)
-{}
+{
+}
 
 void rlc_entity::init(rlc_mode_t            mode,
                       srslte::log          *rlc_entity_log_,

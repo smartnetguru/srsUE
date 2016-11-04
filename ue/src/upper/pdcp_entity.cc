@@ -87,7 +87,7 @@ bool pdcp_entity::is_active()
 // RRC interface
 void pdcp_entity::write_sdu(byte_buffer_t *sdu)
 {
-  log->info_hex(sdu->msg, sdu->N_bytes, "UL %s SDU, do_security = %s", rb_id_text[lcid], (do_security)?"true":"false");
+  log->info_hex(sdu->msg, sdu->N_bytes, "TX %s SDU, do_security = %s", rb_id_text[lcid], (do_security)?"true":"false");
 
   // Handle SRB messages
   switch(lcid)
@@ -150,15 +150,15 @@ void pdcp_entity::write_pdu(byte_buffer_t *pdu)
   {
   case RB_ID_SRB0:
     // Simply pass on to RRC
-    log->info_hex(pdu->msg, pdu->N_bytes, "DL %s PDU", rb_id_text[lcid]);
+    log->info_hex(pdu->msg, pdu->N_bytes, "RX %s PDU", rb_id_text[lcid]);
     rrc->write_pdu(RB_ID_SRB0, pdu);
     break;
   case RB_ID_SRB1: // Intentional fall-through
   case RB_ID_SRB2:
     uint32_t sn;
-    log->info_hex(pdu->msg, pdu->N_bytes, "DL %s PDU", rb_id_text[lcid]);
+    log->info_hex(pdu->msg, pdu->N_bytes, "RX %s PDU", rb_id_text[lcid]);
     pdcp_unpack_control_pdu(pdu, &sn);
-    log->info_hex(pdu->msg, pdu->N_bytes, "DL %s SDU SN: %d",
+    log->info_hex(pdu->msg, pdu->N_bytes, "RX %s SDU SN: %d",
                   rb_id_text[lcid], sn);
     rrc->write_pdu(lcid, pdu);
     break;
@@ -174,7 +174,7 @@ void pdcp_entity::write_pdu(byte_buffer_t *pdu)
     } else {
       pdcp_unpack_data_pdu_short_sn(pdu, &sn);
     }
-    log->info_hex(pdu->msg, pdu->N_bytes, "DL %s PDU: %d", rb_id_text[lcid], sn);
+    log->info_hex(pdu->msg, pdu->N_bytes, "RX %s PDU: %d", rb_id_text[lcid], sn);
     gw->write_pdu(lcid, pdu);
   }
 }
