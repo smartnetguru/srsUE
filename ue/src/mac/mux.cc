@@ -82,35 +82,41 @@ bool mux::is_pending_sdu(uint32_t lch_id) {
   return rlc->get_buffer_state(lch_id)>0;  
 }
 
-void mux::set_priority(uint32_t lch_id, uint32_t set_priority, int set_PBR, uint32_t set_BSD)
+void mux::set_priority(uint32_t lch_id, uint32_t new_priority, int set_PBR, uint32_t set_BSD)
 {
   if (lch_id < NOF_UL_LCH) {
-    priority[lch_id] = set_priority;
-    PBR[lch_id]      = set_PBR;
-    BSD[lch_id]      = set_BSD; 
-    
-    // Insert priority in sorted idx array
-    int new_index = 0; 
-    while(new_index < NOF_UL_LCH && set_priority > priority_sorted[new_index]) {
-      new_index++; 
+    if (new_priority < NOF_UL_LCH) {
+      priority[lch_id] = new_priority;
+      PBR[lch_id]      = set_PBR;
+      BSD[lch_id]      = set_BSD; 
+      
+      // Insert priority in sorted idx array
+      int new_index = 0; 
+      while(new_index < NOF_UL_LCH && new_priority > priority_sorted[new_index]) {
+        new_index++; 
+      }
+      int old_index = 0; 
+      while(old_index < NOF_UL_LCH && lch_id != lchid_sorted[old_index]) {
+        old_index++;
+      }
+      if (new_index ==  NOF_UL_LCH) {
+        Error("Can't find LCID=%d in sorted list\n", lch_id);
+        return;
+      }
+      // Replace goes in one direction or the other 
+      int add=new_index>old_index?1:-1;
+      for (int i=old_index;i!=new_index;i+=add) {
+        priority_sorted[i] = priority_sorted[i+add];
+        lchid_sorted[i]    = lchid_sorted[i+add];
+      }
+      priority_sorted[new_index] = new_priority;
+      lchid_sorted[new_index]    = lch_id; 
+    } else {
+      Error("Invalid priority %d: must be in 1..16\n", new_priority);
     }
-    int old_index = 0; 
-    while(old_index < NOF_UL_LCH && lch_id != lchid_sorted[old_index]) {
-      old_index++;
-    }
-    if (new_index ==  NOF_UL_LCH) {
-      Error("Can't find LchID=%d in sorted list\n", lch_id);
-      return;
-    }
-    // Replace goes in one direction or the other 
-    int add=new_index>old_index?1:-1;
-    for (int i=old_index;i!=new_index;i+=add) {
-      priority_sorted[i] = priority_sorted[i+add];
-      lchid_sorted[i]    = lchid_sorted[i+add];
-    }
-    priority_sorted[new_index] = set_priority;
-    lchid_sorted[new_index]    = lch_id; 
-  }  
+  } else {
+    Error("Invalid lch_id %d: must be in 0..15\n", lch_id);
+  }
 }
 
 srslte::sch_subh::cetype bsr_format_convert(bsr_proc::bsr_format_t format) {

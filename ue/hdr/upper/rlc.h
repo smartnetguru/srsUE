@@ -73,7 +73,7 @@ public:
   // RRC interface
   void reset();
   void add_bearer(uint32_t lcid);
-  void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg=NULL);
+  void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg);
 
 private:
   void reset_metrics(); 

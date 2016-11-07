@@ -101,7 +101,7 @@ rrc_state_t rrc::get_state()
 
 void rrc::write_sdu(uint32_t lcid, byte_buffer_t *sdu)
 {
-  rrc_log->info_hex(sdu->msg, sdu->N_bytes, "UL %s SDU", rb_id_text[lcid]);
+  rrc_log->info_hex(sdu->msg, sdu->N_bytes, "RX %s SDU", rb_id_text[lcid]);
 
   switch(state)
   {
@@ -142,7 +142,7 @@ void rrc::release_pucch_srs()
   // Apply default configuration for PUCCH (CQI and SR) and SRS (release)
   set_phy_default_pucch_srs();
   
-  // Configure UL signals without pregeneration because default option is release
+  // Configure RX signals without pregeneration because default option is release
   phy->configure_ul_params(true);
   
 }
@@ -213,8 +213,8 @@ bool rrc::have_drb()
 
 void rrc::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
 {
-  rrc_log->info_hex(pdu->msg, pdu->N_bytes, "DL %s PDU", rb_id_text[lcid]);
-  rrc_log->info("DL PDU Stack latency: %ld us\n", pdu->get_latency_us());
+  rrc_log->info_hex(pdu->msg, pdu->N_bytes, "TX %s PDU", rb_id_text[lcid]);
+  rrc_log->info("TX PDU Stack latency: %ld us\n", pdu->get_latency_us());
 
   switch(lcid)
   {
@@ -226,7 +226,7 @@ void rrc::write_pdu(uint32_t lcid, byte_buffer_t *pdu)
     parse_dl_dcch(lcid, pdu);
     break;
   default:
-    rrc_log->error("DL PDU with invalid bearer id: %s", lcid);
+    rrc_log->error("TX PDU with invalid bearer id: %s", lcid);
     break;
   }
 
@@ -557,10 +557,10 @@ void rrc::send_con_setup_complete(byte_buffer_t *nas_msg)
 
 void rrc::send_ul_info_transfer(uint32_t lcid, byte_buffer_t *sdu)
 {
-  rrc_log->debug("Preparing UL Info Transfer\n");
+  rrc_log->debug("Preparing RX Info Transfer\n");
   LIBLTE_RRC_UL_DCCH_MSG_STRUCT ul_dcch_msg;
 
-  // Prepare UL INFO packet
+  // Prepare RX INFO packet
   ul_dcch_msg.msg_type                                 = LIBLTE_RRC_UL_DCCH_MSG_TYPE_UL_INFO_TRANSFER;
   ul_dcch_msg.msg.ul_info_transfer.dedicated_info_type = LIBLTE_RRC_UL_INFORMATION_TRANSFER_TYPE_NAS;
   memcpy(ul_dcch_msg.msg.ul_info_transfer.dedicated_info.msg, sdu->msg, sdu->N_bytes);
@@ -582,7 +582,7 @@ void rrc::send_ul_info_transfer(uint32_t lcid, byte_buffer_t *sdu)
   pdu->N_bytes = bit_buf.N_bits/8;
   pdu->timestamp = bpt::microsec_clock::local_time();
 
-  rrc_log->info("Sending UL Info Transfer\n");
+  rrc_log->info("Sending RX Info Transfer\n");
   pdcp->write_sdu(lcid, pdu);
 }
 

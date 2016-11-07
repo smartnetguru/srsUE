@@ -80,7 +80,7 @@ void gw::get_metrics(gw_metrics_t &m)
   double secs = td.total_microseconds()/(double)1e6;
   m.dl_tput_mbps = (dl_tput_bytes*8/(double)1e6)/secs;
   m.ul_tput_mbps = (ul_tput_bytes*8/(double)1e6)/secs;
-  gw_log->info("DL throughput: %4.6f Mbps. UL throughput: %4.6f Mbps.\n",
+  gw_log->info("RX throughput: %4.6f Mbps. TX throughput: %4.6f Mbps.\n",
                m.dl_tput_mbps, m.ul_tput_mbps);
   metrics_time = now;
   dl_tput_bytes = 0;
@@ -92,18 +92,18 @@ void gw::get_metrics(gw_metrics_t &m)
 *******************************************************************************/
 void gw::write_pdu(uint32_t lcid, srslte::byte_buffer_t *pdu)
 {
-  gw_log->info_hex(pdu->msg, pdu->N_bytes, "DL PDU");
-  gw_log->info("DL PDU. Stack latency: %ld us\n", pdu->get_latency_us());
+  gw_log->info_hex(pdu->msg, pdu->N_bytes, "RX PDU");
+  gw_log->info("RX PDU. Stack latency: %ld us\n", pdu->get_latency_us());
   dl_tput_bytes += pdu->N_bytes;
   if(!if_up)
   {
-    gw_log->warning("TUN/TAP not up - dropping gw DL message\n");
+    gw_log->warning("TUN/TAP not up - dropping gw RX message\n");
   }else{
     int n = write(tun_fd, pdu->msg, pdu->N_bytes); 
     if(pdu->N_bytes != n)
     {
-      gw_log->error("DL TUN/TAP write failure\n");
-      gw_log->console("DL TUN/TAP write failure (%d) writting %d bytes\n", n, pdu->N_bytes);
+      gw_log->error("RX TUN/TAP write failure\n");
+      gw_log->console("RX TUN/TAP write failure (%d) writting %d bytes\n", n, pdu->N_bytes);
     } 
   }
   pool->deallocate(pdu);
@@ -235,7 +235,7 @@ void gw::run_thread()
             // Check if entire packet was received
             if(ntohs(ip_pkt->tot_len) == pdu->N_bytes)
             {
-              gw_log->info_hex(pdu->msg, pdu->N_bytes, "UL PDU");
+              gw_log->info_hex(pdu->msg, pdu->N_bytes, "TX PDU");
 
               while(running && (!rrc->rrc_connected() || !rrc->have_drb())) {
                 rrc->rrc_connect();

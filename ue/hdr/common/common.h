@@ -114,6 +114,7 @@ public:
     uint8_t     buffer[SRSUE_MAX_BUFFER_SIZE_BYTES];
     uint8_t    *msg;
     bpt::ptime  timestamp;
+    uint32_t     opt, opt2; 
 
     byte_buffer_t():N_bytes(0)
     {
