@@ -181,24 +181,46 @@ void rlc_am::write_sdu(byte_buffer_t *sdu)
 
 uint32_t rlc_am::get_total_buffer_state()
 {
+  boost::lock_guard<boost::mutex> lock(mutex);
   uint32_t n_bytes = 0;
-  
+  uint32_t n_sdus  = 0;
+
+  // Bytes needed for status report
+  check_reordering_timeout();
+  if(do_status && !status_prohibited()) {
+    n_bytes += prepare_status();
+    log->debug("Buffer state - status report: %d bytes\n", n_bytes);
+  }
+
   // Bytes needed for retx
   if(retx_queue.size() > 0) {
     rlc_amd_retx_t retx = retx_queue.front();
     log->debug("Buffer state - retx - SN: %d, Segment: %s, %d:%d\n", retx.sn, retx.is_segment ? "true" : "false", retx.so_start, retx.so_end);
     if(tx_window.end() != tx_window.find(retx.sn)) {
-      n_bytes += required_buffer_size(retx);
-      log->debug("Buffer state - retx: %d bytes\n", n_bytes);
+        n_bytes += required_buffer_size(retx);
+        log->debug("Buffer state - retx: %d bytes\n", n_bytes);
     }
   }
 
   // Bytes needed for tx SDUs
-  n_bytes = tx_sdu_queue.size_bytes();
+  n_sdus  = tx_sdu_queue.size();
+  n_bytes += tx_sdu_queue.size_bytes();
   if(tx_sdu)
   {
+    n_sdus++;
     n_bytes += tx_sdu->N_bytes;
   }
+
+  // Room needed for header extensions? (integer rounding)
+  if(n_sdus > 1)
+    n_bytes += ((n_sdus-1)*1.5)+0.5;
+
+  // Room needed for fixed header?
+  if(n_bytes > 0) {
+    n_bytes += 2;
+    log->debug("Buffer state - tx SDUs: %d bytes\n", n_bytes);
+  }
+
   return n_bytes;
 }
 
