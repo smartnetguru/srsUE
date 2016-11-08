@@ -58,6 +58,7 @@ public:
 
   // MAC interface
   uint32_t get_buffer_state();
+  uint32_t get_total_buffer_state();
   int      read_pdu(uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu(uint8_t *payload, uint32_t nof_bytes);
 

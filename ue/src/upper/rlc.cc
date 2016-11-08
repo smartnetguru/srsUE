@@ -123,6 +123,15 @@ uint32_t rlc::get_buffer_state(uint32_t lcid)
   }
 }
 
+uint32_t rlc::get_total_buffer_state(uint32_t lcid)
+{
+  if(valid_lcid(lcid)) {
+    return rlc_array[lcid].get_total_buffer_state();
+  } else {
+    return 0;
+  }
+}
+
 int rlc::read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes)
 {
   if(valid_lcid(lcid)) {

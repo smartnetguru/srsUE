@@ -185,6 +185,11 @@ uint32_t rlc_um::get_buffer_state()
   return n_bytes;
 }
 
+uint32_t rlc_um::get_total_buffer_state()
+{
+  return get_buffer_state();
+}
+
 int rlc_um::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   log->debug("MAC opportunity - %d bytes\n", nof_bytes);

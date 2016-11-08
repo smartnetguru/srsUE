@@ -91,6 +91,11 @@ uint32_t rlc_tm::get_buffer_state()
   return ul_queue.size_bytes();
 }
 
+uint32_t rlc_tm::get_total_buffer_state()
+{
+  return get_buffer_state();
+}
+
 int rlc_tm::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   uint32_t pdu_size = ul_queue.size_tail_bytes();

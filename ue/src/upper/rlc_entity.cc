@@ -112,6 +112,15 @@ uint32_t rlc_entity::get_buffer_state()
   else
     return 0;
 }
+
+uint32_t rlc_entity::get_total_buffer_state()
+{
+  if(rlc)
+    return rlc->get_total_buffer_state();
+  else
+    return 0;
+}
+
 int rlc_entity::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   if(rlc)

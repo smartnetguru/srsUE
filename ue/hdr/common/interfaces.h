@@ -212,6 +212,8 @@ public:
   /* MAC calls RLC to get buffer state for a logical channel.
    * This function should return quickly. */
   virtual uint32_t get_buffer_state(uint32_t lcid) = 0;
+  virtual uint32_t get_total_buffer_state(uint32_t lcid) = 0; 
+
 
   const static int MAX_PDU_SEGMENTS = 20;
 

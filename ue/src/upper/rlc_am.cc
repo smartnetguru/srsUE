@@ -179,6 +179,29 @@ void rlc_am::write_sdu(byte_buffer_t *sdu)
  * MAC interface
  ***************************************************************************/
 
+uint32_t rlc_am::get_total_buffer_state()
+{
+  uint32_t n_bytes = 0;
+  
+  // Bytes needed for retx
+  if(retx_queue.size() > 0) {
+    rlc_amd_retx_t retx = retx_queue.front();
+    log->debug("Buffer state - retx - SN: %d, Segment: %s, %d:%d\n", retx.sn, retx.is_segment ? "true" : "false", retx.so_start, retx.so_end);
+    if(tx_window.end() != tx_window.find(retx.sn)) {
+      n_bytes += required_buffer_size(retx);
+      log->debug("Buffer state - retx: %d bytes\n", n_bytes);
+    }
+  }
+
+  // Bytes needed for tx SDUs
+  n_bytes = tx_sdu_queue.size_bytes();
+  if(tx_sdu)
+  {
+    n_bytes += tx_sdu->N_bytes;
+  }
+  return n_bytes;
+}
+
 uint32_t rlc_am::get_buffer_state()
 {
   boost::lock_guard<boost::mutex> lock(mutex);

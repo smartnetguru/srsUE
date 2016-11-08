@@ -174,6 +174,7 @@ public:
 
   // MAC interface
   virtual uint32_t get_buffer_state() = 0;
+  virtual uint32_t get_total_buffer_state() = 0;
   virtual int      read_pdu(uint8_t *payload, uint32_t nof_bytes) = 0;
   virtual void     write_pdu(uint8_t *payload, uint32_t nof_bytes) = 0;
 };
