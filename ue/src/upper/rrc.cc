@@ -1083,6 +1083,10 @@ void rrc::apply_phy_config_dedicated(LIBLTE_RRC_PHYSICAL_CONFIG_DEDICATED_STRUCT
   }
   if(phy_cnfg->antenna_info_present) {
     if (!phy_cnfg->antenna_info_default_value) {
+      if(phy_cnfg->antenna_info_explicit_value.tx_mode != LIBLTE_RRC_TRANSMISSION_MODE_1 &&
+         phy_cnfg->antenna_info_explicit_value.tx_mode != LIBLTE_RRC_TRANSMISSION_MODE_2) {
+        rrc_log->error("Transmission mode TM%s not currently supported by srsUE\n", liblte_rrc_transmission_mode_text[phy_cnfg->antenna_info_explicit_value.tx_mode]);
+      }
       memcpy(&current_cfg->antenna_info_explicit_value, &phy_cnfg->antenna_info_explicit_value, sizeof(LIBLTE_RRC_ANTENNA_INFO_DEDICATED_STRUCT)); 
     } else if (apply_defaults) {
       current_cfg->antenna_info_explicit_value.tx_mode = LIBLTE_RRC_TRANSMISSION_MODE_2;
