@@ -551,7 +551,7 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   if(!tx_sdu && tx_sdu_queue.size() == 0)
   {
-    log->info("No data available to be sent");
+    log->info("No data available to be sent\n");
     return 0;
   }
 
