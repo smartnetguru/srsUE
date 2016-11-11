@@ -35,7 +35,7 @@ using namespace srslte;
 
 namespace srsue{
 
-rlc_am::rlc_am()
+rlc_am::rlc_am() : tx_sdu_queue(16)
 {
   tx_sdu = NULL;
   rx_sdu = NULL;

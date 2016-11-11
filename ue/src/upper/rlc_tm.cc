@@ -31,7 +31,7 @@ using namespace srslte;
 
 namespace srsue{
 
-rlc_tm::rlc_tm()
+rlc_tm::rlc_tm() : ul_queue(16)
 {
   pool = buffer_pool::get_instance();
 }
