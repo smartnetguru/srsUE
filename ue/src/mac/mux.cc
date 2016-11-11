@@ -265,8 +265,8 @@ bool mux::allocate_sdu(uint32_t lcid, srslte::sch_pdu* pdu_msg, int max_sdu_sz, 
             *sdu_sz = sdu_len; 
           }
           
-          Info("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
-                 buffer_state, sdu_len, sdu_space, pdu_msg->rem_size());
+          Info("SDU: rlc_buffer=%d, allocated=%d/%d, max_sdu_sz=%d, remaining=%d\n", 
+                 buffer_state, sdu_len, sdu_space, max_sdu_sz, pdu_msg->rem_size());
           return true;               
         } else {
           Warning("SDU: rlc_buffer=%d, allocated=%d/%d, remaining=%d\n", 
