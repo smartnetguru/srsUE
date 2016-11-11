@@ -372,6 +372,7 @@ int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
 
   // Is resegmentation needed?
   if(retx.is_segment || required_buffer_size(retx) > nof_bytes) {
+    log->debug("%s build_retx_pdu - resegmentation required\n", rb_id_text[lcid]);
     return build_segment(payload, nof_bytes, retx);
   }
 
@@ -502,6 +503,8 @@ int rlc_am::build_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_retx_t r
   if(pdu_len > nof_bytes) {
     log->error("%s Retx PDU segment length error. Available: %d, Used: %d\n",
                rb_id_text[lcid], nof_bytes, pdu_len);
+    log->debug("%s Retx PDU segment length error. Header len: %d, Payload len: %d, N_li: %d\n",
+               rb_id_text[lcid], (ptr-payload), len, new_header.N_li);
   }
   return pdu_len;
 
