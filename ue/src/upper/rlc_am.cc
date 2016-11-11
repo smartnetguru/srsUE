@@ -546,6 +546,9 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     return 0;
   }
 
+  log->debug("%s Building PDU - pdu_space: %d, head_len: %d \n",
+            rb_id_text[lcid], pdu_space, head_len);
+
   // Check for SDU segment
   if(tx_sdu)
   {
@@ -568,6 +571,9 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     else
       pdu_space = 0;
     header.fi |= RLC_FI_FIELD_NOT_START_ALIGNED; // First byte does not correspond to first byte of SDU
+
+    log->debug("%s Building PDU - added SDU segment (len:%d) - pdu_space: %d, head_len: %d \n",
+              rb_id_text[lcid], to_move, pdu_space, head_len);
   }
 
   // Pull SDUs from queue
@@ -576,7 +582,7 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
     if(last_li > 0)
       header.li[header.N_li++] = last_li;
     head_len = rlc_am_packed_length(&header);
-    if(head_len > pdu_space) {
+    if(head_len >= pdu_space) {
       header.N_li--;
       break;
     }
@@ -599,6 +605,9 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
       pdu_space -= to_move;
     else
       pdu_space = 0;
+
+    log->debug("%s Building PDU - added SDU segment (len:%d) - pdu_space: %d, head_len: %d \n",
+              rb_id_text[lcid], to_move, pdu_space, head_len);
   }
 
   if(tx_sdu)
