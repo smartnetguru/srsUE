@@ -1076,10 +1076,10 @@ int rlc_am::required_buffer_size(rlc_amd_retx_t retx)
     lower += old_header.li[i];
   }
 
-  if(tx_window[retx.sn].buf->N_bytes != retx.so_end) {
-    if(new_header.N_li > 0)
-      new_header.N_li--; // No li for last segment
-  }
+//  if(tx_window[retx.sn].buf->N_bytes != retx.so_end) {
+//    if(new_header.N_li > 0)
+//      new_header.N_li--; // No li for last segment
+//  }
 
   return rlc_am_packed_length(&new_header) + (retx.so_end-retx.so_start);
 }
