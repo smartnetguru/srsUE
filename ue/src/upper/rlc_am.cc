@@ -371,7 +371,8 @@ int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
   }
 
   // Is resegmentation needed?
-  if(retx.is_segment || tx_window[retx.sn].buf->N_bytes > nof_bytes) {
+  if(retx.is_segment || required_buffer_size(retx) > nof_bytes) {
+    log->debug("%s build_retx_pdu - resegmentation required\n", rb_id_text[lcid]);
     return build_segment(payload, nof_bytes, retx);
   }
 
@@ -395,7 +396,7 @@ int  rlc_am::build_retx_pdu(uint8_t *payload, uint32_t nof_bytes)
   tx_window[retx.sn].retx_count++;
   if(tx_window[retx.sn].retx_count >= max_retx_thresh)
     rrc->max_retx_attempted();
-  log->info("%s Retx SN %d, retx count: %d\n",
+  log->info("%s Retx PDU scheduled for tx. SN: %d, retx count: %d\n",
             rb_id_text[lcid], retx.sn, tx_window[retx.sn].retx_count);
 
   debug_state();
@@ -494,11 +495,18 @@ int rlc_am::build_segment(uint8_t *payload, uint32_t nof_bytes, rlc_amd_retx_t r
   uint32_t len  = retx.so_end - retx.so_start;
   memcpy(ptr, data, len);
 
-  log->info("%s Retx data segment SN %d, SO: %d\n",
+  log->info("%s Retx PDU segment scheduled for tx. SN: %d, SO: %d\n",
             rb_id_text[lcid], retx.sn, retx.so_start);
 
   debug_state();
-  return (ptr-payload) + len;
+  int pdu_len = (ptr-payload) + len;
+  if(pdu_len > nof_bytes) {
+    log->error("%s Retx PDU segment length error. Available: %d, Used: %d\n",
+               rb_id_text[lcid], nof_bytes, pdu_len);
+    log->debug("%s Retx PDU segment length error. Header len: %d, Payload len: %d, N_li: %d\n",
+               rb_id_text[lcid], (ptr-payload), len, new_header.N_li);
+  }
+  return pdu_len;
 
 }
 
@@ -611,6 +619,7 @@ int  rlc_am::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   // Set SN
   header.sn = vt_s;
   vt_s = (vt_s + 1)%MOD;
+  log->info("%s PDU scheduled for tx. SN: %d\n", rb_id_text[lcid], header.sn);
 
   // Place PDU in tx_window, write header and TX
   tx_window[header.sn].buf        = pdu;
@@ -1067,10 +1076,10 @@ int rlc_am::required_buffer_size(rlc_amd_retx_t retx)
     lower += old_header.li[i];
   }
 
-  if(tx_window[retx.sn].buf->N_bytes != retx.so_end) {
-    if(new_header.N_li > 0)
-      new_header.N_li--; // No li for last segment
-  }
+//  if(tx_window[retx.sn].buf->N_bytes != retx.so_end) {
+//    if(new_header.N_li > 0)
+//      new_header.N_li--; // No li for last segment
+//  }
 
   return rlc_am_packed_length(&new_header) + (retx.so_end-retx.so_start);
 }
