@@ -122,6 +122,11 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
   sch_subh padding; 
   padding.set_padding(); 
   
+  if (init_rem_len < 0) {
+    log_h->error("init_rem_len=%d\n", init_rem_len);
+    return NULL; 
+  }
+  
   /* If last SDU has zero payload, remove it. FIXME: Why happens this?? */
   if (subheaders[nof_subheaders-1].get_payload_size() == 0) {
     del_subh();
@@ -228,6 +233,14 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
          nof_subheaders, last_sdu_idx, total_sdu_len, onetwo_padding, rem_len, init_rem_len);
     fprintf(stderr, "Expected PDU len %d bytes but wrote %d\n", pdu_len, rem_len + header_sz + ce_payload_sz + total_sdu_len);
     printf("------------------------------\n");
+    
+    if (log_h) {
+      log_h->error("Wrote PDU: pdu_len=%d, header_and_ce=%d (%d+%d), nof_subh=%d, last_sdu=%d, sdu_len=%d, onepad=%d, multi=%d, init_rem_len=%d\n", 
+         pdu_len, header_sz+ce_payload_sz, header_sz, ce_payload_sz, 
+         nof_subheaders, last_sdu_idx, total_sdu_len, onetwo_padding, rem_len, init_rem_len);
+    
+    }
+    
     return NULL; 
   }
 
