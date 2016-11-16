@@ -31,7 +31,9 @@
 namespace srslte{
 
 log_filter::log_filter()
-{}
+{
+  do_tti = false; 
+}
 
 log_filter::log_filter(std::string layer, logger *logger_, bool tti)
 {
@@ -226,7 +228,7 @@ void log_filter::warning_line(std::string file, int line, std::string message, .
     char     *args_msg;
     va_list   args;
     va_start(args, message);
-    if(vasprintf(&args_msg, message.c_str(), args) > 0);
+    if(vasprintf(&args_msg, message.c_str(), args) > 0)
       all_log_line(LOG_LEVEL_WARNING, tti, file, line, args_msg);
     va_end(args);
     free(args_msg);
@@ -239,7 +241,7 @@ void log_filter::info_line(std::string file, int line, std::string message, ...)
     char     *args_msg;
     va_list   args;
     va_start(args, message);
-    if(vasprintf(&args_msg, message.c_str(), args) > 0);
+    if(vasprintf(&args_msg, message.c_str(), args) > 0)
       all_log_line(LOG_LEVEL_INFO, tti, file, line, args_msg);
     va_end(args);
     free(args_msg);
@@ -252,7 +254,7 @@ void log_filter::debug_line(std::string file, int line, std::string message, ...
     char     *args_msg;
     va_list   args;
     va_start(args, message);
-    if(vasprintf(&args_msg, message.c_str(), args) > 0);
+    if(vasprintf(&args_msg, message.c_str(), args) > 0)
       all_log_line(LOG_LEVEL_DEBUG, tti, file, line, args_msg);
     va_end(args);
     free(args_msg);

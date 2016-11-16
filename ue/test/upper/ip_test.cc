@@ -117,6 +117,7 @@ public:
   
   tester() {
     state = srsue::RRC_STATE_SIB1_SEARCH;
+    read_enable = true; 
   }
   
   void init(srsue::phy *phy_, srsue::mac *mac_, srsue::rlc *rlc_, srslte::log *log_h_, std::string ip_address) {

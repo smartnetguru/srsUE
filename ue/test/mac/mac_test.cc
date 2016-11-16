@@ -283,7 +283,7 @@ public:
     send_ack = 0; 
   }
   uint32_t get_total_buffer_state(uint32_t lcid) {
-    
+    return get_buffer_state(lcid); 
   }
   uint32_t get_buffer_state(uint32_t lcid) {
     if (lcid == 0) {
