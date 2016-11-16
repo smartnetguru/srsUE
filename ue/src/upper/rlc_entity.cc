@@ -30,7 +30,8 @@ namespace srsue {
 
 rlc_entity::rlc_entity()
   :rlc(NULL)
-{}
+{
+}
 
 void rlc_entity::init(rlc_mode_t            mode,
                       srslte::log          *rlc_entity_log_,
@@ -111,6 +112,15 @@ uint32_t rlc_entity::get_buffer_state()
   else
     return 0;
 }
+
+uint32_t rlc_entity::get_total_buffer_state()
+{
+  if(rlc)
+    return rlc->get_total_buffer_state();
+  else
+    return 0;
+}
+
 int rlc_entity::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   if(rlc)

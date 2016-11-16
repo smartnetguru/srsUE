@@ -326,7 +326,7 @@ private:
 
 
 testmac         my_mac;
-srslte::radio radio; 
+srslte::radio   radio; 
   
 int main(int argc, char *argv[])
 {

@@ -31,6 +31,13 @@
 #include "common/pdu.h"
 #include "srslte/srslte.h"
 
+// Table 6.1.3.1-1 Buffer size levels for BSR 
+static uint32_t btable[64] = {
+  0, 5, 10, 12, 14, 17, 19, 22, 26, 31, 36, 42, 49, 57, 67, 78, 91, 107, 125, 146, 171, 200, 234, 274, 321, 376, 440, 515, 603, 706, 826, 967, 1132, 
+  1326, 1552, 1817, 2127, 2490, 2915, 3413, 3995, 4667, 5476, 6411, 7505, 8787, 10287, 12043, 14099, 16507, 19325, 22624, 26487, 31009, 36304, 
+  42502, 49759, 58255, 68201, 79846, 93479, 109439, 128125, 150000};
+
+
 
 namespace srslte {
    
@@ -48,7 +55,7 @@ void sch_subh::fprint(FILE* stream)
   } else {
     if (parent->is_ul()) {
       switch(lcid) {
-        case C_RNTI:
+        case CRNTI:
           fprintf(stream, "C-RNTI CE\n");
           break;
         case PHR_REPORT:
@@ -114,7 +121,12 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
   int init_rem_len=rem_len; 
   sch_subh padding; 
   padding.set_padding(); 
-    
+  
+  if (init_rem_len < 0) {
+    log_h->error("init_rem_len=%d\n", init_rem_len);
+    return NULL; 
+  }
+  
   /* If last SDU has zero payload, remove it. FIXME: Why happens this?? */
   if (subheaders[nof_subheaders-1].get_payload_size() == 0) {
     del_subh();
@@ -221,6 +233,14 @@ uint8_t* sch_pdu::write_packet(srslte::log *log_h)
          nof_subheaders, last_sdu_idx, total_sdu_len, onetwo_padding, rem_len, init_rem_len);
     fprintf(stderr, "Expected PDU len %d bytes but wrote %d\n", pdu_len, rem_len + header_sz + ce_payload_sz + total_sdu_len);
     printf("------------------------------\n");
+    
+    if (log_h) {
+      log_h->error("Wrote PDU: pdu_len=%d, header_and_ce=%d (%d+%d), nof_subh=%d, last_sdu=%d, sdu_len=%d, onepad=%d, multi=%d, init_rem_len=%d\n", 
+         pdu_len, header_sz+ce_payload_sz, header_sz, ce_payload_sz, 
+         nof_subheaders, last_sdu_idx, total_sdu_len, onetwo_padding, rem_len, init_rem_len);
+    
+    }
+    
     return NULL; 
   }
 
@@ -335,7 +355,7 @@ uint32_t sch_subh::sizeof_ce(uint32_t lcid, bool is_ul)
     switch(lcid) {
       case PHR_REPORT: 
         return 1; 
-      case C_RNTI: 
+      case CRNTI: 
         return 2;
       case TRUNC_BSR: 
         return 1;
@@ -369,7 +389,7 @@ uint16_t sch_subh::get_c_rnti()
   if (payload) {
     return (uint16_t) payload[0] | payload[1]<<8;
   } else {
-    return 0;
+    return (uint16_t) w_payload_ce[0] | w_payload_ce[1]<<8;
   }
 }
 uint64_t sch_subh::get_con_res_id()
@@ -378,6 +398,8 @@ uint64_t sch_subh::get_con_res_id()
     return ((uint64_t) payload[5]) | (((uint64_t) payload[4])<<8) | (((uint64_t) payload[3])<<16) | (((uint64_t) payload[2])<<24) |
            (((uint64_t) payload[1])<<32) | (((uint64_t) payload[0])<<40);                
   } else {
+    return ((uint64_t) w_payload_ce[5]) | (((uint64_t) w_payload_ce[4])<<8) | (((uint64_t) w_payload_ce[3])<<16) | (((uint64_t) w_payload_ce[2])<<24) |
+           (((uint64_t) w_payload_ce[1])<<32) | (((uint64_t) w_payload_ce[0])<<40);                
     return 0; 
   }
 }
@@ -386,9 +408,34 @@ uint8_t sch_subh::get_phr()
   if (payload) {
     return (uint8_t) payload[0]&0x3f;
   } else {
-    return 0;
+    return (uint8_t) w_payload_ce[0]&0x3f;
   }
 }
+
+int sch_subh::get_bsr(uint32_t buff_size[4])
+{
+  if (payload) {
+    uint32_t nonzero_lcg = 0;
+    if (ce_type()==LONG_BSR) {
+      buff_size[0] = (payload[0]&0xFC) >> 2;
+      buff_size[1] = (payload[0]&0x03) << 4 | (payload[1]&0xF0) >> 4;
+      buff_size[2] = (payload[1]&0x0F) << 4 | (payload[1]&0xC0) >> 6;
+      buff_size[3] = (payload[2]&0x3F); 
+    } else {
+      uint32_t nonzero_lcg     = (payload[0]&0xc0) >> 6;
+      buff_size[nonzero_lcg%4] =  payload[0]&0x3f;
+    }
+    for (int i=0;i<4;i++) {
+      if (buff_size[i]) {
+        buff_size[i] = btable[buff_size[i]%64];
+      }
+    }
+    return nonzero_lcg;
+  } else {
+    return -1; 
+  }
+}
+
 uint8_t sch_subh::get_ta_cmd()
 {
   if (payload) {
@@ -464,7 +511,7 @@ bool sch_subh::set_c_rnti(uint16_t crnti)
   if (((sch_pdu*)parent)->has_space_ce(2)) {
     w_payload_ce[0] = (uint8_t) (crnti&0xff00)>>8;
     w_payload_ce[1] = (uint8_t) (crnti&0x00ff);
-    lcid = C_RNTI;
+    lcid = CRNTI;
     ((sch_pdu*)parent)->update_space_ce(2);
     nof_bytes = 2; 
     return true; 
@@ -475,7 +522,7 @@ bool sch_subh::set_c_rnti(uint16_t crnti)
 bool sch_subh::set_con_res_id(uint64_t con_res_id)
 {
   if (((sch_pdu*)parent)->has_space_ce(6)) {
-    w_payload_ce[0] = (uint8_t) ((con_res_id&0xff0000000000)>>48);
+    w_payload_ce[0] = (uint8_t) ((con_res_id&0xff0000000000)>>40);
     w_payload_ce[1] = (uint8_t) ((con_res_id&0x00ff00000000)>>32);
     w_payload_ce[2] = (uint8_t) ((con_res_id&0x0000ff000000)>>24);
     w_payload_ce[3] = (uint8_t) ((con_res_id&0x000000ff0000)>>16);
@@ -521,7 +568,6 @@ int sch_subh::set_sdu(uint32_t lcid_, uint32_t requested_bytes, read_pdu_interfa
     lcid = lcid_;
     
     payload = ((sch_pdu*)parent)->get_current_sdu_ptr();
-    
     // Copy data and get final number of bytes written to the MAC PDU 
     int sdu_sz = sdu_itf->read_pdu(lcid, payload, requested_bytes);
     
@@ -624,14 +670,6 @@ void sch_subh::read_payload(uint8_t** ptr)
   *ptr += nof_bytes;
 }
 
-
-
-// Table 6.1.3.1-1 Buffer size levels for BSR 
-uint32_t btable[61] = {
-  10, 12, 14, 17, 19, 22, 26, 31, 36, 42, 49, 57, 67, 78, 91, 107, 125, 146, 171, 200, 234, 274, 321, 376, 440, 515, 603, 706, 826, 967, 1132, 
-  1326, 1552, 1817, 2127, 2490, 2915, 3413, 3995, 4667, 5476, 6411, 7505, 8787, 10287, 12043, 14099, 16507, 19325, 22624, 26487, 31009, 36304, 
-  42502, 49759, 58255, 68201, 79846, 93479, 109439, 128125};
-
 uint8_t sch_subh::buff_size_table(uint32_t buffer_size) {
   if (buffer_size == 0) {
     return 0; 
@@ -639,7 +677,7 @@ uint8_t sch_subh::buff_size_table(uint32_t buffer_size) {
     return 63;
   } else {
     for (int i=0;i<61;i++) {
-      if (buffer_size < btable[i]) {
+      if (buffer_size < btable[i+2]) {
         return 1+i; 
       }      
     }

@@ -36,7 +36,6 @@
 
 /* Buffer status report procedure */
 
-
 namespace srsue {
 
 class bsr_proc : public srslte::timer_callback

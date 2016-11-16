@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include "common/log_filter.h"
 
-using namespace srsue;
 using namespace srslte;
 
 typedef struct {

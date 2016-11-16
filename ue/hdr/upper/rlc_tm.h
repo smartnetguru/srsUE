@@ -54,23 +54,24 @@ public:
   uint32_t      get_bearer();
 
   // PDCP interface
-  void write_sdu(byte_buffer_t *sdu);
+  void write_sdu(srslte::byte_buffer_t *sdu);
 
   // MAC interface
   uint32_t get_buffer_state();
+  uint32_t get_total_buffer_state();
   int      read_pdu(uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu(uint8_t *payload, uint32_t nof_bytes);
 
 private:
 
-  buffer_pool        *pool;
+  srslte::buffer_pool        *pool;
   srslte::log        *log;
   uint32_t            lcid;
   pdcp_interface_rlc *pdcp;
   rrc_interface_rlc  *rrc;
 
   // Thread-safe queues for MAC messages
-  msg_queue    ul_queue;
+  srslte::msg_queue    ul_queue;
 };
 
 } // namespace srsue

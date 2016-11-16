@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include "common/logger.h"
 
-using namespace srsue;
+using namespace srslte;
 
 typedef struct {
   logger *l;

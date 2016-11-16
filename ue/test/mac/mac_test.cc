@@ -282,7 +282,9 @@ public:
     sib2_period = 0; 
     send_ack = 0; 
   }
-  
+  uint32_t get_total_buffer_state(uint32_t lcid) {
+    
+  }
   uint32_t get_buffer_state(uint32_t lcid) {
     if (lcid == 0) {
       if (sib2_decoded && !connsetup_decoded) {

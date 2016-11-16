@@ -34,6 +34,8 @@
 #include "common/security.h"
 #include "liblte_mme.h"
 
+using srslte::byte_buffer_t;
+
 namespace srsue {
 
 // EMM states (3GPP 24.302 v10.0.0)
@@ -76,7 +78,7 @@ public:
   bool      get_s_tmsi(LIBLTE_RRC_S_TMSI_STRUCT *s_tmsi);
   
 private:
-  buffer_pool        *pool;
+  srslte::buffer_pool *pool;
   srslte::log        *nas_log;
   rrc_interface_nas  *rrc;
   usim_interface_nas *usim;

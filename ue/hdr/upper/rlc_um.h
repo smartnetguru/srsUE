@@ -41,7 +41,7 @@ namespace srsue {
 
 struct rlc_umd_pdu_t{
   rlc_umd_pdu_header_t  header;
-  byte_buffer_t        *buf;
+  srslte::byte_buffer_t        *buf;
 };
 
 class rlc_um
@@ -64,10 +64,11 @@ public:
   uint32_t      get_bearer();
 
   // PDCP interface
-  void write_sdu(byte_buffer_t *sdu);
+  void write_sdu(srslte::byte_buffer_t *sdu);
 
   // MAC interface
   uint32_t get_buffer_state();
+  uint32_t get_total_buffer_state();
   int      read_pdu(uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu(uint8_t *payload, uint32_t nof_bytes);
 
@@ -78,7 +79,7 @@ public:
 
 private:
 
-  buffer_pool          *pool;
+  srslte::buffer_pool          *pool;
   srslte::log          *log;
   uint32_t              lcid;
   pdcp_interface_rlc   *pdcp;
@@ -86,8 +87,8 @@ private:
   srslte::mac_interface_timers *mac_timers; 
 
   // TX SDU buffers
-  msg_queue           tx_sdu_queue;
-  byte_buffer_t      *tx_sdu;
+  srslte::msg_queue           tx_sdu_queue;
+  srslte::byte_buffer_t      *tx_sdu;
 
   // Rx window
   std::map<uint32_t, rlc_umd_pdu_t>  rx_window;
@@ -96,7 +97,7 @@ private:
   uint32_t                           tx_mod; // Tx counter modulus
 
   // RX SDU buffers
-  byte_buffer_t      *rx_sdu;
+  srslte::byte_buffer_t      *rx_sdu;
   uint32_t            vr_ur_in_rx_sdu;
 
   // Mutexes
@@ -143,9 +144,9 @@ private:
  * Header pack/unpack helper functions
  * Ref: 3GPP TS 36.322 v10.0.0 Section 6.2.1
  ***************************************************************************/
-void        rlc_um_read_data_pdu_header(byte_buffer_t *pdu, rlc_umd_sn_size_t sn_size, rlc_umd_pdu_header_t *header);
+void        rlc_um_read_data_pdu_header(srslte::byte_buffer_t *pdu, rlc_umd_sn_size_t sn_size, rlc_umd_pdu_header_t *header);
 void        rlc_um_read_data_pdu_header(uint8_t *payload, uint32_t nof_bytes, rlc_umd_sn_size_t sn_size, rlc_umd_pdu_header_t *header);
-void        rlc_um_write_data_pdu_header(rlc_umd_pdu_header_t *header, byte_buffer_t *pdu);
+void        rlc_um_write_data_pdu_header(rlc_umd_pdu_header_t *header, srslte::byte_buffer_t *pdu);
 
 uint32_t    rlc_um_packed_length(rlc_umd_pdu_header_t *header);
 bool        rlc_um_start_aligned(uint8_t fi);

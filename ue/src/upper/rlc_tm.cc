@@ -55,7 +55,7 @@ void rlc_tm::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
 
 void rlc_tm::empty_queue()
 {
-  // Drop all messages in UL queue
+  // Drop all messages in TX queue
   byte_buffer_t *buf;
   while(ul_queue.size() > 0) {
     ul_queue.read(&buf);
@@ -91,15 +91,19 @@ uint32_t rlc_tm::get_buffer_state()
   return ul_queue.size_bytes();
 }
 
+uint32_t rlc_tm::get_total_buffer_state()
+{
+  return get_buffer_state();
+}
+
 int rlc_tm::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   uint32_t pdu_size = ul_queue.size_tail_bytes();
   if(pdu_size > nof_bytes)
   {
-    log->error("UL %s PDU size larger than MAC opportunity\n", rb_id_text[lcid]);
+    log->error("TX %s PDU size larger than MAC opportunity\n", rb_id_text[lcid]);
     return 0;
   }
-
   byte_buffer_t *buf;
   ul_queue.read(&buf);
   pdu_size = buf->N_bytes;
@@ -107,7 +111,7 @@ int rlc_tm::read_pdu(uint8_t *payload, uint32_t nof_bytes)
   log->info("%s Complete SDU scheduled for tx. Stack latency: %ld us\n",
             rb_id_text[lcid], buf->get_latency_us());
   pool->deallocate(buf);
-  log->info_hex(payload, pdu_size, "UL %s, %s PDU", rb_id_text[lcid], rlc_mode_text[RLC_MODE_TM]);
+  log->info_hex(payload, pdu_size, "TX %s, %s PDU", rb_id_text[lcid], rlc_mode_text[RLC_MODE_TM]);
   return pdu_size;
 }
 

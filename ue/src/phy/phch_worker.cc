@@ -385,19 +385,13 @@ bool phch_worker::decode_pdcch_dl(srsue::mac_interface_phy::mac_grant_t* grant)
     
     last_dl_pdcch_ncce = srslte_ue_dl_get_ncce(&ue_dl);
 
-#ifdef LOG_EXECTIME
-  gettimeofday(&logtime_start[2], NULL);
-  get_time_interval(logtime_start);
-  snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
-#endif
-
     char hexstr[16];
     hexstr[0]='\0';
     if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
       srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
     }
-    Info("PDCCH: DL DCI %s cce_index=%2d, n_data_bits=%d%s, hex=%s\n", srslte_dci_format_string(dci_msg.format), 
-         last_dl_pdcch_ncce, dci_msg.nof_bits, timestr, hexstr);
+    Info("PDCCH: DL DCI %s cce_index=%2d, L=%d, n_data_bits=%d, hex=%s\n", srslte_dci_format_string(dci_msg.format), 
+         last_dl_pdcch_ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, hexstr);
     
     return true; 
   } else {
@@ -534,19 +528,14 @@ bool phch_worker::decode_pdcch_ul(mac_interface_phy::mac_grant_t* grant)
       grant->has_cqi_request = dci_unpacked.cqi_request;
       ret = true; 
       
-#ifdef LOG_EXECTIME
-  gettimeofday(&logtime_start[2], NULL);
-  get_time_interval(logtime_start);
-  snprintf(timestr, 64, ", partial_time=%4d us", (int) logtime_start[0].tv_usec);
-#endif
-
       char hexstr[16];
       hexstr[0]='\0';
       if (phy->log_h->get_level() >= srslte::LOG_LEVEL_INFO) {
         srslte_vec_sprint_hex(hexstr, dci_msg.data, dci_msg.nof_bits);
       }
-      Info("PDCCH: UL DCI Format0 cce_index=%d, L=%d, n_data_bits=%d, TBS=%d%s, hex=%s\n", 
-           ue_dl.last_location.ncce, (1<<ue_dl.last_location.L), dci_msg.nof_bits, grant->phy_grant.ul.mcs.tbs, timestr, hexstr);
+      // Change to last_location_ul
+      Info("PDCCH: UL DCI Format0  cce_index=%d, L=%d, n_data_bits=%d, hex=%s\n", 
+           ue_dl.last_location_ul.ncce, (1<<ue_dl.last_location_ul.L), dci_msg.nof_bits, hexstr);
       
       if (grant->phy_grant.ul.mcs.tbs==0) {
         srslte_vec_fprint_hex(stdout, dci_msg.data, dci_msg.nof_bits);
@@ -603,7 +592,7 @@ void phch_worker::set_uci_sr()
     uint32_t sr_tx_tti = (tti+4)%10240;
     // Get I_sr parameter   
     if (srslte_ue_ul_sr_send_tti(I_sr, sr_tx_tti)) {
-      Info("PUCCH: SR transmission at TTI=%d\n", sr_tx_tti);
+      Info("PUCCH: SR transmission at TTI=%d, I_sr=%d\n", sr_tx_tti, I_sr);
       uci_data.scheduling_request = true; 
       phy->sr_last_tx_tti = sr_tx_tti; 
       phy->sr_enabled = false;
@@ -738,8 +727,6 @@ void phch_worker::encode_pusch(srslte_ra_ul_grant_t *grant, uint8_t *payload, ui
          grant->mcs.tbs/8, grant->mcs.mod, grant->mcs.idx, rv,
          uci_data.uci_ack_len>0?(uci_data.uci_ack?"1":"0"):"no",
          cfo*15000, timestr);
-  
-  //srslte_vec_save_file("pusch_tx", signal_buffer, sizeof(cf_t)*SRSLTE_SF_LEN_PRB(cell.nof_prb));
 
   // Store metrics
   ul_metrics.mcs   = grant->mcs.idx;

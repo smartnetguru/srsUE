@@ -46,6 +46,8 @@ rlc_um::rlc_um() : tx_sdu_queue(16)
   
   vr_ur_in_rx_sdu = 0; 
   
+  mac_timers = NULL; 
+
   pdu_lost = false;
 }
 
@@ -77,7 +79,7 @@ void rlc_um::configure(LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg)
     log->info("%s configured in %s mode: "
               "t_reordering=%d ms, rx_sn_field_length=%u bits, tx_sn_field_length=%u bits\n",
               rb_id_text[lcid], liblte_rrc_rlc_mode_text[cnfg->rlc_mode],
-              liblte_rrc_t_reordering_num[t_reordering],
+              t_reordering,
               rlc_umd_sn_size_num[rx_sn_field_length],
               rlc_umd_sn_size_num[tx_sn_field_length]);
     break;
@@ -183,6 +185,11 @@ uint32_t rlc_um::get_buffer_state()
   return n_bytes;
 }
 
+uint32_t rlc_um::get_total_buffer_state()
+{
+  return get_buffer_state();
+}
+
 int rlc_um::read_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   log->debug("MAC opportunity - %d bytes\n", nof_bytes);
@@ -244,7 +251,7 @@ int  rlc_um::build_data_pdu(uint8_t *payload, uint32_t nof_bytes)
 {
   if(!tx_sdu && tx_sdu_queue.size() == 0)
   {
-    log->info("No data available to be sent");
+    log->info("No data available to be sent\n");
     return 0;
   }
 
@@ -349,7 +356,7 @@ void rlc_um::handle_data_pdu(uint8_t *payload, uint32_t nof_bytes)
   rlc_umd_pdu_header_t header;
   rlc_um_read_data_pdu_header(payload, nof_bytes, rx_sn_field_length, &header);
 
-  log->info_hex(payload, nof_bytes, "DL %s Rx data PDU SN: %d",
+  log->info_hex(payload, nof_bytes, "RX %s Rx data PDU SN: %d",
                 rb_id_text[lcid], header.sn);
 
   if(RX_MOD_BASE(header.sn) >= RX_MOD_BASE(vr_uh-rx_window_size) &&

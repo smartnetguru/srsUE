@@ -31,6 +31,8 @@
 #include "srslte_version_check.h"
 #include "srslte/srslte.h"
 
+using namespace srslte;
+
 namespace srsue{
 
 ue*           ue::instance = NULL;

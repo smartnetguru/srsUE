@@ -53,9 +53,6 @@ public:
     pdu_is_ul      = false; 
     buffer_tx      = NULL; 
     total_sdu_len  = 0; 
-    for (int i=0;i<max_subheaders;i++) {
-      subheaders[i].parent = this; 
-    }
   }
   
   void fprint(FILE *stream) {
@@ -173,6 +170,7 @@ private:
     last_sdu_idx   = -1;
     reset();
     for (int i=0;i<max_subheaders;i++) {
+      subheaders[i].parent = this; 
       subheaders[i].init();
     }
   }
@@ -203,7 +201,7 @@ public:
   
   typedef enum {
     PHR_REPORT = 26,
-    C_RNTI     = 27,
+    CRNTI      = 27,
     CON_RES_ID = 28,
     TRUNC_BSR  = 28,
     TA_CMD     = 29,
@@ -214,6 +212,9 @@ public:
     SDU        = 0
   } cetype; 
   
+  // Size of MAC CEs
+  const static int MAC_CE_CONTRES_LEN = 6; 
+
   // Reading functions
   bool     is_sdu();
   cetype   ce_type();
@@ -231,6 +232,7 @@ public:
   uint64_t get_con_res_id();
   uint8_t  get_ta_cmd();
   uint8_t  get_phr();
+  int      get_bsr(uint32_t buff_size[4]);
   
   // Writing functions
   void     write_subheader(uint8_t** ptr, bool is_last);

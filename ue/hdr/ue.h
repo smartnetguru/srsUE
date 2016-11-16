@@ -170,18 +170,18 @@ private:
   srsue::gw         gw;
   srsue::usim       usim;
 
-  srsue::logger     logger;
-  srsue::log_filter rf_log;
-  srsue::log_filter phy_log;
-  srsue::log_filter mac_log;
-  srsue::log_filter rlc_log;
-  srsue::log_filter pdcp_log;
-  srsue::log_filter rrc_log;
-  srsue::log_filter nas_log;
-  srsue::log_filter gw_log;
-  srsue::log_filter usim_log;
+  srslte::logger     logger;
+  srslte::log_filter rf_log;
+  srslte::log_filter phy_log;
+  srslte::log_filter mac_log;
+  srslte::log_filter rlc_log;
+  srslte::log_filter pdcp_log;
+  srslte::log_filter rrc_log;
+  srslte::log_filter nas_log;
+  srslte::log_filter gw_log;
+  srslte::log_filter usim_log;
 
-  srsue::buffer_pool *pool;
+  srslte::buffer_pool *pool;
 
   all_args_t       *args;
   bool              started;

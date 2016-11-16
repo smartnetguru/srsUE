@@ -57,7 +57,7 @@ namespace bpt = boost::posix_time;
                               TYPEDEFS
 *******************************************************************************/
 
-namespace srsue {
+namespace srslte {
 
 typedef enum{
   ERROR_NONE = 0,
@@ -114,6 +114,7 @@ public:
     uint8_t     buffer[SRSUE_MAX_BUFFER_SIZE_BYTES];
     uint8_t    *msg;
     bpt::ptime  timestamp;
+    uint32_t     opt, opt2; 
 
     byte_buffer_t():N_bytes(0)
     {

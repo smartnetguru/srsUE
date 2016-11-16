@@ -61,7 +61,7 @@ uint8_t* pdu_queue::request_buffer(uint32_t pid, uint32_t len)
   if (pid < NOF_HARQ_PID) {
     if (len < MAX_PDU_LEN) {
       if (pdu_q[pid].pending_msgs() > 0.75*pdu_q[pid].max_msgs()) {
-        log_h->console("Warning UL buffer HARQ PID=%d: Occupation is %.1f%% \n", 
+        log_h->console("Warning TX buffer HARQ PID=%d: Occupation is %.1f%% \n", 
                       pid, (float) 100*pdu_q[pid].pending_msgs()/pdu_q[pid].max_msgs());
       }
       buff = (uint8_t*) pdu_q[pid].request();
@@ -95,6 +95,7 @@ void pdu_queue::push_pdu(uint32_t pid, uint32_t nof_bytes)
       if (!pdu_q[pid].push(nof_bytes)) {
         Warning("Full queue %d when pushing MAC PDU %d bytes\n", pid, nof_bytes);
       }
+      //callback->process_pdu((uint8_t*) pdu_q[pid].request(), nof_bytes);
     } else {
       Warning("Trying to push PDU with payload size zero\n");
     }

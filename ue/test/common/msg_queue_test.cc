@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include "common/msg_queue.h"
 
-using namespace srsue;
+using namespace srslte;
 
 typedef struct {
   msg_queue   *q;

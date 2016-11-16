@@ -52,16 +52,16 @@ public:
   void get_metrics(gw_metrics_t &m);
 
   // PDCP interface
-  void write_pdu(uint32_t lcid, byte_buffer_t *pdu);
+  void write_pdu(uint32_t lcid, srslte::byte_buffer_t *pdu);
 
   // NAS interface
-  error_t setup_if_addr(uint32_t ip_addr, char *err_str);
+  srslte::error_t setup_if_addr(uint32_t ip_addr, char *err_str);
   
 private:
   
   static const int GW_THREAD_PRIO = 7; 
   
-  buffer_pool        *pool;
+  srslte::buffer_pool        *pool;
   srslte::log        *gw_log;
   pdcp_interface_gw  *pdcp;
   rrc_interface_gw   *rrc;
@@ -77,7 +77,7 @@ private:
   bpt::ptime          metrics_time;
 
   void                run_thread();
-  error_t             init_if(char *err_str);
+  srslte::error_t     init_if(char *err_str);
 };
 
 } // namespace srsue

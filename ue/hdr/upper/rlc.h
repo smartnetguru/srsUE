@@ -64,6 +64,7 @@ public:
 
   // MAC interface
   uint32_t get_buffer_state(uint32_t lcid);
+  uint32_t get_total_buffer_state(uint32_t lcid);
   int      read_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu(uint32_t lcid, uint8_t *payload, uint32_t nof_bytes);
   void     write_pdu_bcch_bch(uint8_t *payload, uint32_t nof_bytes);
@@ -73,12 +74,12 @@ public:
   // RRC interface
   void reset();
   void add_bearer(uint32_t lcid);
-  void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg=NULL);
+  void add_bearer(uint32_t lcid, LIBLTE_RRC_RLC_CONFIG_STRUCT *cnfg);
 
 private:
   void reset_metrics(); 
   
-  buffer_pool        *pool;
+  srslte::buffer_pool        *pool;
   srslte::log        *rlc_log;
   pdcp_interface_rlc *pdcp;
   rrc_interface_rlc  *rrc;

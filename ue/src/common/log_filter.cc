@@ -28,9 +28,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "common/log_filter.h"
 
-using namespace srslte;
-
-namespace srsue{
+namespace srslte{
 
 log_filter::log_filter()
 {}
