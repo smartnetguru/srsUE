@@ -7,6 +7,16 @@ srsUE is a software radio LTE UE developed by SRS (www.softwareradiosystems.com)
 srsUE is released under the AGPLv3 license and uses software from the OpenLTE project (http://sourceforge.net/projects/openlte) for some security functions and for RRC/NAS message parsing.
  
 
+Compatibility
+-------------
+
+srsUE has been fully tested and validated with the following newtork equipment: 
+ * Amarisoft LTE100 eNodeB and EPC
+ * Nokia FlexiRadio family FSMF system module with 1800MHz FHED radio module and TravelHawk EPC simulator
+ * Huawei DBS3900 
+ * Octasic Flexicell LTE-FDD NIB 
+ 
+
 Features
 --------
 

@@ -1,6 +1,16 @@
 Change Log for Releases
 ==============================
 
+## 001.004.000
+  * Fixed issues in RLC AM
+  * Added warning messages for unhandled ASN extensions
+  * Moved some classes from srsue to srslte namescape 
+  * Improved compatibility with more eNodeBs
+
+* Known Bugs: 
+  * Found bug in PBR UL schedulign. Disabled PBR. 
+  * Possible problem with UL TA compensation. Disabled TA from MAC commands (from RAR still enabled)
+  
 ## 001.003.000
 
 * Bugfixes: 
