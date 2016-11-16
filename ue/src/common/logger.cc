@@ -37,9 +37,7 @@ logger::logger()
   :buffer(LOG_BUFFER_SIZE)
   ,inited(false)
   ,not_done(true)
-{
-  thread = NULL; 
-}
+{}
 
 logger::~logger() {
   not_done = false;
