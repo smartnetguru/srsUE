@@ -81,8 +81,6 @@ public:
   void stop();
 
   rrc_state_t get_state();
-  
-  void enable_capabilities();
 
   // Timeout callback interface
   void timer_expired(uint32_t timeout_id);
@@ -139,6 +137,7 @@ private:
   void write_sdu(uint32_t lcid, byte_buffer_t *sdu);
   uint16_t get_mcc();
   uint16_t get_mnc();
+  void enable_capabilities();
 
   // PHY interface
   void in_sync();
