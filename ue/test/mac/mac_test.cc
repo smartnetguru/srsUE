@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "liblte/hdr/liblte_rrc.h"
+#include "liblte_rrc.h"
 #include "radio/radio.h"
 #include "phy/phy.h"
 #include "common/mac_interface.h"

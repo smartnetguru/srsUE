@@ -133,6 +133,12 @@ uint16_t rrc::get_mnc()
     return 0;
 }
 
+void rrc::enable_capabilities()
+{
+  //printf("Not enabling 64QAM\n");
+  //phy->set_config_64qam_en(true);
+}
+
 /*******************************************************************************
   MAC interface
 *******************************************************************************/
@@ -631,12 +637,6 @@ void rrc::send_rrc_con_reconfig_complete(uint32_t lcid, byte_buffer_t *pdu)
 
   rrc_log->info("Sending RRC Connection Reconfig Complete\n");
   pdcp->write_sdu(lcid, pdu);
-}
-
-void rrc::enable_capabilities()
-{
-  //printf("Not enabling 64QAM\n");
-  //phy->set_config_64qam_en(true);  
 }
 
 void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
