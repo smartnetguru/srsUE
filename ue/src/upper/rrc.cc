@@ -635,8 +635,9 @@ void rrc::send_rrc_con_reconfig_complete(uint32_t lcid, byte_buffer_t *pdu)
 
 void rrc::enable_capabilities()
 {
-  //printf("Not enabling 64QAM\n");
-  //phy->set_config_64qam_en(true);  
+  bool enable_ul_64 = SRSUE_UE_CATEGORY>=5 && sib2.rr_config_common_sib.pusch_cnfg.enable_64_qam;
+  rrc_log->info("%s 64QAM PUSCH\n", enable_ul_64?"Enabling":"Disabling");
+  phy->set_config_64qam_en(enable_ul_64);  
 }
 
 void rrc::send_rrc_ue_cap_info(uint32_t lcid, byte_buffer_t *pdu)
