@@ -335,28 +335,28 @@ int main(int argc, char *argv[])
   if(!ue->init(&args)) {
     exit(1);
   }
-  metrics.init(ue, args.expert.metrics_period_secs);
+//  metrics.init(ue, args.expert.metrics_period_secs);
 
   pthread_t input;
   pthread_create(&input, NULL, &input_loop, &metrics);
 
-  bool plot_started         = false; 
-  bool signals_pregenerated = false; 
+//  bool plot_started         = false;
+//  bool signals_pregenerated = false;
   while(running) {
-    if (ue->is_attached()) {
-      if (!signals_pregenerated && args.expert.pregenerate_signals) {
-        ue->pregenerate_signals(true);
-        signals_pregenerated = true; 
-      }
-      if (!plot_started && args.gui.enable) {
-        ue->start_plot();
-        plot_started = true; 
-      }
-    }
+//    if (ue->is_attached()) {
+//      if (!signals_pregenerated && args.expert.pregenerate_signals) {
+//        ue->pregenerate_signals(true);
+//        signals_pregenerated = true;
+//      }
+//      if (!plot_started && args.gui.enable) {
+//        ue->start_plot();
+//        plot_started = true;
+//      }
+//    }
     sleep(1);
   }
   pthread_cancel(input);
-  metrics.stop();
+//  metrics.stop();
   ue->stop();
   ue->cleanup();
   cout << "---  exiting  ---" << endl;

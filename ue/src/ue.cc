@@ -87,153 +87,159 @@ bool ue::init(all_args_t *args_)
   }
   
   logger.init(args->log.filename);
-  rf_log.init("RF  ", &logger);
-  phy_log.init("PHY ", &logger, true);
-  mac_log.init("MAC ", &logger, true);
-  rlc_log.init("RLC ", &logger);
-  pdcp_log.init("PDCP", &logger);
+//  rf_log.init("RF  ", &logger);
+//  phy_log.init("PHY ", &logger, true);
+//  mac_log.init("MAC ", &logger, true);
+//  rlc_log.init("RLC ", &logger);
+//  pdcp_log.init("PDCP", &logger);
   rrc_log.init("RRC ", &logger);
   nas_log.init("NAS ", &logger);
-  gw_log.init("GW  ", &logger);
+//  gw_log.init("GW  ", &logger);
   usim_log.init("USIM", &logger);
 
   // Init logs
   logger.log("\n\n");
-  rf_log.set_level(srslte::LOG_LEVEL_INFO);
-  phy_log.set_level(level(args->log.phy_level));
-  mac_log.set_level(level(args->log.mac_level));
-  rlc_log.set_level(level(args->log.rlc_level));
-  pdcp_log.set_level(level(args->log.pdcp_level));
+//  rf_log.set_level(srslte::LOG_LEVEL_INFO);
+//  phy_log.set_level(level(args->log.phy_level));
+//  mac_log.set_level(level(args->log.mac_level));
+//  rlc_log.set_level(level(args->log.rlc_level));
+//  pdcp_log.set_level(level(args->log.pdcp_level));
   rrc_log.set_level(level(args->log.rrc_level));
   nas_log.set_level(level(args->log.nas_level));
-  gw_log.set_level(level(args->log.gw_level));
+//  gw_log.set_level(level(args->log.gw_level));
   usim_log.set_level(level(args->log.usim_level));
 
-  phy_log.set_hex_limit(args->log.phy_hex_limit);
-  mac_log.set_hex_limit(args->log.mac_hex_limit);
-  rlc_log.set_hex_limit(args->log.rlc_hex_limit);
-  pdcp_log.set_hex_limit(args->log.pdcp_hex_limit);
+//  phy_log.set_hex_limit(args->log.phy_hex_limit);
+//  mac_log.set_hex_limit(args->log.mac_hex_limit);
+//  rlc_log.set_hex_limit(args->log.rlc_hex_limit);
+//  pdcp_log.set_hex_limit(args->log.pdcp_hex_limit);
   rrc_log.set_hex_limit(args->log.rrc_hex_limit);
   nas_log.set_hex_limit(args->log.nas_hex_limit);
-  gw_log.set_hex_limit(args->log.gw_hex_limit);
+//  gw_log.set_hex_limit(args->log.gw_hex_limit);
   usim_log.set_hex_limit(args->log.usim_hex_limit);
 
-  // Set up pcap and trace
-  if(args->pcap.enable)
-  {
-    mac_pcap.open(args->pcap.filename.c_str());
-    mac.start_pcap(&mac_pcap);
-  }
-  if(args->trace.enable)
-  {
-    phy.start_trace();
-    radio.start_trace();
-  }
+//  //Set up pcap and trace
+//  if(args->pcap.enable)
+//  {
+//    mac_pcap.open(args->pcap.filename.c_str());
+//    mac.start_pcap(&mac_pcap);
+//  }
+//  if(args->trace.enable)
+//  {
+//    phy.start_trace();
+//    radio.start_trace();
+//  }
   
   // Init layers
   
-  /* Start Radio */
-  char *dev_name = NULL;
-  if (args->rf.device_name.compare("auto")) {
-    dev_name = (char*) args->rf.device_name.c_str();
-  }
+//  /* Start Radio */
+//  char *dev_name = NULL;
+//  if (args->rf.device_name.compare("auto")) {
+//    dev_name = (char*) args->rf.device_name.c_str();
+//  }
   
-  char *dev_args = NULL;
-  if (args->rf.device_args.compare("auto")) {
-    dev_args = (char*) args->rf.device_args.c_str();
-  }
+//  char *dev_args = NULL;
+//  if (args->rf.device_args.compare("auto")) {
+//    dev_args = (char*) args->rf.device_args.c_str();
+//  }
   
-  if(!radio.init(dev_args, dev_name))
-  {
-    printf("Failed to find device %s with args %s\n",
-           args->rf.device_name.c_str(), args->rf.device_args.c_str());
-    return false;
-  }    
+//  if(!radio.init(dev_args, dev_name))
+//  {
+//    printf("Failed to find device %s with args %s\n",
+//           args->rf.device_name.c_str(), args->rf.device_args.c_str());
+//    return false;
+//  }
   
-  // Set RF options
-  if (args->rf.time_adv_nsamples.compare("auto")) {
-    radio.set_tx_adv(atoi(args->rf.time_adv_nsamples.c_str()));
-  }  
-  if (args->rf.burst_preamble.compare("auto")) {
-    radio.set_burst_preamble(atof(args->rf.burst_preamble.c_str()));    
-  }
+//  // Set RF options
+//  if (args->rf.time_adv_nsamples.compare("auto")) {
+//    radio.set_tx_adv(atoi(args->rf.time_adv_nsamples.c_str()));
+//  }
+//  if (args->rf.burst_preamble.compare("auto")) {
+//    radio.set_burst_preamble(atof(args->rf.burst_preamble.c_str()));
+//  }
   
-  radio.set_manual_calibration(&args->rf_cal);
+//  radio.set_manual_calibration(&args->rf_cal);
 
-  if (args->rf.tx_gain > 0) {
-    args->expert.phy.ul_pwr_ctrl_en = false; 
-  } else {
-    args->expert.phy.ul_pwr_ctrl_en = true; 
-  }
-  phy.init(&radio, &mac, &rrc, &phy_log, &args->expert.phy);
+//  if (args->rf.tx_gain > 0) {
+//    args->expert.phy.ul_pwr_ctrl_en = false;
+//  } else {
+//    args->expert.phy.ul_pwr_ctrl_en = true;
+//  }
+//  phy.init(&radio, &mac, &rrc, &phy_log, &args->expert.phy);
   
-  if (args->rf.rx_gain < 0) {
-    radio.start_agc(false);    
-    radio.set_tx_rx_gain_offset(10);
-    phy.set_agc_enable(true);
-  } else {
-    radio.set_rx_gain(args->rf.rx_gain);
-  }
-  if (args->rf.tx_gain > 0) {
-    radio.set_tx_gain(args->rf.tx_gain);    
-  } else {
-    radio.set_tx_gain(args->rf.rx_gain);
-    std::cout << std::endl << 
-                "Warning: TX gain was not set. " << 
-                "Using open-loop power control (not working properly)" << std::endl << std::endl; 
-  }
+//  if (args->rf.rx_gain < 0) {
+//    radio.start_agc(false);
+//    radio.set_tx_rx_gain_offset(10);
+//    phy.set_agc_enable(true);
+//  } else {
+//    radio.set_rx_gain(args->rf.rx_gain);
+//  }
+//  if (args->rf.tx_gain > 0) {
+//    radio.set_tx_gain(args->rf.tx_gain);
+//  } else {
+//    radio.set_tx_gain(args->rf.rx_gain);
+//    std::cout << std::endl <<
+//                "Warning: TX gain was not set. " <<
+//                "Using open-loop power control (not working properly)" << std::endl << std::endl;
+//  }
 
-  radio.register_error_handler(rf_msg);
+//  radio.register_error_handler(rf_msg);
 
-  radio.set_rx_freq(args->rf.dl_freq);
-  radio.set_tx_freq(args->rf.ul_freq);
+//  radio.set_rx_freq(args->rf.dl_freq);
+//  radio.set_tx_freq(args->rf.ul_freq);
 
-  phy_log.console("Setting frequency: DL=%.1f Mhz, UL=%.1f MHz\n", args->rf.dl_freq/1e6, args->rf.ul_freq/1e6);
+//  phy_log.console("Setting frequency: DL=%.1f Mhz, UL=%.1f MHz\n", args->rf.dl_freq/1e6, args->rf.ul_freq/1e6);
 
-  mac.init(&phy, &rlc, &rrc, &mac_log);
-  rlc.init(&pdcp, &rrc, this, &rlc_log, &mac);
-  pdcp.init(&rlc, &rrc, &gw, &pdcp_log);
-  rrc.init(&phy, &mac, &rlc, &pdcp, &nas, &usim, &mac, &rrc_log);
-  nas.init(&usim, &rrc, &gw, &nas_log);
-  gw.init(&pdcp, &rrc, this, &gw_log);
+//  mac.init(&phy, &rlc, &rrc, &mac_log);
+//  rlc.init(&pdcp, &rrc, this, &rlc_log, &mac);
+//  pdcp.init(&rlc, &rrc, &gw, &pdcp_log);
+
+  dummy_rrc_args_t dummy_rrc_args;
+  dummy_rrc_args.snkport = 12345;
+  dummy_rrc_args.srcport = 123456;
+  dummy_rrc.init(&dummy_rrc_args, &nas, &rrc_log);
+  dummy_gw gw;
+  nas.init(&usim, &dummy_rrc, &gw, &nas_log);
+//  gw.init(&pdcp, &rrc, this, &gw_log);
   usim.init(&args->usim, &usim_log);
 
   started = true;
   return true;
 }
 
-void ue::pregenerate_signals(bool enable)
-{
-  phy.enable_pregen_signals(enable);
-}
+//void ue::pregenerate_signals(bool enable)
+//{
+//  phy.enable_pregen_signals(enable);
+//}
 
-void ue::test_con_restablishment() {
-  rrc.test_con_restablishment();
-}
+//void ue::test_con_restablishment() {
+//  rrc.test_con_restablishment();
+//}
 
 void ue::stop()
 {
   if(started)
   {
     usim.stop();
-    gw.stop();
+//    gw.stop();
     nas.stop();
-    rrc.stop();
-    pdcp.stop();
-    rlc.stop();
-    mac.stop();
-    phy.stop();
+    dummy_rrc.stop();
+//    rrc.stop();
+//    pdcp.stop();
+//    rlc.stop();
+//    mac.stop();
+//    phy.stop();
  
-    usleep(1e5);
-    if(args->pcap.enable)
-    {
-       mac_pcap.close();
-    }
-    if(args->trace.enable)
-    {
-      phy.write_trace(args->trace.phy_filename);
-      radio.write_trace(args->trace.radio_filename);
-    }
+//    usleep(1e5);
+//    if(args->pcap.enable)
+//    {
+//       mac_pcap.close();
+//    }
+//    if(args->trace.enable)
+//    {
+//      phy.write_trace(args->trace.phy_filename);
+//      radio.write_trace(args->trace.radio_filename);
+//    }
     started = false;
   }
 }
@@ -243,56 +249,57 @@ bool ue::is_attached()
   return (EMM_STATE_REGISTERED == nas.get_state());
 }
 
-void ue::start_plot() {
-  phy.start_plot();
-}
+//void ue::start_plot() {
+//  phy.start_plot();
+//}
 
 bool ue::get_metrics(ue_metrics_t &m)
 {
-  m.rf = rf_metrics;
-  bzero(&rf_metrics, sizeof(rf_metrics_t));
-  rf_metrics.rf_error = false; // Reset error flag
+//  m.rf = rf_metrics;
+//  bzero(&rf_metrics, sizeof(rf_metrics_t));
+//  rf_metrics.rf_error = false; // Reset error flag
 
-  if(EMM_STATE_REGISTERED == nas.get_state()) {
-    if(RRC_STATE_RRC_CONNECTED == rrc.get_state()) {
-      phy.get_metrics(m.phy);
-      mac.get_metrics(m.mac);
-      rlc.get_metrics(m.rlc);
-      gw.get_metrics(m.gw);
-      return true;
-    }
-  }
-  return false;
+//  if(EMM_STATE_REGISTERED == nas.get_state()) {
+//    if(RRC_STATE_RRC_CONNECTED == rrc.get_state()) {
+//      phy.get_metrics(m.phy);
+//      mac.get_metrics(m.mac);
+//      rlc.get_metrics(m.rlc);
+//      gw.get_metrics(m.gw);
+//      return true;
+//    }
+//  }
+//  return false;
+  return true;
 }
 
-void ue::rf_msg(srslte_rf_error_t error)
-{
-  ue *u = ue::get_instance();
-  u->handle_rf_msg(error);
-}
+//void ue::rf_msg(srslte_rf_error_t error)
+//{
+//  ue *u = ue::get_instance();
+//  u->handle_rf_msg(error);
+//}
 
-void ue::handle_rf_msg(srslte_rf_error_t error)
-{
-  if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OVERFLOW) {
-    rf_metrics.rf_o++;
-    rf_metrics.rf_error = true;
-    rf_log.warning("Overflow\n");
-  }else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_UNDERFLOW) {
-    rf_metrics.rf_u++;
-    rf_metrics.rf_error = true;
-    rf_log.warning("Underflow\n");
-  } else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_LATE) {
-    rf_metrics.rf_l++;
-    rf_metrics.rf_error = true;
-    rf_log.warning("Late\n");
-  } else if (error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OTHER) {
-    std::string str(error.msg);
-    str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
-    str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
-    str.push_back('\n');
-    rf_log.info(str);
-  }
-}
+//void ue::handle_rf_msg(srslte_rf_error_t error)
+//{
+//  if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OVERFLOW) {
+//    rf_metrics.rf_o++;
+//    rf_metrics.rf_error = true;
+//    rf_log.warning("Overflow\n");
+//  }else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_UNDERFLOW) {
+//    rf_metrics.rf_u++;
+//    rf_metrics.rf_error = true;
+//    rf_log.warning("Underflow\n");
+//  } else if(error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_LATE) {
+//    rf_metrics.rf_l++;
+//    rf_metrics.rf_error = true;
+//    rf_log.warning("Late\n");
+//  } else if (error.type == srslte_rf_error_t::SRSLTE_RF_ERROR_OTHER) {
+//    std::string str(error.msg);
+//    str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+//    str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+//    str.push_back('\n');
+//    rf_log.info(str);
+//  }
+//}
 
 srslte::LOG_LEVEL_ENUM ue::level(std::string l)
 {
