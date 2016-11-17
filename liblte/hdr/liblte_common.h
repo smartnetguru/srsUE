@@ -128,6 +128,11 @@ struct LIBLTE_BYTE_MSG_STRUCT{
     {
       return msg-buffer;
     }
+    void reset()
+    {
+      N_bytes = 0;
+      msg = &buffer[LIBLTE_MSG_HEADER_OFFSET];
+    }
 };
 
 struct LIBLTE_BIT_MSG_STRUCT{
@@ -138,6 +143,9 @@ struct LIBLTE_BIT_MSG_STRUCT{
     LIBLTE_BIT_MSG_STRUCT():N_bits(0)
     {
       msg = &buffer[LIBLTE_MSG_HEADER_OFFSET];
+      while( (uint64_t)(msg) % 8 > 0) {
+        msg++;
+      }
     }
     LIBLTE_BIT_MSG_STRUCT(const LIBLTE_BIT_MSG_STRUCT& buf){
       N_bits = buf.N_bits;
@@ -150,6 +158,14 @@ struct LIBLTE_BIT_MSG_STRUCT{
     uint32 get_headroom()
     {
       return msg-buffer;
+    }
+    void reset()
+    {
+      N_bits = 0;
+      msg = &buffer[LIBLTE_MSG_HEADER_OFFSET];
+      while( (uint64_t)(msg) % 8 > 0) {
+        msg++;
+      }
     }
 };
 
