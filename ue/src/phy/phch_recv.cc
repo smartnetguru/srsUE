@@ -84,6 +84,8 @@ int radio_recv_wrapper_cs(void *h, void *data, uint32_t nsamples, srslte_timesta
     int offset = nsamples-radio_h->get_tti_len();
     if (abs(offset)<10 && offset != 0) {
       radio_h->tx_offset(offset);
+    } else if (nsamples<10) {
+      radio_h->tx_offset(nsamples);
     }
     return nsamples;
   } else {
