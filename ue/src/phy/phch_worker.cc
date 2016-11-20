@@ -429,7 +429,7 @@ bool phch_worker::decode_pdsch(srslte_ra_dl_grant_t *grant, uint8_t *payload,
         gettimeofday(&t[1], NULL);
   #endif
         
-        bool ack = srslte_pdsch_decode_rnti(&ue_dl.pdsch, &ue_dl.pdsch_cfg, softbuffer, ue_dl.sf_symbols, 
+        bool ack = srslte_pdsch_decode(&ue_dl.pdsch, &ue_dl.pdsch_cfg, softbuffer, ue_dl.sf_symbols, 
                                       ue_dl.ce, noise_estimate, rnti, payload) == 0;
   #ifdef LOG_EXECTIME
         gettimeofday(&t[2], NULL);

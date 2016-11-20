@@ -260,8 +260,8 @@ void ra_proc::step_pdcch_setup() {
   int ra_tti = phy_h->prach_tx_tti();
   if (ra_tti > 0) {    
     ra_rnti = 1+ra_tti%10;
-    rInfo("seq=%d, ra-rnti=%d, ra-tti=%d\n", sel_preamble, ra_rnti, ra_tti);
-    log_h->console("Random Access Transmission: seq=%d, ra-rnti=%d\n", sel_preamble, ra_rnti);
+    rInfo("seq=%d, ra-rnti=0x%x, ra-tti=%d\n", sel_preamble, ra_rnti, ra_tti);
+    log_h->console("Random Access Transmission: seq=%d, ra-rnti=0x%x\n", sel_preamble, ra_rnti);
     phy_h->pdcch_dl_search(SRSLTE_RNTI_RAR, ra_rnti, ra_tti+3, ra_tti+3+responseWindowSize);
     state = RESPONSE_RECEPTION;
   }
@@ -473,8 +473,8 @@ void ra_proc::step_contention_resolution() {
 }
 
 void ra_proc::step_completition() {
-  log_h->console("Random Access Complete.     c-rnti=%d, ta=%d\n", rntis->crnti, current_ta);
-  rInfo("Random Access Complete.     c-rnti=%d, ta=%d\n",          rntis->crnti, current_ta);
+  log_h->console("Random Access Complete.     c-rnti=0x%x, ta=%d\n", rntis->crnti, current_ta);
+  rInfo("Random Access Complete.     c-rnti=0x%x, ta=%d\n",          rntis->crnti, current_ta);
   if (!msg3_flushed) {
     mux_unit->msg3_flush();
     msg3_flushed = true; 

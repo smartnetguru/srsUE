@@ -113,9 +113,9 @@ bool pdu_queue::process_pdus()
   bool have_data = false; 
   for (int i=0;i<NOF_HARQ_PID;i++) {
     uint8_t *buff = NULL;
-    uint32_t len  = 0; 
     uint32_t cnt  = 0; 
     do {
+      uint32_t len  = 0;       
       buff = (uint8_t*) pdu_q[i].pop(&len);
       if (buff) {
         if (callback) {

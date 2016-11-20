@@ -105,7 +105,7 @@ bool phch_common::ul_rnti_active(uint32_t tti) {
 }
 
 bool phch_common::dl_rnti_active(uint32_t tti) {
-  Debug("tti=%d, dl_rnti_start=%d, dl_rnti_end=%d, dl_rnti=%d\n", tti, dl_rnti_start, dl_rnti_end, dl_rnti);
+  Debug("tti=%d, dl_rnti_start=%d, dl_rnti_end=%d, dl_rnti=0x%x\n", tti, dl_rnti_start, dl_rnti_end, dl_rnti);
   if (((tti >= dl_rnti_start && dl_rnti_start >= 0)  || dl_rnti_start < 0) && 
       ((tti <  dl_rnti_end   && dl_rnti_end   >= 0)  || dl_rnti_end   < 0))
   {
